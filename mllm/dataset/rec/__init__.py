@@ -1,1 +1,1 @@
-from .rec import RECDataset, RECComputeMetrics
+from .rec import RECDataset, RECComputeMetrics, RECRawDataset

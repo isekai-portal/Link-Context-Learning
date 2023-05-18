@@ -15,6 +15,7 @@ from ..common import (
     BoxFormatter,
     AccComputeMetrics,
 )
+from ..common.transform import de_norm_box_xyxy, norm_box_xyxy
 
 from ..conv import DEFAULT_IMAGE_TOKEN
 
@@ -37,7 +38,7 @@ logging.basicConfig(
 #   "width": 500
 # }
 
-class RECDataset(QuestionTemplateMixin, BoxDatasetBase):
+class RECRawDataset(QuestionTemplateMixin):
     def __init__(self, *args, data_file, transform=Expand2square(), **kwargs):
         super().__init__(*args, **kwargs)
         self.data_file = data_file
@@ -59,12 +60,15 @@ class RECDataset(QuestionTemplateMixin, BoxDatasetBase):
         item = self.get_raw_item(index)
         img_path = item['img_path']
         expr = item['expression']
+        bbox = item['bbox']
 
         img = read_img_general(img_path)
-        target = {'bbox': item['bbox']}
+        bbox = de_norm_box_xyxy(bbox, w=img.width, h=img.height)
+        target = {'bbox': bbox}
         if self.transform is not None:
             img, target = self.transform(img, target)
         bbox = target['bbox']
+        bbox = norm_box_xyxy(bbox, w=img.width, h=img.height)
 
         question_template: str = self.get_template()
         question = question_template.replace('<expr>', expr) + DEFAULT_IMAGE_TOKEN
@@ -84,6 +88,10 @@ class RECDataset(QuestionTemplateMixin, BoxDatasetBase):
             }
         ]
         return ret
+
+
+class RECDataset(RECRawDataset, BoxDatasetBase):
+    pass
 
 
 class RECComputeMetrics(AccComputeMetrics):
@@ -112,7 +120,7 @@ class RECComputeMetrics(AccComputeMetrics):
         with torch.no_grad():
             target_boxes = torch.tensor(target_boxes)
             pred_boxes = torch.tensor(pred_boxes)
-            ious = box_iou(pred_boxes, target_boxes)
+            ious = box_iou(pred_boxes * 1000, target_boxes * 1000)
             ious = torch.einsum('i i -> i', ious)  # take diag elem
             iou = ious.mean().item()  # please note iou only calculate for success target
             correct = (ious > 0.5).sum().item()

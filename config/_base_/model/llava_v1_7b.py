@@ -4,8 +4,8 @@ model_args = dict(
 
     # checkpoint config
     cache_dir=None,
-    model_name_or_path=r'/mnt/lustre/share_data/zhangzhao2/VG/ckpt/llava/llava_v1/7B',
-    vision_tower=r'/mnt/lustre/share_data/zhangzhao2/VG/ckpt/openai/clip-vit-large-patch14',
+    model_name_or_path=r'/mnt/lustre/share_data/chenkeqin/VG/ckpt/llava/llava_v1/7B',
+    vision_tower=r'/mnt/lustre/share_data/chenkeqin/VG/ckpt/openai/clip-vit-large-patch14',
     pretrain_mm_mlp_adapter=None,
 
     # model config

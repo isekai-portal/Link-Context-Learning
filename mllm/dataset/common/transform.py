@@ -17,6 +17,16 @@ def expand2square(pil_img, background_color=(255, 255, 255)):
         return result
 
 
+def de_norm_box_xyxy(box, *, w, h):
+    x1, y1, x2, y2 = box
+    x1 = x1 * w
+    x2 = x2 * w
+    y1 = y1 * h
+    y2 = y2 * h
+    box = x1, y1, x2, y2
+    return box
+
+
 def norm_box_xyxy(box, w, h):
     x1, y1, x2, y2 = box
 
@@ -31,21 +41,21 @@ def norm_box_xyxy(box, w, h):
     return normalized_box
 
 
-def norm_box_xyxy_expand2square(box, w, h):
+def box_xyxy_expand2square(box, w, h):
     if w == h:
-        return norm_box_xyxy(box, w, h)
+        return box
     if w > h:
         x1, y1, x2, y2 = box
         y1 += (w - h) // 2
         y2 += (w - h) // 2
         box = x1, y1, x2, y2
-        return norm_box_xyxy(box, w, w)
+        return box
     assert w < h
     x1, y1, x2, y2 = box
     x1 += (h - w) // 2
     x2 += (h - w) // 2
     box = x1, y1, x2, y2
-    return norm_box_xyxy(box, h, h)
+    return box
 
 
 class Expand2square:
@@ -57,9 +67,9 @@ class Expand2square:
         if labels is None:
             return processed_image
         if 'bbox' in labels:
-            bbox = norm_box_xyxy_expand2square(labels['bbox'], w=width, h=height)
+            bbox = box_xyxy_expand2square(labels['bbox'], w=width, h=height)
             labels['bbox'] = bbox
         if 'bboxes' in labels:
-            bboxes = [norm_box_xyxy_expand2square(bbox, w=width, h=height) for bbox in labels['bboxes']]
+            bboxes = [box_xyxy_expand2square(bbox, w=width, h=height) for bbox in labels['bboxes']]
             labels['bboxes'] = bboxes
         return processed_image, labels

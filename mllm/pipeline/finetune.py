@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import pathlib
@@ -63,6 +64,14 @@ def main():
         trainer.save_state()  # noqa
         trainer.save_model()
         trainer.plot_loss()
+
+    # save cfg to output_dir
+    try:
+        output_dir = training_args.output_dir
+        pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
+        cfg.dump(os.path.join(output_dir, "cfg.py"))
+    except Exception as e:
+        warnings.warn(f'try to save cfg to output_dir, but get exception {e}')
 
     # Keyword arguments for `model.generate`
     gen_kwargs = cfg.data_args.gen_kwargs

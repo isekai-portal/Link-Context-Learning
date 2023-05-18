@@ -27,7 +27,7 @@ training_args = dict(
     fsdp_transformer_layer_cls_to_wrap='LlamaDecoderLayer',
 
     # train logging
-    logging_steps=1,
+    logging_steps=10,
     save_strategy='steps',
     save_steps=500,
     save_total_limit=1,
@@ -35,7 +35,7 @@ training_args = dict(
     # eval and predict
     do_eval=True,
     do_predict=True,
-    fp16_full_eval=True,
+    bf16_full_eval=True,
     predict_with_generate=True,
-    per_device_eval_batch_size=8,
+    per_device_eval_batch_size=16,
 )
