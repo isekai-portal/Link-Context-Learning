@@ -31,6 +31,10 @@ class TrainerDifferentCollatorMixin:
                  **kwargs):
         if train_collator is None and eval_collator is None and test_collator is None:
             raise ValueError("use different collator for trainer but get no collator function.")
+        if eval_collator is not None and test_collator is not None and eval_collator != test_collator:
+            warnings.warn('[WARNING!!!] use different collator for eval and test. but maybe do_eval and '
+                          'do_predict both use trainer.predict (i.e. only test_collator is used.) u should'
+                          'check your code and know exactly what u are doing.')
         self._train_collator = train_collator
         self._eval_collator = eval_collator if eval_collator is not None else self._train_collator
         self._test_collator = test_collator if test_collator is not None else self._eval_collator
@@ -169,7 +173,7 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
             return data.to(**kwargs)
         return data
 
-    def save_predict(self, predict_results):
+    def save_prediction(self, predict_results, file_key_prefix='predict'):
         if not self.is_world_process_zero():
             return
 
@@ -190,9 +194,7 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
             'detail': objs,
         }
         os.makedirs(self.args.output_dir, exist_ok=True)
-        json.dump(ret, open(os.path.join(self.args.output_dir, 'extra_predict.json'), 'w', encoding="utf-8"))
-        self.log_metrics('predict', predict_results.metrics)  # noqa
-        self.save_metrics('predict', predict_results.metrics)  # noqa
+        json.dump(ret, open(os.path.join(self.args.output_dir, f'{file_key_prefix}_extra_prediction.json'), 'w', encoding="utf-8"))
         return ret
 
     def plot_loss(self) -> None:

@@ -1,6 +1,7 @@
 import sys
 import logging
 import pathlib
+import warnings
 
 import torch
 import torch.cuda
@@ -52,13 +53,13 @@ def main():
                 train_result = trainer.train(resume_from_checkpoint=True)
             else:
                 train_result = trainer.train()
+            trainer.log_metrics("train", train_result.metrics)  # noqa
+            trainer.save_metrics("train", train_result.metrics)  # noqa
         except RuntimeError as e:
             with training_args.main_process_first(desc='check cuda device state'):
                 for device in range(torch.cuda.device_count()):
                     print(f"#### device {device} summary ####\n{torch.cuda.memory_summary(device)}")
                 raise e
-        trainer.log_metrics("train", train_result.metrics)  # noqa
-        trainer.save_metrics("train", train_result.metrics)  # noqa
         trainer.save_state()  # noqa
         trainer.save_model()
         trainer.plot_loss()
@@ -71,14 +72,21 @@ def main():
 
     # Evaluation
     if training_args.do_eval:
-        metrics = trainer.evaluate(metric_key_prefix="eval", **gen_kwargs)
-        trainer.log_metrics("eval", metrics)  # noqa
-        trainer.save_metrics("eval", metrics)  # noqa
+        if hasattr(trainer, '_test_collator') and hasattr(trainer, '_eval_collator') \
+                and trainer._test_collator != trainer._eval_collator:  # noqa
+            warnings.warn('[WARNING!!!] use different collator for eval and test. but do_eval and '
+                          'do_predict both use trainer.predict (i.e. only test_collator is used.)')
+        eval_results = trainer.predict(dataset['validation'], metric_key_prefix="eval", **gen_kwargs)
+        trainer.log_metrics("eval", eval_results.metrics)  # noqa
+        trainer.save_metrics("eval", eval_results.metrics)  # noqa
+        trainer.save_prediction(eval_results, file_key_prefix='eval')
 
     # Predict
     if training_args.do_predict:
-        predict_results = trainer.predict(dataset['test'], metric_key_prefix="predict", **gen_kwargs)
-        trainer.save_predict(predict_results)
+        predict_results = trainer.predict(dataset['test'], metric_key_prefix="test", **gen_kwargs)
+        trainer.log_metrics("test", predict_results.metrics)  # noqa
+        trainer.save_metrics("test", predict_results.metrics)  # noqa
+        trainer.save_prediction(predict_results, file_key_prefix='test')
 
 
 # noinspection PyUnusedLocal
