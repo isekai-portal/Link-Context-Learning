@@ -15,7 +15,7 @@ def prepare_trainer_collator(
         model_args,
         preprocessor: Dict[str, Any],
         collator_kwargs: Dict[str, Any]
-) -> Tuple[Type[TrainerForMMLLM], Dict[DataCollator]]:
+) -> Tuple[Type[TrainerForMMLLM], Dict[str, DataCollator]]:
     type_ = model_args.type
     trainer_cls = TYPE2TRAINER[type_]
     data_collator_func = partial(

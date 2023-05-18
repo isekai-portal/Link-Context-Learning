@@ -4,7 +4,7 @@ import json
 import logging
 import warnings
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Tuple, Union, Sequence
+from typing import Any, Dict, List, Optional, Tuple, Union, Sequence, Mapping
 
 import torch
 from torch import nn
@@ -101,7 +101,7 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
             if not (k in filter_keys):
                 gen_kwargs[k] = inputs[k]
         self._logging_generate_kwargs(gen_kwargs.keys())
-        with torch.no_grad():
+        with torch.inference_mode():
             with self.compute_loss_context_manager():
                 generated_tokens = self.model.generate(**gen_kwargs)
 
@@ -142,6 +142,32 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
         if self._generate_kwargs != keys:
             self._generate_kwargs = keys
             logger.warning(f"generate use kwargs: {keys}")
+
+    def _prepare_input(self, data: Union[torch.Tensor, Any]) -> Union[torch.Tensor, Any]:
+        """
+        Prepares one `data` before feeding it to the model, be it a tensor or a nested list/dictionary of tensors.
+        """
+        if isinstance(data, Mapping):
+            # noinspection PyArgumentList
+            return type(data)({k: self._prepare_input(v) for k, v in data.items()})
+        elif isinstance(data, (tuple, list)):
+            return type(data)(self._prepare_input(v) for v in data)
+        elif isinstance(data, torch.Tensor):
+            kwargs = {"device": self.args.device}
+            if self.deepspeed and (torch.is_floating_point(data) or torch.is_complex(data)):
+                # NLP models inputs are int/uint and those get adjusted to the right dtype of the
+                # embedding. Other models such as wav2vec2's inputs are already float and thus
+                # may need special handling to match the dtypes of the model
+                kwargs.update({"dtype": self.args.hf_deepspeed_config.dtype()})
+            # vision input may contain float data and should be adjusted to match the dtypes
+            # of the model while eval.
+            elif (not self.is_in_train) and self.args.fp16_full_eval and (torch.is_floating_point(data) or torch.is_complex(data)):
+                kwargs.update({"dtype": torch.float16})
+            elif (not self.is_in_train) and self.args.bf16_full_eval and (torch.is_floating_point(data) or torch.is_complex(data)):
+                kwargs.update({"dtype": torch.bfloat16})
+
+            return data.to(**kwargs)
+        return data
 
     def save_predict(self, predict_results):
         if not self.is_world_process_zero():
@@ -197,33 +223,38 @@ class Seq2SeqDataCollator(DataCollatorForSeq2Seq):
         super().__init__(**kwargs)
 
     def __call__(self, features: Sequence[Dict[str, Sequence]], return_tensors=None) -> Dict[str, torch.Tensor]:
-        # evaluation set adopts left-padding while training set adopts right-padding
+        # evaluation/inference adopts left-padding while training adopts right-padding
         if self.inference_mode:
             old_padding_side = self.tokenizer.padding_side
             self.tokenizer.padding_side = 'left'
             text_features = [{'input_ids': feature['input_ids'], 'labels': feature['labels']} for feature in features]
-            ret = super().__call__(text_features)
+            text_features = super().__call__(text_features)
             self.tokenizer.padding_side = old_padding_side
-            return ret
-        input_ids, labels = [[torch.tensor(feature[key]) for feature in features] for key in ("input_ids", "labels")]
-        input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id)
-        labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=self.label_pad_token_id)
-        features = {"input_ids": input_ids, "labels": labels}
-        return features
+            ret = {"input_ids": text_features['input_ids'], "labels": text_features['labels']}
+        else:
+            input_ids, labels = [[torch.as_tensor(feature[key]) for feature in features] for key in ("input_ids", "labels")]
+            input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id)
+            labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=self.label_pad_token_id)
+            ret = {"input_ids": input_ids, "labels": labels}
+        # hack: this is only suit for llava
+        ret['attention_mask'] = ret['input_ids'].ne(self.tokenizer.pad_token_id)
+        return ret
 
 
 class Seq2Seq2DataCollatorWithImage(Seq2SeqDataCollator):
     def __init__(self, preprocessor, **kwargs):
         super().__init__(tokenizer=preprocessor['text'], **kwargs)
         self.image_processor = preprocessor['image']
-        self.zero_padding = torch.zeros(*self.image_processor.zero_padding_shape, dtype=torch.float)
+        crop_size = self.image_processor.crop_size
+        height, width = crop_size['height'], crop_size['width']
+        self.zero_padding = torch.zeros(3, height, width, dtype=torch.float)
 
     def _image_process(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         images = []
         for feature in features:
             image = feature['image']
             if image is not None:
-                images.append(self.image_processor(image))
+                images.append(image)
             else:
                 images.append(self.zero_padding)
         # B C=3 H=224 W=224

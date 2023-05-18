@@ -14,6 +14,8 @@ from ..common import (
     AccComputeMetrics,
 )
 
+from ..conv import DEFAULT_IMAGE_TOKEN
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logging.basicConfig(
@@ -63,7 +65,7 @@ class RECDataset(QuestionTemplateMixin, BoxDatasetBase):
         bbox = target['bbox']
 
         question_template: str = self.get_template()
-        question = question_template.replace('<expr>', expr)
+        question = question_template.replace('<expr>', expr) + DEFAULT_IMAGE_TOKEN
 
         ret = [
             {

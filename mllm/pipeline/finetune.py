@@ -49,9 +49,9 @@ def main():
     if training_args.do_train:
         try:
             if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
-                trainer.train(resume_from_checkpoint=True)
+                train_result = trainer.train(resume_from_checkpoint=True)
             else:
-                trainer.train()
+                train_result = trainer.train()
         except RuntimeError as e:
             with training_args.main_process_first(desc='check cuda device state'):
                 for device in range(torch.cuda.device_count()):
@@ -65,6 +65,9 @@ def main():
 
     # Keyword arguments for `model.generate`
     gen_kwargs = cfg.data_args.gen_kwargs
+    gen_kwargs['pad_token_id'] = preprocessor['text'].pad_token_id
+    gen_kwargs['bos_token_id'] = preprocessor['text'].bos_token_id
+    gen_kwargs['eos_token_id'] = preprocessor['text'].eos_token_id
 
     # Evaluation
     if training_args.do_eval:

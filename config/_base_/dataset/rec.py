@@ -15,8 +15,8 @@ data_args = dict(
 
     # question template
     template_string=None,
-    template_file=None,
-    max_dynamic_size=None,
+    template_file=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome/rec_question_template.json',
+    max_dynamic_size=1,
 
     # padding collator kwargs
     padding=True,
@@ -26,6 +26,5 @@ data_args = dict(
     gen_kwargs=dict(
         max_new_tokens=1024,
         num_beams=1,
-        synced_gpus=True,
     )
 )

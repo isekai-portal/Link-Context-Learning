@@ -22,4 +22,6 @@ model_args = dict(
     sep_image_conv_front=False,
     image_token_len=256,
     mm_use_im_start_end=True,
+
+    # TODO: process version; current version use default version
 )

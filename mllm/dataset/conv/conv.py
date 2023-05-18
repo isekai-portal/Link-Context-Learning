@@ -7,11 +7,10 @@ from typing import Dict, Any, Callable, List, Tuple
 
 import torch
 from PIL import Image
-from fastchat.conversation import SeparatorStyle
 from torch.utils.data import Dataset
 from transformers import TrainingArguments, LlamaTokenizer
 
-from mllm.conversation import Conversation, get_conv_template
+from mllm.conversation import Conversation, get_conv_template, SeparatorStyle
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -136,7 +135,7 @@ class ConvDatasetBase(Dataset):
                     _mode = 'train' if self.train_mode else ' eval'
                     _local_rank = self.training_args.local_rank
                     _word_size = self.training_args.world_size
-                    _file_path = str(output_dir / f'sample_check_{_mode}_{_local_rank}/{_word_size}.pt')
+                    _file_path = str(output_dir / f'sample_check_{_mode}_{_local_rank}_{_word_size}.pt')
                     print(f'saving some sample to {_file_path} for check.')
                     torch.save(_save_obj, _file_path)
             except Exception as e:
@@ -157,6 +156,11 @@ class LLavaConvProcessV1:
         is_multimodal = multimodal_cfg['is_multimodal']
 
         assert is_multimodal
+        has_default_image_token = False
+        for sentence in raw_conv:
+            if DEFAULT_IMAGE_TOKEN in sentence['value']:
+                has_default_image_token = True
+        assert has_default_image_token
 
         if multimodal_cfg['sep_image_conv_front']:
             assert DEFAULT_IMAGE_TOKEN in raw_conv[0]['value']

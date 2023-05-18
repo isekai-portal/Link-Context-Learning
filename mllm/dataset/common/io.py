@@ -34,7 +34,7 @@ def read_img_ceph(img_path):
         from petrel_client.client import Client  # noqa
         client = Client(enable_mc=True)
         ed = time.time()
-        logger.info(f"initialize client cost {ed - st:.2} s")
+        logger.info(f"initialize client cost {ed - st:.2f} s")
     img_bytes = client.get(img_path)
     assert img_bytes is not None, f"Please check image at {img_path}"
     img_mem_view = memoryview(img_bytes)

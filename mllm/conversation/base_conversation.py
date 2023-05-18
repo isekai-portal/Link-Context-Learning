@@ -1,107 +1,479 @@
-from fastchat.conversation import SeparatorStyle, Conversation, register_conv_template, get_conv_template
+# copy from fastchat: https://github.com/lm-sys/FastChat/blob/main/fastchat/conversation.py
+"""
+Conversation prompt templates.
+"""
 
-__all__ = [SeparatorStyle, Conversation, register_conv_template, get_conv_template]
-
-if __name__ == '__main__':
-    IGNORE_INDEX = -100
-
-    from typing import Dict
-    import transformers
+import dataclasses
+from enum import auto, Enum
+from typing import List, Tuple, Any, Dict
 
 
-    def preprocess_v1(
-            sources,
-            tokenizer: transformers.PreTrainedTokenizer,
-            conv,
-    ) -> Dict:
-        conv = conv.copy()
-        roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
+class SeparatorStyle(Enum):
+    """Separator styles."""
 
-        # Apply prompt templates
-        conversations = []
-        for i, source in enumerate(sources):
-            if roles[source[0]["from"]] != conv.roles[0]:
-                # Skip the first one if it is not from human
-                source = source[1:]
+    ADD_COLON_SINGLE = auto()
+    ADD_COLON_TWO = auto()
+    NO_COLON_SINGLE = auto()
+    BAIZE = auto()
+    DOLLY = auto()
+    RWKV = auto()
+    PHOENIX = auto()
+    NEW_LINE = auto()
+    BILLA = auto()
 
-            conv.messages = []
-            for j, sentence in enumerate(source):
-                role = roles[sentence["from"]]
-                assert role == conv.roles[j % 2], f"{i}"
-                conv.append_message(role, sentence["value"])
-            conversations.append(conv.get_prompt())
 
-        # Tokenize conversations
-        input_ids = tokenizer(
-            conversations[0],
-            return_tensors="pt",
-            padding="longest",
-            max_length=tokenizer.model_max_length,
-            truncation=True,
-        ).input_ids
-        targets = input_ids.clone()
+@dataclasses.dataclass
+class Conversation:
+    """A class that keeps all conversation history."""
 
-        assert conv.sep_style == SeparatorStyle.ADD_COLON_TWO
+    # The name of this template
+    name: str
+    # System prompts
+    system: str
+    # Two roles
+    roles: List[str]
+    # All messages
+    messages: List[List[str]]
+    # Offset of few shot examples
+    offset: int
+    # Separators
+    sep_style: SeparatorStyle
+    sep: str
+    sep2: str = None
+    # Stop criteria (the default one is EOS token)
+    stop_str: str = None
+    # Stops generation if meeting any token in this list
+    stop_token_ids: List[int] = None
 
-        # Mask targets
-        sep = conv.sep + conv.roles[1] + ": "
-        conversation, target = conversations[0], targets
-        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+    # Used for the state in the gradio servers.
+    # TODO(lmzheng): move this out of this class.
+    conv_id: Any = None
+    skip_next: bool = False
+    model_name: str = None
 
-        rounds = conversation.split(conv.sep2)
-        cur_len = 1
-        target[:cur_len] = IGNORE_INDEX
-        for i, rou in enumerate(rounds):
-            if rou == "":
-                break
+    def get_prompt(self) -> str:
+        """Get the prompt for generation."""
+        if self.sep_style == SeparatorStyle.ADD_COLON_SINGLE:
+            ret = self.system + self.sep
+            for role, message in self.messages:
+                if message:
+                    ret += role + ": " + message + self.sep
+                else:
+                    ret += role + ":"
+            return ret
+        elif self.sep_style == SeparatorStyle.ADD_COLON_TWO:
+            seps = [self.sep, self.sep2]
+            ret = self.system + seps[0]
+            for i, (role, message) in enumerate(self.messages):
+                if message:
+                    ret += role + ": " + message + seps[i % 2]
+                else:
+                    ret += role + ":"
+            return ret
+        elif self.sep_style == SeparatorStyle.NO_COLON_SINGLE:
+            ret = self.system
+            for role, message in self.messages:
+                if message:
+                    ret += role + message + self.sep
+                else:
+                    ret += role
+            return ret
+        elif self.sep_style == SeparatorStyle.BAIZE:
+            ret = self.system + "\n"
+            for role, message in self.messages:
+                if message:
+                    ret += role + message + "\n"
+                else:
+                    ret += role
+            return ret
+        elif self.sep_style == SeparatorStyle.DOLLY:
+            seps = [self.sep, self.sep2]
+            ret = self.system
+            for i, (role, message) in enumerate(self.messages):
+                if message:
+                    ret += role + ":\n" + message + seps[i % 2]
+                    if i % 2 == 1:
+                        ret += "\n\n"
+                else:
+                    ret += role + ":\n"
+            return ret
+        elif self.sep_style == SeparatorStyle.RWKV:
+            ret = self.system
+            for i, (role, message) in enumerate(self.messages):
+                if message:
+                    ret += (
+                        role
+                        + ": "
+                        + message.replace("\r\n", "\n").replace("\n\n", "\n")
+                    )
+                    ret += "\n\n"
+                else:
+                    ret += role + ":"
+            return ret
+        elif self.sep_style == SeparatorStyle.PHOENIX:
+            ret = self.system
+            for role, message in self.messages:
+                if message:
+                    ret += role + ": " + "<s>" + message + "</s>"
+                else:
+                    ret += role + ": " + "<s>"
+            return ret
+        elif self.sep_style == SeparatorStyle.NEW_LINE:
+            ret = self.system + self.sep
+            for role, message in self.messages:
+                if message:
+                    ret += role + "\n" + message + self.sep
+                else:
+                    ret += role + "\n"
+            return ret
+        elif self.sep_style == SeparatorStyle.BILLA:
+            ret = self.system + self.sep
+            for role, message in self.messages:
+                if message:
+                    ret += role + ": " + message + self.sep
+                else:
+                    ret += role + ": " # must be end with a space
+            return ret
+        else:
+            raise ValueError(f"Invalid style: {self.sep_style}")
 
-            parts = rou.split(sep)
-            if len(parts) != 2:
-                break
-            parts[0] += sep
-            round_len = len(tokenizer(rou).input_ids)
-            instruction_len = len(tokenizer(parts[0]).input_ids) - 2
+    def append_message(self, role: str, message: str):
+        """Append a new message."""
+        self.messages.append([role, message])
 
-            target[cur_len: cur_len + instruction_len] = IGNORE_INDEX
+    def to_gradio_chatbot(self):
+        """Convert the history to gradio chatbot format"""
+        ret = []
+        for i, (role, msg) in enumerate(self.messages[self.offset :]):
+            if i % 2 == 0:
+                ret.append([msg, None])
+            else:
+                ret[-1][-1] = msg
+        return ret
 
-            cur_len += round_len
-        target[cur_len:] = IGNORE_INDEX
+    def to_openai_api_messages(self):
+        """Convert the conversation to OpenAI chat completion format."""
+        ret = [{"role": "system", "content": self.system}]
 
-        if cur_len < tokenizer.model_max_length:
-            if cur_len != total_len:
-                target[:] = IGNORE_INDEX
-                print(
-                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
-                )
+        for i, (_, msg) in enumerate(self.messages[self.offset :]):
+            if i % 2 == 0:
+                ret.append({"role": "user", "content": msg})
+            else:
+                if msg is not None:
+                    ret.append({"role": "assistant", "content": msg})
+        return ret
 
-        return dict(
-            input_ids=input_ids,
-            labels=targets,
+    def copy(self):
+        return Conversation(
+            name=self.name,
+            system=self.system,
+            roles=self.roles,
+            messages=[[x, y] for x, y in self.messages],
+            offset=self.offset,
+            sep_style=self.sep_style,
+            sep=self.sep,
+            sep2=self.sep2,
+            stop_str=self.stop_str,
+            stop_token_ids=self.stop_token_ids,
+            conv_id=self.conv_id,
+            model_name=self.model_name,
         )
 
+    def dict(self):
+        return {
+            "name": self.name,
+            "system": self.system,
+            "roles": self.roles,
+            "messages": self.messages,
+            "offset": self.offset,
+            "conv_id": self.conv_id,
+            "model_name": self.model_name,
+        }
 
-    from mllm.models.flamingo import FlamingoTokenizer
 
-    tk = FlamingoTokenizer.from_pretrained(r"D:\home\code\mllm\test\llama_7b_hf")
+# A global registry for all conversation templates
+conv_templates: Dict[str, Conversation] = {}
 
-    sources = [[
-        {
-            "from": "human",
-            'value': "What does the verbal irony in this text suggest?\nAccording to Mr. Herrera's kids, his snoring is as quiet as a jackhammer.\nContext: N/A\nOptions: (A) The snoring is loud. (B) The snoring occurs in bursts.",
-        },
-        {
-            "from": "gpt",
-            "value": "LECTURE: Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\nVerbal irony involves saying one thing but implying something very different. People often use verbal irony when they are being sarcastic.\nOlivia seems thrilled that her car keeps breaking down.\nEach breakdown is as enjoyable as a punch to the face.\nSOLUTION: The text uses verbal irony, which involves saying one thing but implying something very different.\nAs quiet as a jackhammer suggests that the snoring is loud. A jackhammer is not quiet, and neither is Mr. Herrera's snoring.\n###\nANSWER: A.",
-        },
-        {
-            "from": "human",
-            'value': "What does the verbal irony in this text suggest?\nAccording to Mr. Herrera's kids, his snoring is as quiet as a jackhammer.\nContext: N/A\nOptions: (A) The snoring is loud. (B) The snoring occurs in bursts.",
-        },
-        {
-            "from": "gpt",
-            "value": "LECTURE: Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\nVerbal irony involves saying one thing but implying something very different. People often use verbal irony when they are being sarcastic.\nOlivia seems thrilled that her car keeps breaking down.\nEach breakdown is as enjoyable as a punch to the face.\nSOLUTION: The text uses verbal irony, which involves saying one thing but implying something very different.\nAs quiet as a jackhammer suggests that the snoring is loud. A jackhammer is not quiet, and neither is Mr. Herrera's snoring.\n###\nANSWER: A.",
-        },
-    ], ]
-    ret = preprocess_v1(sources, tk, get_conv_template('vicuna_v1.1'))
-    print(ret)
+
+def register_conv_template(template: Conversation, override: bool = False):
+    """Register a new conversation template."""
+    if not override:
+        assert template.name not in conv_templates, f"{template.name} has been registered."
+    conv_templates[template.name] = template
+
+
+def get_conv_template(name: str) -> Conversation:
+    """Get a conversation template."""
+    return conv_templates[name].copy()
+
+
+# A template with one conversation example
+register_conv_template(
+    Conversation(
+        name="one_shot",
+        system="A chat between a curious human and an artificial intelligence assistant. "
+        "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+        roles=("Human", "Assistant"),
+        messages=(
+            (
+                "Human",
+                "What are the key differences between renewable and non-renewable energy sources?",
+            ),
+            (
+                "Assistant",
+                "Renewable energy sources are those that can be replenished naturally in a relatively "
+                "short amount of time, such as solar, wind, hydro, geothermal, and biomass. "
+                "Non-renewable energy sources, on the other hand, are finite and will eventually be "
+                "depleted, such as coal, oil, and natural gas. Here are some key differences between "
+                "renewable and non-renewable energy sources:\n"
+                "1. Availability: Renewable energy sources are virtually inexhaustible, while non-renewable "
+                "energy sources are finite and will eventually run out.\n"
+                "2. Environmental impact: Renewable energy sources have a much lower environmental impact "
+                "than non-renewable sources, which can lead to air and water pollution, greenhouse gas emissions, "
+                "and other negative effects.\n"
+                "3. Cost: Renewable energy sources can be more expensive to initially set up, but they typically "
+                "have lower operational costs than non-renewable sources.\n"
+                "4. Reliability: Renewable energy sources are often more reliable and can be used in more remote "
+                "locations than non-renewable sources.\n"
+                "5. Flexibility: Renewable energy sources are often more flexible and can be adapted to different "
+                "situations and needs, while non-renewable sources are more rigid and inflexible.\n"
+                "6. Sustainability: Renewable energy sources are more sustainable over the long term, while "
+                "non-renewable sources are not, and their depletion can lead to economic and social instability.",
+            ),
+        ),
+        offset=2,
+        sep_style=SeparatorStyle.ADD_COLON_SINGLE,
+        sep="\n### ",
+        stop_str="###",
+    )
+)
+
+# Vicuna v1.1 template
+register_conv_template(
+    Conversation(
+        name="vicuna_v1.1",
+        system="A chat between a curious user and an artificial intelligence assistant. "
+        "The assistant gives helpful, detailed, and polite answers to the user's questions.",
+        roles=("USER", "ASSISTANT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
+# Koala default template
+register_conv_template(
+    Conversation(
+        name="koala_v1",
+        system="BEGINNING OF CONVERSATION:",
+        roles=("USER", "GPT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
+# Dolly V2 default template
+register_conv_template(
+    Conversation(
+        name="dolly_v2",
+        system="Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n",
+        roles=("### Instruction", "### Response"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.DOLLY,
+        sep="\n\n",
+        sep2="### End",
+    )
+)
+
+# OpenAssistant Pythia default template
+register_conv_template(
+    Conversation(
+        name="oasst_pythia",
+        system="",
+        roles=("<|prompter|>", "<|assistant|>"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="<|endoftext|>",
+    )
+)
+
+# StableLM Alpha default template
+register_conv_template(
+    Conversation(
+        name="stablelm",
+        system="""<|SYSTEM|># StableLM Tuned (Alpha version)
+- StableLM is a helpful and harmless open-source AI language model developed by StabilityAI.
+- StableLM is excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- StableLM is more than just an information source, StableLM is also able to write poetry, short stories, and make jokes.
+- StableLM will refuse to participate in anything that could harm a human.
+""",
+        roles=("<|USER|>", "<|ASSISTANT|>"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="",
+        stop_token_ids=[50278, 50279, 50277, 1, 0],
+    )
+)
+
+# Baize default template
+register_conv_template(
+    Conversation(
+        name="baize",
+        system="The following is a conversation between a human and an AI assistant named Baize (named after a mythical creature in Chinese folklore). Baize is an open-source AI assistant developed by UCSD and Sun Yat-Sen University. The human and the AI assistant take turns chatting. Human statements start with [|Human|] and AI assistant statements start with [|AI|]. The AI assistant always provides responses in as much detail as possible, and in Markdown format. The AI assistant always declines to engage with topics, questions and instructions related to unethical, controversial, or sensitive issues. Complete the transcript in exactly that format.",
+        roles=("[|Human|]", "[|AI|]"),
+        messages=(
+            ("[|Human|]", "Hello!"),
+            ("[|AI|]", "Hi!"),
+        ),
+        offset=2,
+        sep_style=SeparatorStyle.BAIZE,
+        sep="[|Human|]",
+        stop_str="[|Human|]",
+    )
+)
+
+# RWKV-4-Raven default template
+register_conv_template(
+    Conversation(
+        name="rwkv",
+        system="The following is a coherent verbose detailed conversation between Bob and Alice.\n\n",
+        roles=("Bob", "Alice"),
+        messages=(
+            ("Bob", "Hi"),
+            (
+                "Alice",
+                "Hi. I am your assistant and I will answer all questions. Please feel free to ask any question and I will always answer it.",
+            ),
+        ),
+        offset=2,
+        sep_style=SeparatorStyle.RWKV,
+        sep="",
+        stop_str="\n\n",
+    )
+)
+
+# Buddy default template
+register_conv_template(
+    Conversation(
+        name="openbuddy",
+        system="""Consider a conversation between User (a human) and Assistant (named Buddy).
+Buddy is an INTP-T, a friendly, intelligent and multilingual AI assistant, by OpenBuddy team. GitHub: https://github.com/OpenBuddy/OpenBuddy
+Buddy cannot access the Internet.
+Buddy can fluently speak the user's language (e.g. English, Chinese).
+Buddy can generate poems, stories, code, essays, songs, parodies, and more.
+Buddy possesses vast knowledge about the world, history, and culture.
+Buddy's responses are always safe, creative, high-quality, human-like, and interesting.
+Buddy strictly refuses to discuss political, NSFW, or other unsafe topics.
+
+User: Hi.
+Assistant: Hi, I'm Buddy, your AI assistant. How can I help you today?""",
+        roles=("User", "Assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+# Phoenix default template
+register_conv_template(
+    Conversation(
+        name="phoenix",
+        system="A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.\n\n",
+        roles=("Human", "Assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.PHOENIX,
+        sep="</s>",
+    )
+)
+
+# ChatGPT default template
+register_conv_template(
+    Conversation(
+        name="chatgpt",
+        system="You are a helpful assistant.",
+        roles=("user", "assistant"),
+        messages=(),
+        offset=0,
+        sep_style=None,
+        sep=None,
+    )
+)
+
+# Claude default template
+register_conv_template(
+    Conversation(
+        name="claude",
+        system="",
+        roles=("Human", "Assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_SINGLE,
+        sep="\n\n",
+    )
+)
+
+# MPT default template
+register_conv_template(
+    Conversation(
+        name="mpt",
+        system="""<|im_start|>system
+- You are a helpful assistant chatbot trained by MosaicML.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.
+""",
+        roles=("<|im_start|>user", "<|im_start|>assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.NEW_LINE,
+        sep="<|im_end|>",
+        stop_token_ids=[50278, 0],
+    )
+)
+
+# Bard default template
+# Reference: https://github.com/google/generative-ai-python/blob/9c99bcb474a991a97a2e7d62fcdb52db7ce40729/google/generativeai/discuss.py#L150
+#            https://github.com/google/generative-ai-python/blob/9c99bcb474a991a97a2e7d62fcdb52db7ce40729/google/generativeai/discuss.py#L40
+register_conv_template(
+    Conversation(
+        name="bard",
+        system="",
+        roles=("0", "1"),
+        messages=(),
+        offset=0,
+        sep_style=None,
+        sep=None,
+    )
+)
+
+# BiLLa default template
+register_conv_template(
+    Conversation(
+        name="billa",
+        system="",
+        roles=("Human", "Assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.BILLA,
+        sep="\n",
+        stop_str="Human:",
+    )
+)
+
+if __name__ == "__main__":
+    conv = get_conv_template("vicuna_v1.1")
+    conv.append_message(conv.roles[0], "Hello!")
+    conv.append_message(conv.roles[1], "Hi!")
+    conv.append_message(conv.roles[0], "How are you?")
+    conv.append_message(conv.roles[1], None)
+    print(conv.get_prompt())

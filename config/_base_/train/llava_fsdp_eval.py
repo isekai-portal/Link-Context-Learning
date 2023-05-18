@@ -9,7 +9,7 @@ training_args = dict(
     remove_unused_columns=False,
 
     # train
-    do_train=True,
+    do_train=False,
     per_device_train_batch_size=8,
     gradient_accumulation_steps=1,
     num_train_epochs=5,
@@ -20,10 +20,10 @@ training_args = dict(
     evaluation_strategy='no',
 
     # train ddp
-    tf32=True,
-    bf16=True,
-    gradient_checkpointing=True,
-    fsdp="full_shard auto_wrap",
+    # tf32=True,
+    # bf16=True,
+    # gradient_checkpointing=False,
+    # fsdp="full_shard auto_wrap",
     fsdp_transformer_layer_cls_to_wrap='LlamaDecoderLayer',
 
     # train logging
@@ -35,6 +35,7 @@ training_args = dict(
     # eval and predict
     do_eval=True,
     do_predict=True,
+    fp16=True,
     fp16_full_eval=True,
     predict_with_generate=True,
     per_device_eval_batch_size=8,
