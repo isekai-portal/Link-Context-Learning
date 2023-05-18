@@ -46,7 +46,7 @@ class PlainBoxFormatter(BoxFormatter):
     def __init__(self, *args, precision=3, **kwargs):
         super().__init__(*args, **kwargs)
         self.precision = precision
-        self.pat = re.compile(r'\(\d(\.\d*)?(,\d(\.\d*)?){3}(;\d(\.\d*)?(,\d(\.\d*)?){3})*\)')
+        self.pat = re.compile(r'\(\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3}(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3})*\)')
 
     def format_box(self, bboxes: Boxes) -> str:
         bbox_strs = []

@@ -1,7 +1,7 @@
 import sys
 import logging
 from copy import deepcopy
-from typing import Dict, Any
+from typing import Dict, Any, Sequence
 
 from transformers import EvalPrediction
 
@@ -28,7 +28,9 @@ class AccComputeMetrics:
         preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True, clean_up_tokenization_spaces=True)
         targets = self.tokenizer.batch_decode(targets, skip_special_tokens=True, clean_up_tokenization_spaces=True)
         assert len(preds) == len(targets)
+        return self.calculate_metric(preds, targets)
 
+    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
         correct = 0
         failed = 0
         target_failed = 0

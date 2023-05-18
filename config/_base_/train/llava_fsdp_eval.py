@@ -22,8 +22,8 @@ training_args = dict(
     # train ddp
     # tf32=True,
     # bf16=True,
-    # gradient_checkpointing=False,
-    # fsdp="full_shard auto_wrap",
+    gradient_checkpointing=True,
+    fsdp="full_shard auto_wrap",
     fsdp_transformer_layer_cls_to_wrap='LlamaDecoderLayer',
 
     # train logging
