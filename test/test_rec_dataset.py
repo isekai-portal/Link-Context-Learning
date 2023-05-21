@@ -1,3 +1,6 @@
+from matplotlib import pyplot as plt
+
+
 def test_rec_dataset():
     from transformers import CLIPImageProcessor
     from mllm.dataset.conv import post_process
@@ -86,27 +89,10 @@ def test_rec_dataset():
 
 
 def test_box():
-    def plot_image_and_boxes(image, boxes):
-        from matplotlib import pyplot as plt
-        from matplotlib.patches import Rectangle
-
-        def bbox_func(bbox, edgecolor='r'):
-            return Rectangle(
-                (bbox[0], bbox[1]), bbox[2] - bbox[0], bbox[3] - bbox[1],
-                fill=False, edgecolor=edgecolor, linewidth=4
-            )
-
-        plt.figure()
-        ax = plt.gca()
-        ax.imshow(image)
-        for box in boxes:
-            ax.add_patch(bbox_func(box))
-        plt.show()
-        plt.close()
-
     from mllm.dataset.common.transform import de_norm_box_xyxy
     from mllm.dataset.rec import RECRawDataset
     from mllm.dataset.common import read_img_general
+    from mllm.utils import show, draw_bounding_boxes
 
     data_file = r'D:\home\code\unify_mllm\test\rec_sample.jsonl'
     template_string = r"Where does <expr> appear in the image? Please provide the specific coordinates."
@@ -122,10 +108,14 @@ def test_box():
         img = read_img_general(img_path)
         box = raw_item['bbox']
         box = de_norm_box_xyxy(box, w=img.width, h=img.height)
-        plot_image_and_boxes(img, [box])
+        result = draw_bounding_boxes(img, [box], colors=['red'])
+        show(result)
+        plt.show()
 
         raw_conv = rec.get_raw_conv_with_box(i)
         img2 = raw_conv[0]['image']
         box2 = raw_conv[-1]['bboxes_seq'][0][0]
         box2 = de_norm_box_xyxy(box2, w=img2.width, h=img2.height)
-        plot_image_and_boxes(img2, [box2])
+        result = draw_bounding_boxes(img2, [box2], colors=['red'])
+        show(result)
+        plt.show()

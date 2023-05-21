@@ -54,7 +54,6 @@ def prepare_args(args=None):
     req_but_not_assign = [item for item in required if item not in training_args]
     if req_but_not_assign:
         raise ValueError(f"Requires {req_but_not_assign} but not assign.")
-    training_args = check_output_dir(training_args)
 
     # update cfg.training_args
     cfg.training_args = training_args
@@ -62,6 +61,7 @@ def prepare_args(args=None):
 
     # initialize and return
     training_args = Seq2SeqTrainingArguments(**training_args)
+    training_args = check_output_dir(training_args)
 
     # setup logger
     if training_args.should_log:

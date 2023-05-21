@@ -10,7 +10,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from transformers import TrainingArguments, LlamaTokenizer
 
-from mllm.conversation import Conversation, get_conv_template, SeparatorStyle
+from ...conversation import Conversation, get_conv_template, SeparatorStyle
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
