@@ -1,3 +1,4 @@
+import copy
 from typing import List, Union
 
 import PIL.Image
@@ -5,6 +6,8 @@ import torch
 import numpy as np
 import torchvision.transforms.functional as F
 from matplotlib import pyplot as plt
+
+from transformers import PreTrainedTokenizer
 
 
 def print_trainable_params(model: torch.nn.Module) -> None:
@@ -19,6 +22,24 @@ def print_trainable_params(model: torch.nn.Module) -> None:
             trainable_params += num_params
     print("trainable params: {:d} || all params: {:d} || trainable%: {:.4f}".format(
         trainable_params, all_param, 100 * trainable_params / all_param))
+
+
+def post_process_generate_ids(tokenizer: PreTrainedTokenizer, ids: torch.Tensor):
+    ids = copy.deepcopy(ids)  # do not modify origin preds and targets
+    ids[ids < 0] = tokenizer.pad_token_id
+    return ids
+
+
+def decode_generate_ids(tokenizer: PreTrainedTokenizer, ids: torch.Tensor) -> Union[List[str], str]:
+    assert ids.ndim in [1, 2]
+    only_one_sentence = ids.ndim == 1
+    if only_one_sentence:
+        ids = ids.unsqueeze(0)
+    ids = post_process_generate_ids(tokenizer, ids)
+    res = tokenizer.batch_decode(ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+    if only_one_sentence:
+        return res[0]
+    return res
 
 
 def show(imgs: Union[torch.Tensor, List[Union[torch.Tensor, PIL.Image.Image]]]):

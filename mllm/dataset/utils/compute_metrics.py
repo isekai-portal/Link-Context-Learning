@@ -1,9 +1,10 @@
 import sys
 import logging
-from copy import deepcopy
 from typing import Dict, Any, Sequence
 
 from transformers import EvalPrediction
+
+from ...utils import decode_generate_ids
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,19 +15,16 @@ logging.basicConfig(
 )
 
 
-class AccComputeMetrics:
+class BaseComputeMetrics:
     def __init__(self, preprocessor: Dict[str, Any]):
         self.preprocessor = preprocessor
         self.tokenizer = self.preprocessor['text']
 
     def __call__(self, eval_preds: EvalPrediction) -> Dict[str, Any]:
-        eval_preds = deepcopy(eval_preds)  # do not modify origin preds and targets
         preds, targets = eval_preds
         logger.warning(f"preds shape: {preds.shape}. targets shape: {targets.shape}")
-        preds[preds < 0] = self.tokenizer.pad_token_id
-        targets[targets < 0] = self.tokenizer.pad_token_id
-        preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-        targets = self.tokenizer.batch_decode(targets, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        preds = decode_generate_ids(self.tokenizer, preds)
+        targets = decode_generate_ids(self.tokenizer, targets)
         assert len(preds) == len(targets)
         return self.calculate_metric(preds, targets)
 

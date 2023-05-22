@@ -4,6 +4,10 @@ import logging
 import pathlib
 import warnings
 
+project_path = pathlib.Path(__file__).parent.parent.parent
+print(f"add project path: `{project_path}` to path to enable import form mllm")
+sys.path.append(str(project_path))
+
 import torch
 import torch.cuda
 
@@ -11,7 +15,7 @@ from mllm.config import prepare_args
 from mllm.models import load_pretrained
 from mllm.utils import print_trainable_params
 from mllm.engine import prepare_trainer_collator
-from mllm.dataset import prepare_data
+from mllm.dataset import prepare_data, smart_prepare_target_processor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -25,15 +29,14 @@ logging.basicConfig(
 def main():
     cfg, training_args = prepare_args()
     model, preprocessor = load_pretrained(cfg.model_args, training_args)
+    # Some ugly codes to inject target_processor into preprocessor. maybe effect model. (e.g. add special token; resize embedding)
+    model, preprocessor = smart_prepare_target_processor(model, preprocessor, cfg.model_args, training_args)
     print_trainable_params(model)
 
     # Prepare data_collator
-    collator_kwargs = dict(
-        padding=cfg.data_args.padding,
-        max_length=cfg.data_args.max_length,
-    )
+    collator_kwargs = cfg.data_args.collator_kwargs
     trainer_cls, data_collator_dict = prepare_trainer_collator(cfg.model_args, preprocessor, collator_kwargs)
-    dataset, compute_metrics = prepare_data(cfg.data_args, training_args, preprocessor)
+    dataset, compute_metrics = prepare_data(cfg.data_args, cfg.model_args.process_func_args, training_args, preprocessor)
 
     # Initialize Trainer
     trainer = trainer_cls(
@@ -42,7 +45,6 @@ def main():
         tokenizer=preprocessor['text'],
         train_dataset=dataset['train'] if training_args.do_train else None,
         eval_dataset=dataset['validation'] if training_args.do_eval else None,
-        # eval only when use generate_mode
         compute_metrics=compute_metrics if training_args.predict_with_generate else None,
         **data_collator_dict,
     )
@@ -56,14 +58,17 @@ def main():
                 train_result = trainer.train()
             trainer.log_metrics("train", train_result.metrics)  # noqa
             trainer.save_metrics("train", train_result.metrics)  # noqa
+            trainer.save_model()
         except RuntimeError as e:
-            with training_args.main_process_first(desc='check cuda device state'):
-                for device in range(torch.cuda.device_count()):
-                    print(f"#### device {device} summary ####\n{torch.cuda.memory_summary(device)}")
-                raise e
-        trainer.save_state()  # noqa
-        trainer.save_model()
-        trainer.plot_loss()
+            print(f"got RuntimeError: {e.args}")
+            try:
+                print(f"#### device {training_args.local_rank} summary ####\n{torch.cuda.memory_summary(training_args.local_rank)}")
+            except Exception as inner_e:
+                print(f"get Exception when show cuda summary: {inner_e.args}")
+            raise e
+        finally:
+            trainer.save_state()  # noqa
+            trainer.plot_loss()
 
     # save cfg to output_dir
     try:
@@ -71,10 +76,12 @@ def main():
         pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
         cfg.dump(os.path.join(output_dir, "cfg.py"))
     except Exception as e:
-        warnings.warn(f'try to save cfg to output_dir, but get exception {e}')
+        warnings.warn(f'try to save cfg to output_dir, but get exception {e.args}')
 
     # Keyword arguments for `model.generate`
-    gen_kwargs = cfg.data_args.gen_kwargs
+    gen_kwargs = dict(cfg.data_args.gen_kwargs)
+    # important for use model.generate in batch mode. some model config with wrong special_token_id
+    # (e.g. llava generationConfig set pad_token_id to -1)
     gen_kwargs['pad_token_id'] = preprocessor['text'].pad_token_id
     gen_kwargs['bos_token_id'] = preprocessor['text'].bos_token_id
     gen_kwargs['eos_token_id'] = preprocessor['text'].eos_token_id

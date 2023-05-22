@@ -109,6 +109,10 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
             with self.compute_loss_context_manager():
                 generated_tokens = self.model.generate(**gen_kwargs)
 
+        # TODO: rewrite official seq2seq_trainer to suppress generation_config warning
+        if self.model.generation_config._from_model_config:
+            self.model.generation_config._from_model_config = False
+
         # important for Decoder-Only LLM: only extract generated_tokens and discard origin inputs
         generation_inputs = inputs['input_ids']
         generated_tokens = generated_tokens[:, generation_inputs.size()[-1]:]
@@ -198,6 +202,9 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
         return ret
 
     def plot_loss(self) -> None:
+        if not self.is_world_process_zero():
+            return
+
         training_args = self.args
         FIGURE_NAME = "trainer_state.png"
         import matplotlib.pyplot as plt

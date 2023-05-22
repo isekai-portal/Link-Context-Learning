@@ -1,6 +1,32 @@
-from typing import Dict, Any, Tuple, Union
+from typing import Dict, Any, Tuple, Optional
 
 from PIL import Image
+
+from ..root import TRANSFORMS
+
+
+def de_norm_box_xyxy(box, *, w, h):
+    x1, y1, x2, y2 = box
+    x1 = x1 * w
+    x2 = x2 * w
+    y1 = y1 * h
+    y2 = y2 * h
+    box = x1, y1, x2, y2
+    return box
+
+
+def norm_box_xyxy(box, *, w, h):
+    x1, y1, x2, y2 = box
+
+    # Calculate the normalized coordinates with min-max clamping
+    norm_x1 = max(0.0, min(x1 / w, 1.0))
+    norm_y1 = max(0.0, min(y1 / h, 1.0))
+    norm_x2 = max(0.0, min(x2 / w, 1.0))
+    norm_y2 = max(0.0, min(y2 / h, 1.0))
+
+    # Return the normalized box coordinates
+    normalized_box = (round(norm_x1, 3), round(norm_y1, 3), round(norm_x2, 3), round(norm_y2, 3))
+    return normalized_box
 
 
 def expand2square(pil_img, background_color=(255, 255, 255)):
@@ -17,31 +43,7 @@ def expand2square(pil_img, background_color=(255, 255, 255)):
         return result
 
 
-def de_norm_box_xyxy(box, *, w, h):
-    x1, y1, x2, y2 = box
-    x1 = x1 * w
-    x2 = x2 * w
-    y1 = y1 * h
-    y2 = y2 * h
-    box = x1, y1, x2, y2
-    return box
-
-
-def norm_box_xyxy(box, w, h):
-    x1, y1, x2, y2 = box
-
-    # Calculate the normalized coordinates with min-max clamping
-    norm_x1 = max(0.0, min(x1 / w, 1.0))
-    norm_y1 = max(0.0, min(y1 / h, 1.0))
-    norm_x2 = max(0.0, min(x2 / w, 1.0))
-    norm_y2 = max(0.0, min(y2 / h, 1.0))
-
-    # Return the normalized box coordinates
-    normalized_box = (round(norm_x1, 3), round(norm_y1, 3), round(norm_x2, 3), round(norm_y2, 3))
-    return normalized_box
-
-
-def box_xyxy_expand2square(box, w, h):
+def box_xyxy_expand2square(box, *, w, h):
     if w == h:
         return box
     if w > h:
@@ -58,18 +60,17 @@ def box_xyxy_expand2square(box, w, h):
     return box
 
 
+@TRANSFORMS.register_module()
 class Expand2square:
-    background_color = (255, 255, 255)
+    def __init__(self, background_color=(255, 255, 255)):
+        self.background_color = background_color
 
-    def __call__(self, image: Image.Image, labels: Dict[str, Any] = None) -> Union[Image.Image, Tuple[Image.Image, Dict[str, Any]]]:
+    def __call__(self, image: Image.Image, labels: Dict[str, Any] = None) -> Tuple[Image.Image, Optional[Dict[str, Any]]]:
         width, height = image.size
         processed_image = expand2square(image, background_color=self.background_color)
         if labels is None:
-            return processed_image
-        if 'bbox' in labels:
-            bbox = box_xyxy_expand2square(labels['bbox'], w=width, h=height)
-            labels['bbox'] = bbox
-        if 'bboxes' in labels:
-            bboxes = [box_xyxy_expand2square(bbox, w=width, h=height) for bbox in labels['bboxes']]
-            labels['bboxes'] = bboxes
+            return processed_image, labels
+        if 'boxes' in labels:
+            bboxes = [box_xyxy_expand2square(bbox, w=width, h=height) for bbox in labels['boxes']]
+            labels['boxes'] = bboxes
         return processed_image, labels

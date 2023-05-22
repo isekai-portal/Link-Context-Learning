@@ -1,0 +1,17 @@
+# torch
+# torchvision
+# transformers
+datasets
+pillow
+dataclasses
+numpy
+nltk
+pandas
+mmengine
+tensorboard
+einops
+tqdm
+matplotlib
+
+accelerate
+SentencePiece

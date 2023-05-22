@@ -1,5 +1,6 @@
 model_args = dict(
     type='llava',
+    # TODO: process version; current version use default version
     version='v1',
 
     # checkpoint config
@@ -23,5 +24,14 @@ model_args = dict(
     image_token_len=256,
     mm_use_im_start_end=True,
 
-    # TODO: process version; current version use default version
+    target_processor=dict(
+        boxes=dict(type='PlainBoxFormatter'),
+    ),
+
+    process_func_args=dict(
+        conv=dict(type='LLavaConvProcessV1'),
+        target=dict(type='BoxFormatProcess'),
+        text=dict(type='LlavaTextProcessV1'),
+        image=dict(type='LlavaImageProcessorV1'),
+    ),
 )

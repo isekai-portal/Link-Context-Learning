@@ -1,30 +1,41 @@
 data_args = dict(
-    type='rec',
-    annotation_path='/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome',
 
-    # image
-    expand2square=True,
+    train=dict(
+        type='RECDataset',
+        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome/train.jsonl',
+        template_file=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome/rec_question_template.json',
+        max_dynamic_size=1,
+    ),
+    validation=dict(
+        type='RECDataset',
+        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome/val.jsonl',
+        template_file=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome/rec_question_template.json',
+        max_dynamic_size=1,
+    ),
+    test=dict(
+        type='RECDataset',
+        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome/test.jsonl',
+        template_file=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome/rec_question_template.json',
+        max_dynamic_size=1,
+    ),
 
-    # box
-    box_format_type='plain',
-    box_format_kwargs={},
+    compute_metric=dict(type='RECComputeMetrics'),
 
-    # conv
-    conv_template='vicuna_v1.1',
-    tokenize_kwargs={},
-
-    # question template
-    template_string=None,
-    template_file=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome/rec_question_template.json',
-    max_dynamic_size=1,
+    conv_args=dict(
+        conv_template='vicuna_v1.1',
+        transforms=dict(type='Expand2square'),
+        tokenize_kwargs=dict(),
+    ),
 
     # padding collator kwargs
-    padding=True,
-    max_length=1024,
+    collator_kwargs=dict(
+        padding=True,
+        max_length=1024,
+    ),
 
     # generate config
     gen_kwargs=dict(
         max_new_tokens=128,
         num_beams=1,
-    )
+    ),
 )

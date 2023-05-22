@@ -4,28 +4,14 @@ import torch
 import transformers
 from torch import nn
 
-from .llava import LlavaLlamaForCausalLM
+from ..llava import LlavaLlamaForCausalLM
 
 PREPROCESSOR = Dict[str, Any]
 
-
-def load_pretrained(model_args, training_args) -> Tuple[nn.Module, PREPROCESSOR]:
-    type_ = model_args.type
-    if type_ == 'llava':
-        return load_pretrained_llava(model_args, training_args)
-    else:
-        assert False
-
-
-IGNORE_INDEX = -100
 DEFAULT_PAD_TOKEN = "[PAD]"
 DEFAULT_EOS_TOKEN = "</s>"
 DEFAULT_BOS_TOKEN = "</s>"
 DEFAULT_UNK_TOKEN = "<unk>"
-DEFAULT_IMAGE_TOKEN = "<image>"
-DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
-DEFAULT_IM_START_TOKEN = "<im_start>"
-DEFAULT_IM_END_TOKEN = "<im_end>"
 
 
 def load_pretrained_llava(model_args, training_args) -> Tuple[nn.Module, PREPROCESSOR]:
@@ -121,7 +107,7 @@ def load_pretrained_llava(model_args, training_args) -> Tuple[nn.Module, PREPROC
     preprocessor = dict(
         image=model_vision_dict['image_processor'],
         text=tokenizer,
-        multimodal_cfg=dict(
+        conv=dict(
             image_token_len=model_args.image_token_len,
             is_multimodal=model_args.is_multimodal,
             sep_image_conv_front=model_args.sep_image_conv_front,

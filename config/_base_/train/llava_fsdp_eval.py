@@ -29,14 +29,14 @@ training_args = dict(
     # train logging
     logging_steps=1,
     save_strategy='steps',
-    save_steps=500,
+    save_steps=1000,
     save_total_limit=1,
 
     # eval and predict
     do_eval=True,
     do_predict=True,
-    fp16=True,
-    fp16_full_eval=True,
+    bf16=True,
+    bf16_full_eval=True,
     predict_with_generate=True,
     per_device_eval_batch_size=8,
 )

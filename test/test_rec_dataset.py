@@ -1,16 +1,60 @@
-from matplotlib import pyplot as plt
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 
 
 def test_rec_dataset():
-    from transformers import CLIPImageProcessor
-    from mllm.dataset.conv import post_process
-    from mllm.dataset.rec.rec import RECDataset
-    from mllm.models.flamingo import FlamingoTokenizer
+    from mllm.dataset import DATASETS
+    from mllm.utils import draw_bounding_boxes, show
 
+    filename = r'D:\home\code\unify_mllm\data\dummy_rec_ann.jsonl'
+    image_folder = r'D:\home\dataset\mscoco\images'
+    cfg = dict(
+        type='RECDataset',
+        filename=filename,
+        image_folder=image_folder,
+        template_string='where is <expr>?'
+    )
+    dataset = DATASETS.build(cfg)
+    for i in range(5):
+        item = dataset[i]
+        print(item)
+        res = draw_bounding_boxes(image=item['image'], boxes=item['target']['boxes'], colors='red', width=4)
+        show(res)
+        plt.title(item['conversations'][0]['value'])
+        plt.show()
+        plt.close()
+
+
+def test_rec_conv_dataset_llava():
+    from transformers import CLIPImageProcessor, LlamaTokenizer
+    from mllm.dataset import (
+        PlainBoxFormatter,
+        SingleImageConvDataset,
+        DATASETS,
+        FUNCTIONS,
+        TRANSFORMS,
+        de_norm_box_xyxy,
+    )
+    from mllm.utils import decode_generate_ids, show, draw_bounding_boxes
+
+    filename = r'D:\home\code\unify_mllm\data\dummy_rec_ann.jsonl'
+    image_folder = r'D:\home\dataset\mscoco\images'
+    cfg = dict(
+        type='RECDataset',
+        filename=filename,
+        image_folder=image_folder,
+        template_string='where is <expr>?'
+    )
+    dataset = DATASETS.build(cfg)
+
+    tokenizer = LlamaTokenizer.from_pretrained(rf"{Path(__file__).parent}\llava_7b_tk")
+    tokenizer.pad_token_id = tokenizer.unk_token_id
     preprocessor = dict(
         image=CLIPImageProcessor(),
-        text=FlamingoTokenizer.from_pretrained(r"D:\home\code\mllm\test\llama_7b_hf"),
-        multimodal_cfg=dict(
+        text=tokenizer,
+        target={'boxes': PlainBoxFormatter()},
+        conv=dict(
             image_token_len=256,
             is_multimodal=True,
             sep_image_conv_front=False,
@@ -18,104 +62,46 @@ def test_rec_dataset():
         )
     )
 
-    tokenize_kwargs = {
-    }
+    process_func = dict(
+        image=FUNCTIONS.build(cfg=dict(type='LlavaImageProcessorV1')),
+        text=FUNCTIONS.build(cfg=dict(type='LlavaTextProcessV1')),
+        conv=FUNCTIONS.build(cfg=dict(type='LLavaConvProcessV1')),
+        target=FUNCTIONS.build(cfg=dict(type='BoxFormatProcess')),
+    )
 
-    trainds = RECDataset(
-        data_file=r'D:\home\code\mllm\test\rec_sample.jsonl',
+    transforms = TRANSFORMS.build(cfg=dict(type='Expand2square', ))
+
+    train_ds = SingleImageConvDataset(
+        dataset=dataset,
         preprocessor=preprocessor,
-        tokenize_kwargs=tokenize_kwargs,
-        template_string='Can you tell me the whereabouts of <expr>? I need the spatial coordinates in the format (x1, y1, x2, y2).',
-        train_mode=True,
+        process_func=process_func,
+        transforms=transforms,
+        mode='train',
     )
-    testds = RECDataset(
-        data_file=r'D:\home\code\mllm\test\rec_sample.jsonl',
+    print(train_ds[0])
+
+    test_ds = SingleImageConvDataset(
+        dataset=dataset,
         preprocessor=preprocessor,
-        tokenize_kwargs=tokenize_kwargs,
-        template_string='Can you tell me the whereabouts of <expr>? I need the spatial coordinates in the format (x1, y1, x2, y2).',
-        train_mode=False,
+        process_func=process_func,
+        transforms=transforms,
+        mode='validation',
     )
-    trainsample = trainds[0]
-    labels = post_process(preprocessor['text'], trainsample['labels'])
-    assert preprocessor['text'].convert_ids_to_tokens(trainsample['input_ids']) == ['<s>', '▁A', '▁chat', '▁between', '▁a', '▁curious',
-                                                                                    '▁user', '▁and', '▁an', '▁artificial', '▁intelligence',
-                                                                                    '▁assistant', '.', '▁The', '▁assistant', '▁gives',
-                                                                                    '▁helpful', ',', '▁detailed', ',', '▁and', '▁pol',
-                                                                                    'ite', '▁answers', '▁to', '▁the', '▁user', "'", 's',
-                                                                                    '▁questions', '.', '▁US', 'ER', ':', '▁Can', '▁you',
-                                                                                    '▁tell', '▁me', '▁the', '▁where', 'about', 's', '▁of',
-                                                                                    '▁a', '▁half', '▁dr', 'unk', '▁be', 'er', '▁in', '▁a',
-                                                                                    '▁large', '▁glass', '?', '▁I', '▁need', '▁the',
-                                                                                    '▁spatial', '▁coordinates', '▁in', '▁the', '▁format',
-                                                                                    '▁(', 'x', '1', ',', '▁y', '1', ',', '▁x', '2', ',',
-                                                                                    '▁y', '2', ').', '▁A', 'SS', 'IST', 'ANT', ':',
-                                                                                    '▁Answer', ':', '▁(', '0', '.', '0', '0', '1', ',', '0',
-                                                                                    '.', '1', '6', '7', ',', '0', '.', '0', '0', '1', ',',
-                                                                                    '0', '.', '1', '6', '8', ')', '▁.', '</s>']
-    assert preprocessor['text'].convert_ids_to_tokens(labels) == ['<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>', '<PAD>',
-                                                                  '▁Answer', ':', '▁(', '0', '.', '0', '0', '1', ',', '0', '.', '1', '6',
-                                                                  '7', ',', '0', '.', '0', '0', '1', ',', '0', '.', '1', '6', '8', ')',
-                                                                  '▁.', '</s>']
-    testsample = testds[0]
-    labels = post_process(preprocessor['text'], testsample['labels'])
-    assert preprocessor['text'].convert_ids_to_tokens(testsample['input_ids']) == ['<s>', '▁A', '▁chat', '▁between', '▁a', '▁curious',
-                                                                                   '▁user', '▁and', '▁an', '▁artificial', '▁intelligence',
-                                                                                   '▁assistant', '.', '▁The', '▁assistant', '▁gives',
-                                                                                   '▁helpful', ',', '▁detailed', ',', '▁and', '▁pol', 'ite',
-                                                                                   '▁answers', '▁to', '▁the', '▁user', "'", 's',
-                                                                                   '▁questions', '.', '▁US', 'ER', ':', '▁Can', '▁you',
-                                                                                   '▁tell', '▁me', '▁the', '▁where', 'about', 's', '▁of',
-                                                                                   '▁a', '▁half', '▁dr', 'unk', '▁be', 'er', '▁in', '▁a',
-                                                                                   '▁large', '▁glass', '?', '▁I', '▁need', '▁the',
-                                                                                   '▁spatial', '▁coordinates', '▁in', '▁the', '▁format',
-                                                                                   '▁(', 'x', '1', ',', '▁y', '1', ',', '▁x', '2', ',',
-                                                                                   '▁y', '2', ').', '▁A', 'SS', 'IST', 'ANT', ':']
-    assert preprocessor['text'].convert_ids_to_tokens(labels) == ['▁Answer', ':', '▁(', '0', '.', '0', '0', '1', ',', '0', '.', '1', '6',
-                                                                  '7', ',', '0', '.', '0', '0', '1', ',', '0', '.', '1', '6', '8', ')',
-                                                                  '▁.']
-    trainsample = trainds[1]
-    testsample = testds[1]
-    trainsample = trainds[2]
-    testsample = testds[2]
+    print(test_ds[0])
 
-
-def test_box():
-    from mllm.dataset.common.transform import de_norm_box_xyxy
-    from mllm.dataset.rec import RECRawDataset
-    from mllm.dataset.common import read_img_general
-    from mllm.utils import show, draw_bounding_boxes
-
-    data_file = r'D:\home\code\unify_mllm\test\rec_sample.jsonl'
-    template_string = r"Where does <expr> appear in the image? Please provide the specific coordinates."
-
-    rec = RECRawDataset(
-        data_file=data_file,
-        template_string=template_string,
-    )
-
-    for i in range(5):
-        raw_item = rec.get_raw_item(i)
-        img_path = raw_item['img_path']
-        img = read_img_general(img_path)
-        box = raw_item['bbox']
-        box = de_norm_box_xyxy(box, w=img.width, h=img.height)
-        result = draw_bounding_boxes(img, [box], colors=['red'])
-        show(result)
+    for i in range(5, 10):
+        item = train_ds.__getitem__(index=i, debug_mode=True)
+        image = item['image']
+        item = item['ret']
+        inputs = decode_generate_ids(preprocessor['text'], item['input_ids'])
+        print(inputs)
+        targets = decode_generate_ids(preprocessor['text'], item['labels'])
+        extracted_ans = preprocessor['target']['boxes'].extract(targets)
+        assert len(extracted_ans) == 1 and len(extracted_ans[0]) == 1 and len(extracted_ans[0][0]) == 4
+        extract_box = extracted_ans[0][0]
+        extract_box = de_norm_box_xyxy(extract_box, w=image.width, h=image.height)
+        res = draw_bounding_boxes(image, boxes=[extract_box], colors='red', width=4)
+        show(res)
+        plt.title(targets)
         plt.show()
-
-        raw_conv = rec.get_raw_conv_with_box(i)
-        img2 = raw_conv[0]['image']
-        box2 = raw_conv[-1]['bboxes_seq'][0][0]
-        box2 = de_norm_box_xyxy(box2, w=img2.width, h=img2.height)
-        result = draw_bounding_boxes(img2, [box2], colors=['red'])
-        show(result)
-        plt.show()
+        plt.close()
