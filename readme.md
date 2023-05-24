@@ -72,7 +72,7 @@ python -c 'from petrel_client.version import version; print(version)'
 
 ```python
 item = {
-    'image': # PIL.Image.Image,
+    'image': None,  # PIL.Image.Image,
     'target': {
         # xmin, ymin, xmax, ymax
         'boxes': [
@@ -81,7 +81,7 @@ item = {
             [100, 310, 670, 653],  # man
             [278, 320, 809, 673],  # rope
         ],
-    }
+    },
 
     "conversations": [
         {
