@@ -1,0 +1,32 @@
+{
+  "bos_token": {
+    "__type": "AddedToken",
+    "content": "<s>",
+    "lstrip": false,
+    "normalized": true,
+    "rstrip": false,
+    "single_word": false
+  },
+  "clean_up_tokenization_spaces": false,
+  "eos_token": {
+    "__type": "AddedToken",
+    "content": "</s>",
+    "lstrip": false,
+    "normalized": true,
+    "rstrip": false,
+    "single_word": false
+  },
+  "model_max_length": 2048,
+  "pad_token": null,
+  "padding_side": "right",
+  "special_tokens_map_file": "/mnt/lustre/share_data/chenkeqin/VG/ckpt/llava/llava_v1/7B/special_tokens_map.json",
+  "tokenizer_class": "LlamaTokenizer",
+  "unk_token": {
+    "__type": "AddedToken",
+    "content": "<unk>",
+    "lstrip": false,
+    "normalized": true,
+    "rstrip": false,
+    "single_word": false
+  }
+}
