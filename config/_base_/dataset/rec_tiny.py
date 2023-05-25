@@ -4,14 +4,14 @@ data_args = dict(
 
     train=dict(
         type='RECDataset',
-        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref3/train.jsonl',
+        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref3-tiny/train.jsonl',
     ),
     validation=dict(
         type='RECDataset',
-        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref3/val.jsonl',
+        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref3-tiny/val.jsonl',
     ),
     test=dict(
         type='RECDataset',
-        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref3/test.jsonl',
+        filename=r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref3-tiny/test.jsonl',
     ),
 )

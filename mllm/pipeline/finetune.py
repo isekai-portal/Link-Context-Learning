@@ -82,9 +82,12 @@ def main():
     gen_kwargs = dict(cfg.data_args.gen_kwargs)
     # important for use model.generate in batch mode. some model config with wrong special_token_id
     # (e.g. llava generationConfig set pad_token_id to -1)
-    gen_kwargs['pad_token_id'] = preprocessor['text'].pad_token_id
-    gen_kwargs['bos_token_id'] = preprocessor['text'].bos_token_id
-    gen_kwargs['eos_token_id'] = preprocessor['text'].eos_token_id
+    if hasattr(cfg.model_args, 'gen_kwargs_set_pad_token_id') and cfg.model_args.gen_kwargs_set_pad_token_id:
+        gen_kwargs['pad_token_id'] = preprocessor['text'].pad_token_id
+    if hasattr(cfg.model_args, 'gen_kwargs_set_bos_token_id') and cfg.model_args.gen_kwargs_set_bos_token_id:
+        gen_kwargs['bos_token_id'] = preprocessor['text'].bos_token_id
+    if hasattr(cfg.model_args, 'gen_kwargs_set_eos_token_id') and cfg.model_args.gen_kwargs_set_eos_token_id:
+        gen_kwargs['eos_token_id'] = preprocessor['text'].eos_token_id
 
     # Evaluation
     if training_args.do_eval:

@@ -40,4 +40,8 @@ model_args = dict(
         transforms=dict(type='Expand2square'),
         tokenize_kwargs=dict(),
     ),
+
+    gen_kwargs_set_pad_token_id=True,
+    gen_kwargs_set_bos_token_id=True,
+    gen_kwargs_set_eos_token_id=True,
 )

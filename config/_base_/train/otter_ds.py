@@ -20,9 +20,9 @@ training_args = dict(
     evaluation_strategy='no',
 
     # train ddp
-    # tf32=True,
-    # bf16=True,
-    gradient_checkpointing=True,
+    tf32=True,
+    bf16=True,
+    # gradient_checkpointing=True,
 
     # train logging
     logging_steps=1,
@@ -31,7 +31,7 @@ training_args = dict(
     save_total_limit=1,
 
     # eval and predict
-    do_eval=False,
+    do_eval=True,
     do_predict=False,
     # bf16_full_eval=True,
     predict_with_generate=True,

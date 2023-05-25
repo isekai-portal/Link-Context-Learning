@@ -1,3 +1,4 @@
+from tkinter import N
 from typing import Optional, List
 
 import torch
@@ -712,10 +713,17 @@ class OtterForConditionalGeneration(OtterPreTrainedModel):
     def __init__(
         self,
         config: OtterConfig,
+        tokenizer_name_or_path=None,
     ):
         super().__init__(config)
+        if tokenizer_name_or_path is None:
+            tokenizer_name_or_path = config.text_config._name_or_path
+            print(f"build otter tokenizer from config: {config.text_config._name_or_path}")
+        else:
+            print(f"build otter tokenizer use tokenizer_name_or_path: {tokenizer_name_or_path}. not from config.")
+
         text_tokenizer = LlamaTokenizer.from_pretrained(
-            config.text_config._name_or_path
+            tokenizer_name_or_path
         )
         lang_encoder = LlamaForCausalLM(config=config.text_config)
         vision_encoder = CLIPVisionModel(config=config.vision_config)
@@ -787,8 +795,8 @@ class OtterForConditionalGeneration(OtterPreTrainedModel):
 
     def forward(
         self,
-        vision_x: torch.Tensor,
-        lang_x: torch.Tensor,
+        images: torch.Tensor,
+        input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
         use_cached_vision_x: bool = False,
@@ -817,6 +825,9 @@ class OtterForConditionalGeneration(OtterPreTrainedModel):
             use_cache: whether to use cached key values. See use_cache
                 documentation in Hugging Face CausalLM models.
         """
+        vision_x = images
+        lang_x = input_ids
+
         assert (
             vision_x is not None
         ) or use_cached_vision_x, (
@@ -877,8 +888,8 @@ class OtterForConditionalGeneration(OtterPreTrainedModel):
     @torch.no_grad()
     def generate(
         self,
-        vision_x: torch.Tensor,
-        lang_x: torch.Tensor,
+        images: torch.Tensor,
+        input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         **generate_kwargs,
     ):
@@ -897,6 +908,9 @@ class OtterForConditionalGeneration(OtterPreTrainedModel):
         Returns:
             torch.Tensor: lang_x with generated tokens appended to it
         """
+        lang_x = input_ids
+        vision_x = images
+
         if hasattr(self, "_hf_hook"):
             # add a hook to make sure that the output of lang_encoder is mapped to the same device as the lang_x
             hook = AlignDevicesHook(
@@ -918,3 +932,6 @@ class OtterForConditionalGeneration(OtterPreTrainedModel):
 
         self.lang_encoder.clear_conditioned_layers()
         return output
+        
+    def can_generate(self) -> bool:
+        return True

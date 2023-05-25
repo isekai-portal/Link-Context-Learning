@@ -83,7 +83,7 @@ class OtterTextProcess(BaseTextProcessFunc):
         return dict(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            label=label_ids,
+            labels=label_ids,
         )
 
     def tk_conv_colon_two_eval(self, conv, tokenizer, **kwargs):
@@ -129,7 +129,7 @@ class OtterImageProcess(BaseImageProcessFunc):
                 raise ValueError("got empty image. and don't know how to pad")
             image = torch.zeros(3, height, width)
         # N T C H W
-        image = image.unsqueeze(1).unsqueeze(1)
+        image = image.unsqueeze(0).unsqueeze(0)
         return {'image': image}
 
 
