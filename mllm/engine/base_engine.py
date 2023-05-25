@@ -229,44 +229,34 @@ class Seq2SeqDataCollator(DataCollatorForSeq2Seq):
             **kwargs,
     ):
         self.inference_mode = inference_mode
+        self.text_keys = ['input_ids', 'labels', 'attention_mask']
         super().__init__(**kwargs)
 
     def __call__(self, features: Sequence[Dict[str, Sequence]], return_tensors=None) -> Dict[str, torch.Tensor]:
         # evaluation/inference adopts left-padding while training adopts right-padding
+        text_features = [{k: feature[k] for k in self.text_keys if k in feature} for feature in features]
+
         if self.inference_mode:
             old_padding_side = self.tokenizer.padding_side
             self.tokenizer.padding_side = 'left'
-            text_features = [{'input_ids': feature['input_ids'], 'labels': feature['labels']} for feature in features]
             text_features = super().__call__(text_features)
             self.tokenizer.padding_side = old_padding_side
-            ret = {"input_ids": text_features['input_ids'], "labels": text_features['labels']}
         else:
-            input_ids, labels = [[torch.as_tensor(feature[key]) for feature in features] for key in ("input_ids", "labels")]
-            input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id)
-            labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=self.label_pad_token_id)
-            ret = {"input_ids": input_ids, "labels": labels}
-        # hack: this is only suit for llava
-        ret['attention_mask'] = ret['input_ids'].ne(self.tokenizer.pad_token_id)
-        return ret
+            old_padding_side = self.tokenizer.padding_side
+            self.tokenizer.padding_side = 'right'
+            text_features = super().__call__(text_features)
+            self.tokenizer.padding_side = old_padding_side
+
+        return text_features
 
 
 class Seq2Seq2DataCollatorWithImage(Seq2SeqDataCollator):
     def __init__(self, preprocessor, **kwargs):
         super().__init__(tokenizer=preprocessor['text'], **kwargs)
-        self.image_processor = preprocessor['image']
-        crop_size = self.image_processor.crop_size
-        height, width = crop_size['height'], crop_size['width']
-        self.zero_padding = torch.zeros(3, height, width, dtype=torch.float)
 
+    # noinspection PyMethodMayBeStatic
     def _image_process(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
-        images = []
-        for feature in features:
-            image = feature['image']
-            if image is not None:
-                images.append(image)
-            else:
-                images.append(self.zero_padding)
-        # B C=3 H=224 W=224
+        images = [feature['image'] for feature in features]
         images = torch.stack(images, dim=0)
         ret = dict(images=images)
         return ret

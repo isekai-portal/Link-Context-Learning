@@ -13,6 +13,7 @@ class SeparatorStyle(Enum):
 
     ADD_COLON_SINGLE = auto()
     ADD_COLON_TWO = auto()
+    ADD_SPACE_TWO = auto()
     NO_COLON_SINGLE = auto()
     BAIZE = auto()
     DOLLY = auto()
@@ -70,6 +71,15 @@ class Conversation:
                 else:
                     ret += role + ":"
             return ret
+        elif self.sep_style == SeparatorStyle.ADD_SPACE_TWO:
+            seps = [self.sep, self.sep2]
+            ret = self.system + seps[0]
+            for i, (role, message) in enumerate(self.messages):
+                if message:
+                    ret += role + " " + message + seps[i % 2]
+                else:
+                    ret += role + ""
+            return ret
         elif self.sep_style == SeparatorStyle.NO_COLON_SINGLE:
             ret = self.system
             for role, message in self.messages:
@@ -102,9 +112,9 @@ class Conversation:
             for i, (role, message) in enumerate(self.messages):
                 if message:
                     ret += (
-                        role
-                        + ": "
-                        + message.replace("\r\n", "\n").replace("\n\n", "\n")
+                            role
+                            + ": "
+                            + message.replace("\r\n", "\n").replace("\n\n", "\n")
                     )
                     ret += "\n\n"
                 else:
@@ -132,7 +142,7 @@ class Conversation:
                 if message:
                     ret += role + ": " + message + self.sep
                 else:
-                    ret += role + ": " # must be end with a space
+                    ret += role + ": "  # must be end with a space
             return ret
         else:
             raise ValueError(f"Invalid style: {self.sep_style}")
@@ -144,7 +154,7 @@ class Conversation:
     def to_gradio_chatbot(self):
         """Convert the history to gradio chatbot format"""
         ret = []
-        for i, (role, msg) in enumerate(self.messages[self.offset :]):
+        for i, (role, msg) in enumerate(self.messages[self.offset:]):
             if i % 2 == 0:
                 ret.append([msg, None])
             else:
@@ -155,7 +165,7 @@ class Conversation:
         """Convert the conversation to OpenAI chat completion format."""
         ret = [{"role": "system", "content": self.system}]
 
-        for i, (_, msg) in enumerate(self.messages[self.offset :]):
+        for i, (_, msg) in enumerate(self.messages[self.offset:]):
             if i % 2 == 0:
                 ret.append({"role": "user", "content": msg})
             else:
@@ -212,7 +222,7 @@ register_conv_template(
     Conversation(
         name="one_shot",
         system="A chat between a curious human and an artificial intelligence assistant. "
-        "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+               "The assistant gives helpful, detailed, and polite answers to the human's questions.",
         roles=("Human", "Assistant"),
         messages=(
             (
@@ -253,7 +263,7 @@ register_conv_template(
     Conversation(
         name="vicuna_v1.1",
         system="A chat between a curious user and an artificial intelligence assistant. "
-        "The assistant gives helpful, detailed, and polite answers to the user's questions.",
+               "The assistant gives helpful, detailed, and polite answers to the user's questions.",
         roles=("USER", "ASSISTANT"),
         messages=(),
         offset=0,
@@ -467,6 +477,20 @@ register_conv_template(
         sep_style=SeparatorStyle.BILLA,
         sep="\n",
         stop_str="Human:",
+    )
+)
+
+# custom otter template
+register_conv_template(
+    Conversation(
+        name='otter',
+        system='',
+        roles=('User:', 'GPT:<answer>'),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_SPACE_TWO,
+        sep=' ',
+        sep2='<|endofchunk|>',
     )
 )
 

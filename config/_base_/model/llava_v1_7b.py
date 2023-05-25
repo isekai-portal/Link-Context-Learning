@@ -34,4 +34,10 @@ model_args = dict(
         text=dict(type='LlavaTextProcessV1'),
         image=dict(type='LlavaImageProcessorV1'),
     ),
+
+    conv_args=dict(
+        conv_template='vicuna_v1.1',
+        transforms=dict(type='Expand2square'),
+        tokenize_kwargs=dict(),
+    ),
 )

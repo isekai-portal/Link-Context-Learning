@@ -21,12 +21,6 @@ data_args = dict(
 
     compute_metric=dict(type='RECComputeMetrics'),
 
-    conv_args=dict(
-        conv_template='vicuna_v1.1',
-        transforms=dict(type='Expand2square'),
-        tokenize_kwargs=dict(),
-    ),
-
     # padding collator kwargs
     collator_kwargs=dict(
         padding=True,

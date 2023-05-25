@@ -14,7 +14,7 @@ ComputeMetrics = Callable[[EvalPrediction], Dict]
 
 def prepare_data(
         data_args,
-        process_func_args: Dict[str, Dict],
+        model_args,
         training_args: TrainingArguments,
         preprocessor: Dict[str, Any],
 ) -> Tuple[DatasetDict, Optional[ComputeMetrics]]:
@@ -32,7 +32,7 @@ def prepare_data(
     else:
         compute_metrics = None
     # conv dataset wrap
-    conv_args = data_args.conv_args
+    conv_args = model_args.conv_args
     tokenize_kwargs = conv_args.get('tokenize_kwargs', {})
     conv_template = conv_args.get('conv_template', 'vicuna_v1.1')
     conv_template = partial(get_conv_template, name=conv_template)
@@ -41,7 +41,7 @@ def prepare_data(
         transforms = TRANSFORMS.build(transforms)
     # process func
     process_func = {}
-    for k, v in process_func_args.items():
+    for k, v in model_args.process_func_args.items():
         process_func[k] = FUNCTIONS.build(cfg=v)
 
     conv_dataset_cls = partial(

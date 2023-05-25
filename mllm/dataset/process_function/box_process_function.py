@@ -131,13 +131,13 @@ def smart_prepare_target_processor(
         training_args,
 ):
     type_ = model_args.type
-    if type_ == 'llava':
-        return smart_prepare_target_processor_llava(model, preprocessor, model_args, training_args)
+    if type_ in ['llava', 'otter']:
+        return smart_prepare_target_processor_default(model, preprocessor, model_args, training_args)
     else:
         assert False
 
 
-def smart_prepare_target_processor_llava(
+def smart_prepare_target_processor_default(
         model,  # multimodal llm
         preprocessor: Dict[str, Any],
         model_args,

@@ -1,3 +1,4 @@
 from .base_engine import TrainerForMMLLM, TrainerDifferentCollatorMixin
-from .open_flamingo import TrainerForOpenFlamingo
+from .otter import OtterTrainer
+from .llava import LLaVATrainer
 from .builder import prepare_trainer_collator

@@ -94,6 +94,7 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
                 warnings.warn(f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}. (ignored):\n{conversation}")
         return dict(
             input_ids=input_ids,
+            attention_mask=input_ids.ne(tokenizer.pad_token_id),
             labels=target,
         )
 
@@ -110,6 +111,7 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
         target[target == tokenizer.pad_token_id] = IGNORE_INDEX
         return dict(
             input_ids=input_ids,
+            attention_mask=input_ids.ne(tokenizer.pad_token_id),
             labels=target,
         )
 
@@ -122,7 +124,6 @@ class LlavaImageProcessorV1(BaseImageProcessFunc):
         if image is not None:
             image = image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
         else:
-            # HACK: use the image_processor attr `crop_size` to do zero_padding
             if hasattr(image_processor, 'crop_size'):
                 crop_size = image_processor.crop_size
                 height, width = crop_size['height'], crop_size['width']

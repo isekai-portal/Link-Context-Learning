@@ -36,7 +36,7 @@ def main():
     # Prepare data_collator
     collator_kwargs = cfg.data_args.collator_kwargs
     trainer_cls, data_collator_dict = prepare_trainer_collator(cfg.model_args, preprocessor, collator_kwargs)
-    dataset, compute_metrics = prepare_data(cfg.data_args, cfg.model_args.process_func_args, training_args, preprocessor)
+    dataset, compute_metrics = prepare_data(cfg.data_args, cfg.model_args, training_args, preprocessor)
 
     # Initialize Trainer
     trainer = trainer_cls(
