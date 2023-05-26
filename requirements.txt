@@ -15,3 +15,4 @@ matplotlib
 
 accelerate
 SentencePiece
+deepspeed
