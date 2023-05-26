@@ -15,7 +15,7 @@ def load_pretrained_otter(model_args, training_args) -> Tuple[nn.Module, PREPROC
         config.text_config.update(dict(num_attention_heads=2, num_hidden_layers=6))
         otter = OtterForConditionalGeneration(config, model_args.tokenizer_name_or_path)
     else:
-        otter = OtterForConditionalGeneration.from_pretrained(model_args.model_name_or_path, model_args.tokenizer_name_or_path, device_map='auto')
+        otter = OtterForConditionalGeneration.from_pretrained(model_args.model_name_or_path, model_args.tokenizer_name_or_path)
     tokenizer = otter.text_tokenizer
     image_processor = transformers.CLIPImageProcessor()
 
