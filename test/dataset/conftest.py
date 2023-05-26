@@ -1,4 +1,5 @@
 import pytest
+from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.fixture(scope='session')
@@ -69,8 +70,8 @@ def reverse_rec_dataset(cfg_dir, rec_dummy_data_file):
 @pytest.fixture(
     scope='session',
     params=[
-        pytest.lazy_fixture('rec_dataset'),
-        pytest.lazy_fixture('reverse_rec_dataset'),
+        lazy_fixture('rec_dataset'),
+        lazy_fixture('reverse_rec_dataset'),
     ]
 )
 def dataset(request):
@@ -80,7 +81,7 @@ def dataset(request):
 @pytest.fixture(
     scope='session',
     params=[
-        pytest.lazy_fixture('plain_formatter'),
+        lazy_fixture('plain_formatter'),
     ]
 )
 def boxes_processor(request):
@@ -90,7 +91,7 @@ def boxes_processor(request):
 @pytest.fixture(
     scope='session',
     params=[
-        pytest.lazy_fixture('boxes_processor'),
+        lazy_fixture('boxes_processor'),
     ],
 )
 def target_processor(request):
@@ -126,6 +127,40 @@ def llava_process_func():
         image=FUNCTIONS.build(cfg=dict(type='LlavaImageProcessorV1')),
         text=FUNCTIONS.build(cfg=dict(type='LlavaTextProcessV1')),
         conv=FUNCTIONS.build(cfg=dict(type='LLavaConvProcessV1')),
+        target=FUNCTIONS.build(cfg=dict(type='BoxFormatProcess')),
+    )
+    return process_func
+
+
+@pytest.fixture(scope='session')
+def otter_processor(cfg_dir, target_processor):
+    import transformers
+    from transformers import LlamaTokenizer
+    image_processor = transformers.CLIPImageProcessor()
+    text_tokenizer = LlamaTokenizer.from_pretrained(cfg_dir.LLAMA_7B_HF_PATH)
+    text_tokenizer.add_special_tokens(
+        {"additional_special_tokens": ["<|endofchunk|>", "<image>", "<answer>"]}
+    )
+    if text_tokenizer.pad_token is None:
+        text_tokenizer.add_special_tokens({"pad_token": "<PAD>"})
+
+    preprocessor = dict(
+        image=image_processor,
+        text=text_tokenizer,
+        target=target_processor,
+        conv=dict(image_token_at_begin='True', ),
+    )
+    return preprocessor
+
+
+@pytest.fixture(scope='session')
+def otter_process_func():
+    from mllm.dataset import FUNCTIONS
+
+    process_func = dict(
+        image=FUNCTIONS.build(cfg=dict(type='OtterImageProcess')),
+        text=FUNCTIONS.build(cfg=dict(type='OtterTextProcess')),
+        conv=FUNCTIONS.build(cfg=dict(type='OtterConvProcess')),
         target=FUNCTIONS.build(cfg=dict(type='BoxFormatProcess')),
     )
     return process_func
