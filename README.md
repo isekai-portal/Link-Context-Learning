@@ -12,7 +12,7 @@
 ## Models
 
 - [x] llava_v1_7b
-- [x] openflamingo(only support training in otter format. i.e. add<answer>token)
+- [x] openflamingo(only support training in otter format. i.e. add\<answer>token)
 - [x] otter
 
 ## Getting Started
