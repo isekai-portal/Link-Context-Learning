@@ -4,10 +4,12 @@
 
 ## Datasets
 
+- [ ] ScienceQA
 - [x] ref4-gnome
 - [x] ref3-coco
-- [ ] ScienceQA
-- [ ] flickr30k
+- [x] ref_reverse(grounded caption)
+- [x] flickr30k
+- [x] flickr30k_reverse(multi object grounded caption)
 
 ## Models
 
