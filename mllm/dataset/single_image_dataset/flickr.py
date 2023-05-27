@@ -50,10 +50,10 @@ class FlickrParser(Dataset):
 @DATASETS.register_module()
 class FlickrDataset(QuestionTemplateMixin, Dataset):
 
-    def __init__(self, *args, filename, annotation_dir, image_dir=None, **kwargs):
+    def __init__(self, *args, filename, annotation_dir, image_folder=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = FlickrParser(filename=filename, annotation_dir=annotation_dir)
-        self.image_dir = image_dir if image_dir is not None else ""
+        self.image_folder = image_folder if image_folder is not None else ""
 
     def __len__(self):
         return len(self.data)
@@ -61,7 +61,7 @@ class FlickrDataset(QuestionTemplateMixin, Dataset):
     def __getitem__(self, index):
         item = self.data[index]
         # image
-        img_path = get_img_path(item['image_id'], image_dir=self.image_dir)
+        img_path = get_img_path(item['image_id'], image_dir=self.image_folder)
         image = read_img_general(img_path)
         # caption
         caption: str = item['sentence']
@@ -89,13 +89,13 @@ class FlickrDataset(QuestionTemplateMixin, Dataset):
 @DATASETS.register_module()
 class FlickrBox2Caption(QuestionTemplateMixin, Dataset):
 
-    def __init__(self, *args, filename, annotation_dir, box_max_num=5, caption_with_box='none', image_dir=None, **kwargs):
+    def __init__(self, *args, filename, annotation_dir, box_max_num=5, caption_with_box='none', image_folder=None, **kwargs):
         super().__init__(*args, **kwargs)
         assert caption_with_box in ['none', 'all', 'question']
         self.data = FlickrParser(filename=filename, annotation_dir=annotation_dir)
         self.box_max_num = box_max_num
         self.caption_with_box = caption_with_box
-        self.image_dir = image_dir
+        self.image_folder = image_folder
 
     def __len__(self):
         return len(self.data)
@@ -103,7 +103,7 @@ class FlickrBox2Caption(QuestionTemplateMixin, Dataset):
     def __getitem__(self, index):
         item = self.data[index]
         # image
-        img_path = get_img_path(item['image_id'], image_dir=self.image_dir)
+        img_path = get_img_path(item['image_id'], image_dir=self.image_folder)
         image = read_img_general(img_path)
 
         boxes_seq_origin = item['boxes_seq']

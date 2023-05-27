@@ -25,8 +25,9 @@ def prepare_data(
         'test': DATASETS.build(data_args.test) if training_args.do_predict else None,
     }
     # compute metric
-    compute_metric_cfg = dict(data_args.get('compute_metric', None))  # copy cfg because we modify it
+    compute_metric_cfg = data_args.get('compute_metric', None)
     if compute_metric_cfg is not None:
+        compute_metric_cfg = dict(compute_metric_cfg)  # copy cfg because we modify it
         compute_metric_cfg.update(dict(preprocessor=preprocessor))
         compute_metrics = METRICS.build(cfg=compute_metric_cfg)
     else:

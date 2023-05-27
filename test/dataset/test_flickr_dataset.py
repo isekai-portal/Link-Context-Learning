@@ -12,6 +12,7 @@ def test_flickr(cfg_dir):
         annotation_dir=cfg_dir.FLICKR_ANNOTATION_DIR,
     )
 
+    print(len(ds))
     item = ds[0]
     print(item)
 
@@ -22,7 +23,7 @@ def test_flickr_caption(cfg_dir):
     ds = FlickrDataset(
         filename=cfg_dir.FLICKR_ANNOTATION_FILE,
         annotation_dir=cfg_dir.FLICKR_ANNOTATION_DIR,
-        image_dir=cfg_dir.FLICKR_IMAGE_DIR,
+        image_folder=cfg_dir.FLICKR_IMAGE_DIR,
         template_string='give a caption for the image.',
     )
 
@@ -59,7 +60,7 @@ def test_flickr_box2caption(cfg_dir, caption_with_box, box_max_num):
     ds = FlickrBox2Caption(
         filename=cfg_dir.FLICKR_ANNOTATION_FILE,
         annotation_dir=cfg_dir.FLICKR_ANNOTATION_DIR,
-        image_dir=cfg_dir.FLICKR_IMAGE_DIR,
+        image_folder=cfg_dir.FLICKR_IMAGE_DIR,
         caption_with_box=caption_with_box,
         box_max_num=box_max_num,
         template_string='give a caption for the objects<boxes> in the image.',

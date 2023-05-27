@@ -32,8 +32,7 @@ training_args = dict(
 
     # eval and predict
     do_eval=True,
-    do_predict=False,
-    # bf16_full_eval=True,
+    do_predict=True,
     predict_with_generate=True,
     per_device_eval_batch_size=16,
 )

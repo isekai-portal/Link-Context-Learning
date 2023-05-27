@@ -40,7 +40,7 @@ logging.basicConfig(
 
 
 @DATASETS.register_module()
-class CaptionBoxDataset(QuestionTemplateMixin, Dataset):
+class FlickrZz(QuestionTemplateMixin, Dataset):
     def __init__(self, *args, filename, image_folder=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.filename = filename
@@ -51,14 +51,14 @@ class CaptionBoxDataset(QuestionTemplateMixin, Dataset):
             for i, line in enumerate(tqdm(f, desc='loading annotations')):
                 obj = json.loads(line)
                 for j, caption in enumerate(obj['context']):
-                    self.anns.append(dict(
+                    self.data.append(dict(
                         id=i + j,
                         image=obj['img_path'],
                         caption=caption,
                     ))
 
     def __len__(self):
-        return len(self.anns)
+        return len(self.data)
 
     def __getitem__(self, index) -> Dict[str, Any]:
         assert isinstance(index, int), f"Don't know why its type is {type(index)}"  # FIXME
@@ -75,7 +75,7 @@ class CaptionBoxDataset(QuestionTemplateMixin, Dataset):
         caption = item['caption']
 
         # question
-        question = self.get_question() + IMAGE_PLACEHOLDER
+        question = self.get_template() + IMAGE_PLACEHOLDER
 
         ret = {
             'image': image,

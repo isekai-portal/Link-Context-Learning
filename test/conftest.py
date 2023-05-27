@@ -19,7 +19,7 @@ def cfg_dir():
     else:
         coco_images_dir = r''
 
-    flickr_annotation_file = r'D:\home\dataset\flickr30kentities\val.txt'
+    flickr_annotation_file = r'D:\home\dataset\flickr30kentities\train.txt'
     flickr_annotation_dir = r'D:\home\dataset\flickr30kentities'
     flickr_image_dir = r'D:\home\dataset\flickr30k\flickr30k-images'
 

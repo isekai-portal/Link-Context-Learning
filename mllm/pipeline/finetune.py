@@ -80,6 +80,7 @@ def main():
 
     # Keyword arguments for `model.generate`
     gen_kwargs = dict(cfg.data_args.gen_kwargs)
+    gen_kwargs.setdefault('use_cache', True)
     # important for use model.generate in batch mode. some model config with wrong special_token_id
     # (e.g. llava generationConfig set pad_token_id to -1)
     if hasattr(cfg.model_args, 'gen_kwargs_set_pad_token_id') and cfg.model_args.gen_kwargs_set_pad_token_id:
