@@ -46,14 +46,28 @@ class FlickrParser(Dataset):
     def __getitem__(self, index):
         return self.data[index]
 
+    def dump(self, filename):
+        import json
+        with open(filename, 'w', encoding='utf8') as f:
+            for obj in self.data:
+                obj_str = json.dumps(obj)
+                f.write(obj_str)
+                f.write('\n')
+
 
 @DATASETS.register_module()
 class FlickrDataset(QuestionTemplateMixin, Dataset):
 
-    def __init__(self, *args, filename, annotation_dir, image_folder=None, **kwargs):
+    def __init__(self, *args, filename, image_folder=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.data = FlickrParser(filename=filename, annotation_dir=annotation_dir)
+        self.filename = filename
         self.image_folder = image_folder if image_folder is not None else ""
+
+        self.data = []
+        with open(filename, 'r', encoding='utf8') as f:
+            for line in tqdm(f, desc='loading annotation file'):
+                item: Dict[str, Any] = json.loads(line)
+                self.data.append(item)
 
     def __len__(self):
         return len(self.data)
@@ -89,13 +103,19 @@ class FlickrDataset(QuestionTemplateMixin, Dataset):
 @DATASETS.register_module()
 class FlickrBox2Caption(QuestionTemplateMixin, Dataset):
 
-    def __init__(self, *args, filename, annotation_dir, box_max_num=5, caption_with_box='none', image_folder=None, **kwargs):
+    def __init__(self, *args, filename, box_max_num=5, caption_with_box='none', image_folder=None, **kwargs):
         super().__init__(*args, **kwargs)
         assert caption_with_box in ['none', 'all', 'question']
-        self.data = FlickrParser(filename=filename, annotation_dir=annotation_dir)
+        self.filename = filename
         self.box_max_num = box_max_num
         self.caption_with_box = caption_with_box
-        self.image_folder = image_folder
+        self.image_folder = image_folder if image_folder is not None else ""
+
+        self.data = []
+        with open(filename, 'r', encoding='utf8') as f:
+            for line in tqdm(f, desc='loading annotation file'):
+                item: Dict[str, Any] = json.loads(line)
+                self.data.append(item)
 
     def __len__(self):
         return len(self.data)

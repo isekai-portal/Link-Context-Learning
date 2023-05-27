@@ -10,7 +10,7 @@ training_args = dict(
 
     # train
     do_train=True,
-    per_device_train_batch_size=8,
+    per_device_train_batch_size=16,
     gradient_accumulation_steps=1,
     num_train_epochs=5,
     learning_rate=2e-5,
@@ -31,4 +31,10 @@ training_args = dict(
     save_strategy='steps',
     save_steps=1000,
     save_total_limit=1,
+
+    # eval and predict
+    do_eval=False,
+    do_predict=False,
+    predict_with_generate=True,
+    per_device_eval_batch_size=16,
 )
