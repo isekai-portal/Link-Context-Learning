@@ -20,9 +20,9 @@ def prepare_data(
 ) -> Tuple[DatasetDict, Optional[ComputeMetrics]]:
     # raw dataset
     datasets = {
-        'train': DATASETS.build(data_args.train) if training_args.do_train else None,
-        'validation': DATASETS.build(data_args.validation) if training_args.do_eval else None,
-        'test': DATASETS.build(data_args.test) if training_args.do_predict else None,
+        'train': partial(DATASETS.build, data_args.train) if training_args.do_train else None,
+        'validation': partial(DATASETS.build, data_args.validation) if training_args.do_eval else None,
+        'test': partial(DATASETS.build, data_args.test) if training_args.do_predict else None,
     }
     # compute metric
     compute_metric_cfg = data_args.get('compute_metric', None)
@@ -55,9 +55,9 @@ def prepare_data(
         transforms=transforms,
     )
     ds = {
-        'train': conv_dataset_cls(dataset=datasets['train'], mode='train') if datasets['train'] is not None else None,
-        'validation': conv_dataset_cls(dataset=datasets['validation'], mode='validation') if datasets['validation'] is not None else None,
-        'test': conv_dataset_cls(dataset=datasets['test'], mode='test') if datasets['test'] is not None else None,
+        'train': conv_dataset_cls(dataset_generator=datasets['train'], mode='train') if datasets['train'] is not None else None,
+        'validation': conv_dataset_cls(dataset_generator=datasets['validation'], mode='validation') if datasets['validation'] is not None else None,
+        'test': conv_dataset_cls(dataset_generator=datasets['test'], mode='test') if datasets['test'] is not None else None,
     }
 
     return ds, compute_metrics

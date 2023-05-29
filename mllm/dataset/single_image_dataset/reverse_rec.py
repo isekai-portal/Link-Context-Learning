@@ -46,7 +46,7 @@ class ReverseRECDataset(QuestionTemplateMixin, Dataset):
         if self.caption_min_words is not None or self.caption_max_words is not None:
             self.origin_data = self.data
             min_words = self.caption_min_words if self.caption_min_words is not None else 0
-            max_words = self.caption_max_words if self.caption_max_words is not None else float('int')
+            max_words = self.caption_max_words if self.caption_max_words is not None else float('inf')
             self.data = []
             logger.info(f"filter reverse_rec dataset by expression words. items before filter: {len(self.origin_data)}")
             for item in self.origin_data:

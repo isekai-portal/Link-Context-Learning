@@ -4,23 +4,23 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 
-from mllm.dataset.rec import RECRawDataset
-from mllm.dataset.utils.transform import de_norm_box_xyxy
-from mllm.dataset.utils import PlainBoxFormatter
+from mllm.dataset import RECDataset, PlainBoxFormatter, de_norm_box_xyxy
 from mllm.utils import show, draw_bounding_boxes
 
 
 def format_examples(
         data_file: str,
         prediction_file: str,
+        image_folder=None,
         template_string: str = "Please specify the location of <expr> using the bounding box's top-left and bottom-right coordinates. Make sure the coordinates are normalized between 0 and 1.",
         template_file: Optional[str] = None,
         max_dynamic_size: Optional[str] = None,
 ):
-    rec = RECRawDataset(data_file=data_file,
-                        template_string=template_string,
-                        template_file=template_file,
-                        max_dynamic_size=max_dynamic_size)
+    rec = RECDataset(filename=data_file,
+                     image_folder=image_folder,
+                     template_string=template_string,
+                     template_file=template_file,
+                     max_dynamic_size=max_dynamic_size)
 
     box_formatter = PlainBoxFormatter()
 
@@ -96,7 +96,7 @@ def main(*args, **kwargs):
 
 if __name__ == '__main__':
     data_file = r'/mnt/lustre/share_data/chenkeqin/VG/pretrain_data/REC/REC_ref4-genome-tiny/val.jsonl'
-    prediction_file = r'/mnt/lustre/share_data/chenkeqin/exp_unify_mllm/eval_rec_llava_origin_5_1/eval_extra_prediction.json'
+    prediction_file = r'/mnt/lustre/share_data/chenkeqin/exp_unify_mllm/rec_ref3_reverse_m8_llava_v1_7b_eval/eval_extra_prediction.json'
 
     main(
         data_file=data_file,

@@ -30,10 +30,10 @@ class LLavaConvProcessV1(BaseConvProcessFunc):
         image_token_len = conv_processor_cfg['image_token_len']
         sep_image_conv_front = conv_processor_cfg.get('sep_image_conv_front', False)
         use_im_start_end = conv_processor_cfg.get('use_im_start_end', False)
-        assert DEFAULT_IMAGE_PATCH_TOKEN in preprocessor['text'].get_vocab()
-        if use_im_start_end:
-            assert DEFAULT_IM_START_TOKEN in preprocessor['text'].get_vocab()
-            assert DEFAULT_IM_END_TOKEN in preprocessor['text'].get_vocab()
+        # assert DEFAULT_IMAGE_PATCH_TOKEN in preprocessor['text'].get_vocab()
+        # if use_im_start_end:
+        #     assert DEFAULT_IM_START_TOKEN in preprocessor['text'].get_vocab()
+        #     assert DEFAULT_IM_END_TOKEN in preprocessor['text'].get_vocab()
 
         if sep_image_conv_front:
             raw_conv[0]['value'] = raw_conv[0]['value'].replace(DEFAULT_IMAGE_TOKEN, '').strip()
@@ -101,7 +101,8 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
     # noinspection PyMethodMayBeStatic
     def tk_conv_colon_two_eval(self, conv, tokenizer, **kwargs):
         assert len(conv.messages) >= 2
-        target = conv.messages[-1][-1]
+        # target = conv.messages[-1][-1]
+        target = conv.get_prompt()
 
         conv.messages[-1][-1] = ""
         conversation = conv.get_prompt()

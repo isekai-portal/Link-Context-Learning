@@ -1,5 +1,3 @@
-_base_ = ['eval_a100.py']
-
 training_args = dict(
     # run
     output_dir=None,  # required. must be filled by derived configs.
@@ -20,5 +18,5 @@ training_args = dict(
     bf16_full_eval=True,
     predict_with_generate=True,
     per_device_eval_batch_size=16,
-    dataloader_num_workers=4,
+    # dataloader_num_workers=4,
 )

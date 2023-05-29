@@ -1,6 +1,6 @@
 import warnings
 from functools import partial
-from typing import Dict, Any, Callable, List, Optional, Tuple
+from typing import Dict, Any, Callable, List, Optional, Tuple, Type
 
 import torch
 from PIL import Image
@@ -209,15 +209,28 @@ class SingleImageConvDatasetMixin:
 
 
 class SingleImageConvDataset(SingleImageConvDatasetMixin, Dataset):
-    def __init__(self, *args, dataset: Dataset, **kwargs):
+    def __init__(self, *args, dataset_generator: Type[Dataset], **kwargs):
         super().__init__(*args, **kwargs)
-        self.dataset = dataset
+        self.dataset_generator = dataset_generator
+        self.dataset = None
+
+    def initialize_if_needed(self):
+        """
+        lazy initialize for big in-memory python object due to python 'copy-on-read' behavior
+        when num_worker > 0. refer: https://github.com/pytorch/pytorch/issues/13246
+        """
+        if self.dataset is None:
+            warnings.warn("it's highly recommended that set persistent_workers=True, "
+                          "otherwise this initialize code will run in every epoch beginning."
+                          "(ignore me if set)")
+            self.dataset = self.dataset_generator()
 
     def __len__(self):
-        # noinspection PyTypeChecker
+        self.initialize_if_needed()
         return len(self.dataset)
 
     def get_raw_item(self, index) -> Dict[str, Any]:
+        self.initialize_if_needed()
         return self.dataset[index]
 
 

@@ -10,8 +10,8 @@ training_args = dict(
 
     # train
     do_train=True,
-    per_device_train_batch_size=16,
-    gradient_accumulation_steps=1,
+    per_device_train_batch_size=8,
+    gradient_accumulation_steps=2,
     num_train_epochs=5,
     learning_rate=2e-5,
     lr_scheduler_type='cosine',
@@ -34,5 +34,5 @@ training_args = dict(
     do_eval=True,
     do_predict=True,
     predict_with_generate=True,
-    per_device_eval_batch_size=16,
+    per_device_eval_batch_size=8,
 )
