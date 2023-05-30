@@ -3,3 +3,4 @@ from .rec import RECDataset, RECComputeMetrics
 from .reverse_rec import ReverseRECDataset
 from .flickr import FlickrParser, FlickrDataset, FlickrBox2Caption
 from .flickrzz import FlickrZz
+from .complex_event import ComplexEventCaption, ComplexEventREC, ComplexEventGroundCap
