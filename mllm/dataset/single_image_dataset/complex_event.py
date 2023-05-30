@@ -30,25 +30,31 @@ logging.basicConfig(
 
 
 class ComplexEventBase(QuestionTemplateMixin, Dataset):
-    def __init__(self, *args, filename, image_folder=None, **kwargs):
+    def __init__(self, *args, filename, image_folder=None, subsize=100, **kwargs):
         super().__init__(*args, **kwargs)
         filenames = filename
         if isinstance(filenames, str):
             filenames = [filenames]
         self.filenames = filenames
         self.image_folder = image_folder
+        self.subsize = subsize
 
         self.data = []
         for i, filename in enumerate(filenames):
             with open(filename, 'r', encoding='utf8') as f:
+                data_in_file = []
                 for line in tqdm(f, desc=f'loading annotation file {i + 1}/{len(filenames)}'):
                     item: Dict[str, Any] = json.loads(line)
+                    data_in_file.append(item)
+
+                data_in_file = self.post_process(data_in_file)
+
+                for item in data_in_file[:self.subsize]:
                     self.data.append(item)
+        print(f"dataset size: {len(self.data)}")
 
-        self.post_process()
-
-    def post_process(self):
-        pass
+    def post_process(self, data_in_file):
+        return data_in_file
 
     def __len__(self):
         return len(self.data)
@@ -106,13 +112,12 @@ class ComplexEventCaption(ComplexEventBase):
 
 @DATASETS.register_module()
 class ComplexEventGroundCap(ComplexEventBase):
-    def post_process(self):
+    def post_process(self, data_in_file):
         filtered = []
-        for item in self.data:
+        for item in data_in_file:
             if 'instances' in item and item['instances']:
                 filtered.append(item)
-        logger.info(f"Ground Caption Dataset filter the image with boxes. {len(self.data)} -> {len(filtered)}")
-        self.data = filtered
+        return filtered
 
     def __getitem__(self, index):
         item = self.data[index]
@@ -149,13 +154,12 @@ class ComplexEventGroundCap(ComplexEventBase):
 
 @DATASETS.register_module()
 class ComplexEventREC(ComplexEventBase):
-    def post_process(self):
+    def post_process(self, data_in_file):
         filtered = []
-        for item in self.data:
+        for item in data_in_file:
             if 'instances' in item and item['instances']:
                 filtered.append(item)
-        logger.info(f"REC Dataset filter the image with boxes. {len(self.data)} -> {len(filtered)}")
-        self.data = filtered
+        return filtered
 
     def __getitem__(self, index):
         item = self.data[index]

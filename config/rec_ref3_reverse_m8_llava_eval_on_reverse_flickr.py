@@ -19,3 +19,7 @@ data_args = dict(
         template_string='please generate an unambiguous description for the object <boxes> in the image.The generated caption should contain and only contain the query boxes.',
     ),
 )
+
+model_args = dict(
+    model_name_or_path='/mnt/lustre/share_data/chenkeqin/exp_unify_mllm/flickr_reverse_llava_v1_7b',
+)

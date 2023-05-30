@@ -22,7 +22,7 @@ data_args = dict(
 
     # generate config
     gen_kwargs=dict(
-        max_new_tokens=512,
+        max_new_tokens=128,
         num_beams=1,
     ),
 )
