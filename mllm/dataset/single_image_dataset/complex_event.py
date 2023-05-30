@@ -2,6 +2,8 @@ import os.path
 import sys
 import json
 import logging
+import warnings
+
 from PIL import Image
 from typing import Dict, Any
 
@@ -41,6 +43,10 @@ class ComplexEventBase(QuestionTemplateMixin, Dataset):
 
         self.data = []
         for i, filename in enumerate(filenames):
+            # HACK: this annotation broken
+            if 'garbage' in filename:
+                warnings.warn(f'some annotation may be broken, we just skip it: {filename}')
+                continue
             with open(filename, 'r', encoding='utf8') as f:
                 data_in_file = []
                 for line in tqdm(f, desc=f'loading annotation file {i + 1}/{len(filenames)}'):
