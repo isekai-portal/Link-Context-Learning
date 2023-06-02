@@ -1,6 +1,7 @@
-# [logic, logic] -> logic
 from typing import Callable, Dict, Any
+from root import CANT_INFER_RESULT
 
+# [logic, logic] -> logic
 logic_logic_to_logic = {
     'and',
     'or',
@@ -51,31 +52,40 @@ class Gqa2CoTBinaryMixin:
                 self.binary_operators2strfunc[item] = strfunc
         # only for type hint
         self.operations = {}
+        self.res = []
 
-    def logic_logic_to_logic_str_func(self, idx):
+    def logic_logic_to_logic_str_func(self, idx, arg_res):
         if self.operations[idx]['operation'] == 'and':
-            return "the question ask about 'and' relation."
+            cot = "The question ask about 'and' relation."
         elif self.operations[idx]['operation'] == 'or':
-            return "the question ask about 'or' relation."
+            cot = "The question ask about 'or' relation."
         else:
             assert False
+        self.res.append(cot)
+        return CANT_INFER_RESULT
 
-    def obj_obj_to_obj_str_func(self, idx):
+    def obj_obj_to_obj_str_func(self, idx, arg_res):
         op = self.operations[idx]['operation']
         v = op.replace('choose', '').strip()
-        return f'the question ask which one is {v} among the two objects.'
+        cot = f'The question ask which one is {v} among the two objects.'
+        self.res.append(cot)
+        return CANT_INFER_RESULT
 
-    def obj_obj_to_logic_str_func(self, idx):
+    def obj_obj_to_logic_str_func(self, idx, arg_res):
         op = self.operations[idx]['operation']
         v = op
-        return f'the question ask if the two objects has {v}.'
+        cot = f'The question ask if the two objects has {v}.'
+        self.res.append(cot)
+        return CANT_INFER_RESULT
 
-    def obj_obj_to_attr_str_func(self, idx):
+    def obj_obj_to_attr_str_func(self, idx, arg_res):
         op = self.operations[idx]['operation']
         assert op == 'common'
-        return f'the question ask the common attribute of the two objects.'
+        cot = f'The question ask the common attribute of the two objects.'
+        self.res.append(cot)
+        return CANT_INFER_RESULT
 
-    def binary_operator_to_str(self, idx):
+    def process_binary_op(self, idx, arg_res):
         assert idx == len(self.operations) - 1  # binary operator always is the last step in function program in gqa.
         assert self.operations[idx]['operation'] in self.binary_operators2strfunc, f"what's this? {self.operations[idx]['operation']}"
-        return self.binary_operators2strfunc[self.operations[idx]['operation']](idx)
+        return self.binary_operators2strfunc[self.operations[idx]['operation']](idx, arg_res)

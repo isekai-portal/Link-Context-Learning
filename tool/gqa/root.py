@@ -1,5 +1,6 @@
 PHRASE_ST_PLACEHOLDER = '<ph_st>'
 PHRASE_ED_PLACEHOLDER = '<ph_ed>'
+CANT_INFER_RESULT = "CAN'T INFER RESULT"
 
 
 def get_box_xyxy(obj):
