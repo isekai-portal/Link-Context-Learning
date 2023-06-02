@@ -1,12 +1,9 @@
-import os
 import sys
-import logging
 import pathlib
+import logging
 import time
-import warnings
 
-import torch
-import torch.cuda
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
 from mllm.config import prepare_args
 from mllm.engine import prepare_trainer_collator
@@ -27,7 +24,7 @@ def main():
     from transformers import CLIPImageProcessor, LlamaTokenizer
     from mllm.dataset.process_function import PlainBoxFormatter
     target_processor = {'boxes': PlainBoxFormatter()}
-    LLAVA_7B_TK_PATH = r'/test/llava_7b_tk'
+    LLAVA_7B_TK_PATH = r'./test/llava_7b_tk'
     tokenizer = LlamaTokenizer.from_pretrained(LLAVA_7B_TK_PATH)
     tokenizer.pad_token_id = tokenizer.unk_token_id
     preprocessor = dict(
@@ -51,9 +48,8 @@ def main():
     from tqdm import tqdm
 
     st = time.time()
-    dl = DataLoader(dataset['train'], batch_size=8,
-
-                    collate_fn=data_collator_dict['train_collator'])
+    print(len(dataset))
+    dl = DataLoader(dataset['train'], batch_size=8, collate_fn=data_collator_dict['train_collator'])
     for i, batch in enumerate(tqdm(dl)):
         pass
     print(f"cost {time.time() - st:.2f} s")
