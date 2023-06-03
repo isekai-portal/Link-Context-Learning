@@ -9,7 +9,7 @@ import datasets
 import transformers
 from mmengine.config import Config, DictAction
 from transformers import HfArgumentParser, Seq2SeqTrainingArguments, set_seed
-from transformers.trainer_utils import get_last_checkpoint
+from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -73,6 +73,7 @@ def prepare_args(args=None):
     transformers.logging.set_verbosity(log_level)
     transformers.logging.enable_default_handler()
     transformers.logging.enable_explicit_format()
+    setup_print_for_distributed(is_main_process(training_args))
 
     # Log on each process the small summary:
     logger.info(f"Training/evaluation parameters {training_args}")
@@ -113,6 +114,21 @@ def check_output_dir(training_args):
                 "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
             )
     return training_args
+
+
+def setup_print_for_distributed(is_master):
+    """
+    This function disables printing when not in master process
+    """
+    import builtins as __builtin__
+    builtin_print = __builtin__.print
+
+    def print(*args, **kwargs):
+        force = kwargs.pop('force', False)
+        if is_master or force:
+            builtin_print(*args, **kwargs)
+
+    __builtin__.print = print
 
 
 if __name__ == "__main__":
