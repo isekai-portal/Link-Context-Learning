@@ -1,5 +1,6 @@
 import json
 import random
+from ..root import IMAGE_PLACEHOLDER
 
 
 class QuestionTemplateMixin:
@@ -19,6 +20,9 @@ class QuestionTemplateMixin:
             self.templates = json.load(open(template_file, 'r', encoding='utf8'))
         if self.max_dynamic_size is not None:
             self.templates = self.templates[: self.max_dynamic_size]
+        # check
+        for template in self.templates:
+            assert IMAGE_PLACEHOLDER in template, f'{template}'
 
     def get_template(self):
         return random.choice(self.templates)
