@@ -2,6 +2,17 @@
 
 [TOC]
 
+# TODOS
+
+- [ ] 检查重构后的数据集行为正确
+- [ ] dataset for GQA
+- [ ] 支持point格式输入输出
+- [ ] dataset for CLEVR
+- [ ] dataset for PointQA
+- [ ] hook: 在train的特定steps时将ckpt复制保存一份。不同于用于crash时恢复的ckpt保存，而是存下来用于评测
+- [x] 日志中保存slurm jobid方便对应slurm日志
+- [x] 抑制非master节点print
+
 ## Datasets
 
 - [ ] ScienceQA
@@ -10,6 +21,7 @@
 - [x] ref_reverse(grounded caption)
 - [x] flickr30k
 - [x] flickr30k_reverse(multi object grounded caption)
+- [ ] pretrain5:
 
 ## Models
 

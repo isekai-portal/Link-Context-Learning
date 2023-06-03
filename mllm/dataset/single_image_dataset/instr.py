@@ -9,7 +9,7 @@ class InstructDataset(MInstrDataset):
 
     def __getitem__(self, index):
         item = self.get_raw_item(index)
-        img_path = item['image']
+        img_path = f"COCO_train2014_{item['image']}"
         conversations = item['conversations']
 
         image = self.get_image(img_path)
