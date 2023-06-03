@@ -8,6 +8,7 @@ from ..conversation import Conversation
 IMAGE_PLACEHOLDER = '<image>'
 BOXES_PLACEHOLDER = '<boxes>'
 EXPR_PLACEHOLDER = '<expr>'
+OBJS_PLACEHOLDER = '<objs>'
 
 # processor
 BOXES_PROCESSOR = Registry('Processor for Boxes')
@@ -55,7 +56,7 @@ class BaseImageProcessFunc:
 
 
 __all__ = [
-    'IMAGE_PLACEHOLDER', 'BOXES_PLACEHOLDER', 'EXPR_PLACEHOLDER',
+    'IMAGE_PLACEHOLDER', 'BOXES_PLACEHOLDER', 'EXPR_PLACEHOLDER', 'OBJS_PLACEHOLDER',
     'FUNCTIONS',
     'DATASETS',
     'TRANSFORMS',

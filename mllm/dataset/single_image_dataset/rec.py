@@ -1,20 +1,14 @@
-import os.path
 import sys
-import json
 import logging
 import warnings
 from typing import Dict, Any, Sequence
 
 import torch
-from tqdm import tqdm
-from torch.utils.data import Dataset
 from torchvision.ops import box_iou
 
 from ..utils import (
-    QuestionTemplateMixin,
+    MInstrDataset,
     BaseComputeMetrics,
-    read_img_general,
-    de_norm_box_xyxy,
 )
 
 from ..process_function import (
@@ -39,34 +33,18 @@ logging.basicConfig(
 
 
 @DATASETS.register_module()
-class RECDataset(QuestionTemplateMixin, Dataset):
-    def __init__(self, *args, filename, image_folder=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.filename = filename
-        self.image_folder = image_folder
-
-        self.data = []
-        with open(filename, 'r', encoding='utf8') as f:
-            for line in tqdm(f, desc='loading annotation file'):
-                item: Dict[str, Any] = json.loads(line)
-                self.data.append(item)
-
-    def __len__(self):
-        return len(self.data)
+class RECDataset(MInstrDataset):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER, EXPR_PLACEHOLDER))
 
     def __getitem__(self, index):
-        item = self.data[index]
-
+        item = self.get_raw_item(index)
         img_path = item['img_path']
         expr = item['expression']
         bbox = item['bbox']
 
-        if self.image_folder is not None:
-            img_path = os.path.join(self.image_folder, img_path)
-        image = read_img_general(img_path)
-        # for some historical reasons, the box in ann_file is normalized
-        bbox = de_norm_box_xyxy(bbox, w=image.width, h=image.height)
-        question = self.get_template().replace(EXPR_PLACEHOLDER, expr) + IMAGE_PLACEHOLDER
+        image = self.get_image(img_path)
+        question = self.get_template().replace(EXPR_PLACEHOLDER, expr)
 
         ret = {
             'image': image,

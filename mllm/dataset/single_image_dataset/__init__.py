@@ -1,6 +1,5 @@
-from .conv import ConvAnnotationDataset
+from .flickr import FlickrParser, FlickrDataset
 from .rec import RECDataset, RECComputeMetrics
-from .reverse_rec import ReverseRECDataset
-from .flickr import FlickrParser, FlickrDataset, FlickrBox2Caption
-from .flickrzz import FlickrZz
-from .complex_event import ComplexEventCaption, ComplexEventREC, ComplexEventGroundCap
+from .reg import REGDataset, VGDataset
+from .caption import CaptionDataset
+from .instr import InstructDataset
