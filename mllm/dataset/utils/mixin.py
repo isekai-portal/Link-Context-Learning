@@ -1,7 +1,5 @@
-import copy
 import json
 import os
-from typing import Dict, Any
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -41,7 +39,7 @@ class QuestionTemplateMixin:
         assert self.placeholders is not None
         for template in self.templates:
             for placeholder in placeholders:
-                assert str(template).count(placeholder) == 1
+                assert str(template).count(placeholder) == 1, f"template: {template}\nplaceholder:{placeholder}"
 
     def get_template(self):
         import random
@@ -63,11 +61,10 @@ class MInstrDataset(QuestionTemplateMixin, Dataset):
         self.data = []
         with open(filename, 'r', encoding='utf8') as f:
             for line in tqdm(f, desc=f'{self.__class__.__name__} loading ann {self.filename}'):
-                item: Dict[str, Any] = json.loads(line)
-                self.data.append(item)
+                self.data.append(line)
 
     def get_raw_item(self, index):
-        return copy.deepcopy(self.data[index])
+        return json.loads(self.data[index])
 
     def get_image(self, image_path):
         if self.image_folder is not None:
@@ -82,7 +79,7 @@ class MInstrDataset(QuestionTemplateMixin, Dataset):
         raise NotImplementedError
 
     def __len__(self):
-        raise len(self.data)
+        return len(self.data)
 
     def __repr__(self) -> str:
         head = "Dataset " + self.__class__.__name__

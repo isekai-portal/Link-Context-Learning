@@ -4,6 +4,8 @@ import logging
 import pathlib
 import warnings
 
+SLURM_ENV = {k: v for k, v in os.environ.items() if 'SLURM' in k}
+print(f"SLURM_ENV: {SLURM_ENV}")
 project_path = pathlib.Path(__file__).parent.parent.parent
 print(f"add project path: `{project_path}` to path to enable import form mllm")
 sys.path.append(str(project_path))

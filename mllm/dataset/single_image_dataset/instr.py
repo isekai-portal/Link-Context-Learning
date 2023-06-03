@@ -5,7 +5,7 @@ from ..utils import MInstrDataset
 @DATASETS.register_module()
 class InstructDataset(MInstrDataset):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, placeholders=())
+        super().__init__(*args, **kwargs, placeholders=(), template_string='', template_file=None)
 
     def __getitem__(self, index):
         item = self.get_raw_item(index)

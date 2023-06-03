@@ -46,5 +46,5 @@ class REGDataset(MInstrDataset):
 
 
 @DATASETS.register_module()
-class VGDataset(REGDataset):
+class GCDataset(REGDataset):
     pass

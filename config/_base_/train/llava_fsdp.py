@@ -29,7 +29,7 @@ training_args = dict(
     # train logging
     logging_steps=10,
     save_strategy='steps',
-    save_steps=1000,
+    save_steps=2000,
     save_total_limit=1,
 
     # eval and predict
@@ -37,4 +37,5 @@ training_args = dict(
     do_predict=False,
     predict_with_generate=True,
     per_device_eval_batch_size=8,
+    dataloader_num_workers=4,
 )

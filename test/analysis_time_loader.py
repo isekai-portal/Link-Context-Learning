@@ -1,8 +1,11 @@
+import os
 import sys
 import pathlib
 import logging
 import time
 
+SLURM_ENV = {k: v for k, v in os.environ.items() if 'SLURM' in k}
+print(f"SLURM_ENV: {SLURM_ENV}")
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
 from mllm.config import prepare_args
@@ -48,8 +51,12 @@ def main():
     from tqdm import tqdm
 
     st = time.time()
-    print(len(dataset))
-    dl = DataLoader(dataset['train'], batch_size=8, collate_fn=data_collator_dict['train_collator'])
+    print(dataset['train'])
+    print(len(dataset['train']))
+    # for item in tqdm(dataset['train']):
+    #     pass
+
+    dl = DataLoader(dataset['train'], batch_size=8, num_workers=4, collate_fn=data_collator_dict['train_collator'])
     for i, batch in enumerate(tqdm(dl)):
         pass
     print(f"cost {time.time() - st:.2f} s")

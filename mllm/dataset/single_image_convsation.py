@@ -209,6 +209,8 @@ class SingleImageConvDatasetMixin:
 
 
 class SingleImageConvDataset(SingleImageConvDatasetMixin, Dataset):
+    _repr_indent = 4
+
     def __init__(self, *args, dataset_generator: Type[Dataset], **kwargs):
         super().__init__(*args, **kwargs)
         self.dataset_generator = dataset_generator
@@ -232,6 +234,15 @@ class SingleImageConvDataset(SingleImageConvDatasetMixin, Dataset):
     def get_raw_item(self, index) -> Dict[str, Any]:
         self.initialize_if_needed()
         return self.dataset[index]
+
+    def __repr__(self) -> str:
+        head = "Dataset " + self.__class__.__name__
+        body = [
+            f"Number of datapoints: {self.__len__()}",
+        ]
+        body += self.dataset.__repr__().splitlines()
+        lines = [head] + [" " * self._repr_indent + line for line in body]
+        return "\n".join(lines)
 
 
 __all__ = ['SingleImageConvDatasetMixin', 'SingleImageConvDataset']
