@@ -65,7 +65,7 @@ class GQA2CoT(Gqa2CoTBinaryMixin, Gqa2CoTUnaryMixin):
             chains = build_chains(self.ann['semantic'])
             # print(chains)
             self.post_order_travel(chains, self.build_chain_str_func)
-        self.add_summary_and_answer_post_process()
+            self.add_summary_and_answer_post_process()
         return " ".join(self.res)
 
     def add_long_answer_cot(self):
@@ -85,6 +85,22 @@ class GQA2CoT(Gqa2CoTBinaryMixin, Gqa2CoTUnaryMixin):
         sent_converted = sent_converted.strip()
         self.res.append(sent_converted)
         self.res.append(f"So the answer is {ann['answer']}.")
+
+    def add_box_to_question(self):
+        ann = self.ann
+        origin_sent = ann['question']
+        sent = list(origin_sent.split())
+        for span, rids_str in ann['annotations']['question'].items():
+            span = tuple(map(int, span.split(':')))
+            if len(span) == 1:
+                span = [span[0], span[0] + 1]
+            sent[span[0]] = f"{PHRASE_ST_PLACEHOLDER}{sent[span[0]]}"
+            sent[span[1] - 1] = f"{sent[span[1] - 1]}{PHRASE_ED_PLACEHOLDER}"
+            # sent[span[0]:span[1]] = [f"{PHRASE_ST_PLACEHOLDER}{' '.join(sent[span[0]:span[1]])}{PHRASE_ED_PLACEHOLDER}"]
+            self.add_boxes_by_rids(rids_str.split(','))
+        sent_converted = " ".join(sent)
+        sent_converted = sent_converted.strip()
+        self.res.append(sent_converted)
 
     def add_short_answer_cot(self):
         ann = self.ann
@@ -114,13 +130,36 @@ class GQA2CoT(Gqa2CoTBinaryMixin, Gqa2CoTUnaryMixin):
 
 
 if __name__ == '__main__':
-    q={'semantic': [{'operation': 'select', 'dependencies': [], 'argument': 'person (1272801)'}, {'operation': 'same', 'dependencies': [0], 'argument': 'gender'}], 'entailed': ['17501270'], 'equivalent': ['17501269'], 'question': 'Are all the people the same gender?', 'imageId': '2387794', 'isBalanced': True, 'groups': {'global': None, 'local': '07same-allpeople'}, 'answer': 'yes', 'semanticStr': 'select: person (1272801)->same: gender [0]', 'annotations': {'answer': {}, 'question': {}, 'fullAnswer': {}}, 'types': {'detailed': 'sameGender', 'semantic': 'attr', 'structural': 'compare'}, 'fullAnswer': 'Yes, all the people are female.'}
-    s={'width': 500, 'objects': {'1272804': {'name': 'water', 'h': 70, 'relations': [{'object': '1272802', 'name': 'near'}, {'object': '1272803', 'name': 'to the right of'}, {'object': '1272801', 'name': 'to the right of'}, {'object': '1272801', 'name': 'near'}], 'w': 95, 'attributes': ['blue', 'deep'], 'y': 147, 'x': 358}, '1272801': {'name': 'girls', 'h': 134, 'relations': [{'object': '1272804', 'name': 'near'}, {'object': '3829949', 'name': 'to the right of'}, {'object': '1272804', 'name': 'to the left of'}], 'w': 138, 'attributes': ['little', 'sitting', 'young', 'smiling', 'happy'], 'y': 164, 'x': 198}, '3829949': {'name': 'basket', 'h': 61, 'relations': [{'object': '1272801', 'name': 'to the left of'}], 'w': 108, 'attributes': ['green'], 'y': 241, 'x': 76}, '1272803': {'name': 'umbrella', 'h': 123, 'relations': [{'object': '1272804', 'name': 'to the left of'}], 'w': 165, 'attributes': ['brown'], 'y': 118, 'x': 135}, '1272802': {'name': 'ground', 'h': 44, 'relations': [{'object': '1272804', 'name': 'near'}], 'w': 498, 'attributes': ['brown', 'rocky', 'muddy', 'dirty'], 'y': 216, 'x': 0}}, 'height': 366}
-    gqa2cot = GQA2CoT(q, s)
-    res = gqa2cot()
-    print(f"****: {gqa2cot.res}")
-    print(q['question'])
-    print(res)
-    print(gqa2cot.boxes_list)
-    print(gqa2cot.boxes_seq)
-    print()
+    import json
+
+    question = json.load(open(r"D:\home\dataset\GQA\questions1.2\train_balanced_questions.json", 'r'))
+    scene = json.load(open(r"D:\home\dataset\GQA\sceneGraphs\train_sceneGraphs.json", 'r'))
+    from tqdm import tqdm
+
+    with open('gqa_balanced_with_cot.jsonl', 'w', encoding='utf8') as g:
+
+        for k, q in tqdm(question.items()):
+            s = scene[q['imageId']]
+            gqa2cot = GQA2CoT(q, s)
+            res = gqa2cot()
+
+            out_dict = {}
+
+            out_dict['cot'] = {
+                'value': res,
+                'boxes': gqa2cot.boxes_list,
+                'seq': gqa2cot.boxes_seq,
+            }
+            out_dict['questionId'] = k
+            for k in [
+                'question',
+                # 'semantic',
+                'semanticStr',
+                'imageId',
+                'annotations',
+                'fullAnswer',
+                'answer'
+            ]:
+                out_dict[k] = q[k]
+            g.write(json.dumps(out_dict))
+            g.write('\n')
