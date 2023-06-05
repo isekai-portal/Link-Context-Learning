@@ -69,7 +69,7 @@ class Gqa2CoTUnaryMixin:
         assert isinstance(rids, (list, tuple))
         assert isinstance(rids[0], (int, str))
         # self.add_boxes_by_rids(rids)
-        # cot = f"Think the {argument} of {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER}."
+        # cot = f"Think the {argument} of {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER}."
         # self.res.append(cot)
         return CANT_INFER_RESULT
 
@@ -95,14 +95,14 @@ class Gqa2CoTUnaryMixin:
             assert len(_a) >= 2
             a = f"{','.join(_a[:-1])} or {_a[-1]}"
             if p == 'o':
-                frids = [rids[0], r[0]]
-                self.add_boxes_by_rids(frids)
-                cot = f"Think {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER} is {a} {PHRASE_ST_PLACEHOLDER} the {n} {PHRASE_ED_PLACEHOLDER}."
+                self.add_boxes_by_rids(rids)
+                self.add_boxes_by_rids(r)
+                cot = f"Think {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER} is {a} {PHRASE_ST_PLACEHOLDER}the {n}{PHRASE_ED_PLACEHOLDER}."
                 self.res.append(cot)
             elif p == 's':
-                frids = [r[0], rids[0]]
-                self.add_boxes_by_rids(frids)
-                cot = f"Think {PHRASE_ST_PLACEHOLDER} the {n} {PHRASE_ED_PLACEHOLDER} is {a} {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER}."
+                self.add_boxes_by_rids(r)
+                self.add_boxes_by_rids(rids)
+                cot = f"Think {PHRASE_ST_PLACEHOLDER}the {n}{PHRASE_ED_PLACEHOLDER} is {a} {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER}."
                 self.res.append(cot)
             else:
                 assert False
@@ -111,7 +111,7 @@ class Gqa2CoTUnaryMixin:
             _a = _v[0].split('|')
             a = f"{','.join(_a[:-1])} or {_a[-1]}"
             self.add_boxes_by_rids(rids)
-            cot = f"Think {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER} is {a}."
+            cot = f"Think {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER} is {a}."
             self.res.append(cot)
         else:
             assert False, f"{_v}, {self.operations}"
@@ -147,25 +147,23 @@ class Gqa2CoTUnaryMixin:
             assert len(r) == 1, f"{_v}"
             if p == 'o':
                 if r[0] == '-':
-                    frids = rids
-                    self.add_boxes_by_rids(frids)
-                    cot = f"Verify if {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER} is {a} the {n}."
+                    self.add_boxes_by_rids(rids)
+                    cot = f"Verify if {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER} is {a} the {n}."
                     self.res.append(cot)
                 else:
-                    frids = [rids[0], r[0]]
-                    self.add_boxes_by_rids(frids)
-                    cot = f"Verify if {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER} is {a} {PHRASE_ST_PLACEHOLDER} the {n} {PHRASE_ED_PLACEHOLDER}."
+                    self.add_boxes_by_rids(rids)
+                    self.add_boxes_by_rids(r)
+                    cot = f"Verify if {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER} is {a} {PHRASE_ST_PLACEHOLDER}the {n}{PHRASE_ED_PLACEHOLDER}."
                     self.res.append(cot)
             elif p == 's':
                 if r[0] == '-':
-                    frids = rids
-                    self.add_boxes_by_rids(frids)
-                    cot = f"Verify if the {n} is {a} {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER}."
+                    self.add_boxes_by_rids(rids)
+                    cot = f"Verify if the {n} is {a} {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER}."
                     self.res.append(cot)
                 else:
-                    frids = [r[0], rids[0]]
-                    self.add_boxes_by_rids(frids)
-                    cot = f"Verify if {PHRASE_ST_PLACEHOLDER} the {n} {PHRASE_ED_PLACEHOLDER} is {a} {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER}."
+                    self.add_boxes_by_rids(r)
+                    self.add_boxes_by_rids(rids)
+                    cot = f"Verify if {PHRASE_ST_PLACEHOLDER}the {n}{PHRASE_ED_PLACEHOLDER} is {a} {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER}."
                     self.res.append(cot)
             else:
                 assert False
@@ -175,9 +173,9 @@ class Gqa2CoTUnaryMixin:
             attr = self.operations[chain[0]]['operation'].replace('verify', '').strip()
             self.add_boxes_by_rids(rids)
             if attr:
-                cot = f"Verify if the {attr} of {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER} is {_a}."
+                cot = f"Verify if the {attr} of {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER} is {_a}."
             else:
-                cot = f"Verify if {PHRASE_ST_PLACEHOLDER} the {_opdn} {PHRASE_ED_PLACEHOLDER} is {_a}."
+                cot = f"Verify if {PHRASE_ST_PLACEHOLDER}the {_opdn}{PHRASE_ED_PLACEHOLDER} is {_a}."
             self.res.append(cot)
         else:
             assert False, f"{_v}, {self.operations}"
@@ -199,27 +197,24 @@ class Gqa2CoTUnaryMixin:
             assert len(r) == 1, f"{_v}"
             if p == 'o':
                 if '-' not in r:
-                    frids = r
-                    self.add_boxes_by_rids(frids)
-                    cot = f"Check the {name_prefix}{n} that it {a}, got {PHRASE_ST_PLACEHOLDER} the {n} {PHRASE_ED_PLACEHOLDER}."
+                    self.add_boxes_by_rids(r)
+                    cot = f"Check the {name_prefix}{n} that it {a}, got {PHRASE_ST_PLACEHOLDER}the {n}{PHRASE_ED_PLACEHOLDER}."
                     self.res.append(cot)
                 else:
                     cot = f"Check the {name_prefix}{n} that it {a}."
                     self.res.append(cot)
             elif p == 's':
                 if '-' not in r:
-                    frids = r
-                    self.add_boxes_by_rids(frids)
-                    cot = f"Check the {name_prefix}{n} {a} it, got {PHRASE_ST_PLACEHOLDER} the {n} {PHRASE_ED_PLACEHOLDER}."
+                    self.add_boxes_by_rids(r)
+                    cot = f"Check the {name_prefix}{n} {a} it, got {PHRASE_ST_PLACEHOLDER}the {n}{PHRASE_ED_PLACEHOLDER}."
                     self.res.append(cot)
                 else:
                     cot = f"Check the {name_prefix}{n} {a} it."
                     self.res.append(cot)
             elif p == '_':
                 if '-' not in r:
-                    frids = r
-                    self.add_boxes_by_rids(frids)
-                    cot = f"Check the {name_prefix}{n} has the {a}, got {PHRASE_ST_PLACEHOLDER} the {n} {PHRASE_ED_PLACEHOLDER}."
+                    self.add_boxes_by_rids(r)
+                    cot = f"Check the {name_prefix}{n} has the {a}, got {PHRASE_ST_PLACEHOLDER}the {n}{PHRASE_ED_PLACEHOLDER}."
                     self.res.append(cot)
                 else:
                     cot = f"Check the {name_prefix}{n} has the {a}."
@@ -244,7 +239,7 @@ class Gqa2CoTUnaryMixin:
             all_filter_text = [self.operations[_]['argument'] for _ in chain[:idx]]
             if len(rids) > 0 and '-' not in rids:
                 self.add_boxes_by_rids(rids)
-                cot = " ".join([f"Find {PHRASE_ST_PLACEHOLDER} the", *all_filter_text, text, f"{PHRASE_ED_PLACEHOLDER}."])
+                cot = " ".join([f"Find {PHRASE_ST_PLACEHOLDER}the", *all_filter_text, text, f"{PHRASE_ED_PLACEHOLDER}."])
                 self.res.append(cot)
             else:
                 cot = " ".join([f"Find the", *all_filter_text, f"{text}."])
