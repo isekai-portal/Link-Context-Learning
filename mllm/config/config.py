@@ -73,7 +73,7 @@ def prepare_args(args=None):
     transformers.logging.set_verbosity(log_level)
     transformers.logging.enable_default_handler()
     transformers.logging.enable_explicit_format()
-    setup_print_for_distributed(is_main_process(training_args))
+    # setup_print_for_distributed(is_main_process(training_args))
 
     # Log on each process the small summary:
     logger.info(f"Training/evaluation parameters {training_args}")
