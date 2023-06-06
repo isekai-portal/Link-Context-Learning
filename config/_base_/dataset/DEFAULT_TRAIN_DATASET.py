@@ -12,6 +12,11 @@ DEFAULT_TRAIN_DATASET = dict(
         filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/REC_ref3_train.jsonl',
         template_file=r'{{fileDirname}}/template/REC.json',
     ),
+    recvg=dict(
+        type='RECDataset',
+        filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/GC_genome196_train.jsonl',
+        template_file=r'{{fileDirname}}/template/REC.json',
+    ),
     reg=dict(
         type='REGDataset',
         filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/REC_ref3_train.jsonl',

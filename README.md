@@ -83,13 +83,18 @@ item = {
             [100, 310, 670, 653],  # man
             [278, 320, 809, 673],  # rope
         ],
+        'points': [
+            [100, 100],  # man1
+            [200, 200],  # man2
+        ]
     },
 
     "conversations": [
         {
             'from': 'human',
-            'value': 'What is the relation between the two dogs <boxes> and the man <boxes> in the image <image> ?',
+            'value': 'What is the relation between the two dogs <boxes> and the man <boxes> in the image <image> ? Is the man<points> shaking hands with the man<points>?',
             'boxes_seq': [[0, 1], [2], ],
+            'points_seq': [[0,], [1,]],
         },
         {
             'from': 'gpt',
@@ -97,6 +102,7 @@ item = {
                      'So the man <boxes> is walking the dog <boxes>.'
                     'And the man <boxes> has no relationship with the right dog <boxes>',
             'boxes_seq': [[3], [0], [2], [2], [0], [2], [1]],
+            'points_seq': None,
         }
     ]
 }
