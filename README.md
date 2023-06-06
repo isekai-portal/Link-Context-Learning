@@ -59,13 +59,19 @@ cp accelerate_config/default_config.yaml ~/.cache/huggingface/accelerate/default
 ```shell
 python -m pip install setuptools==59.2.0
 python -m pip install pip==21.3.1
-python -m pip install -i http://pkg.sensetime.com/repository/pypi-proxy/simple/ --trusted-host pkg.sensetime.com http://10.5.41.14/packages/petrel-oss-sdk.tar.gz --user
+python -m pip install -i http://pkg.sensetime.com/repository/pypi-proxy/simple/ --trusted-host pkg.sensetime.com http://10.5.41.14/packages/petrel-oss-sdk.tar.gz
 ```
 
 测试ceph是否安装成功：
 
 ```shell
 python -c 'from petrel_client.version import version; print(version)'
+```
+
+查看petrel_client安装路径，确保在cache文件系统上
+
+```shell
+python -c 'import petrel_client; print(petrel_client.__file__)'
 ```
 
 ### 数据处理
