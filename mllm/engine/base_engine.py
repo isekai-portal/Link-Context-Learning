@@ -201,6 +201,28 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
         json.dump(ret, open(os.path.join(self.args.output_dir, f'{file_key_prefix}_extra_prediction.json'), 'w', encoding="utf-8"))
         return ret
 
+    # transformers + FSDP + saving model -> cuda OOM for small memory gpu
+    # refer: https://github.com/tatsu-lab/stanford_alpaca/issues/65
+    def save_model(self, output_dir: Optional[str] = None, _internal_call: bool = False):
+        if self.fsdp is not None:
+            if output_dir is None:
+                output_dir = self.args.output_dir
+            from torch.distributed.fsdp import (
+                FullyShardedDataParallel as FSDP,
+                FullStateDictConfig,
+                StateDictType,
+            )
+            save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
+            with FSDP.state_dict_type(self.model, StateDictType.FULL_STATE_DICT, save_policy):
+                cpu_state_dict = self.model.state_dict()
+            if self.args.should_save:
+                self._save(output_dir, state_dict=cpu_state_dict)  # noqa
+            # Push to the Hub when `save_model` is called by the user.
+            if self.args.push_to_hub and not _internal_call:
+                self.push_to_hub(commit_message="Model save")
+        else:
+            super().save_model(output_dir, _internal_call)
+
     def plot_loss(self) -> None:
         if not self.is_world_process_zero():
             return
