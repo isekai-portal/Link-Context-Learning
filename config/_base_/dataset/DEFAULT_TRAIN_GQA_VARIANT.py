@@ -1,7 +1,7 @@
 GQA_TRAIN_COMMON_CFG = dict(
     type='GQADataset',
     filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/gqa_question_balanced_with_cot.jsonl',
-    image_folder=r'',
+    image_folder=r'zz1424:s3://publicdataset_11/GQA/unzip/images',
     scene_graph_file=r"/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/gqa_scene_graph_data.jsonl",
     scene_graph_index=r"/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/gqa_scene_graph_index.json",
 )
