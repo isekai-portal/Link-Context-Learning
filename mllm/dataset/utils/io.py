@@ -28,13 +28,7 @@ client = None
 
 
 def read_img_ceph(img_path):
-    global client
-    if client is None:
-        st = time.time()
-        from petrel_client.client import Client  # noqa
-        client = Client(enable_mc=True)
-        ed = time.time()
-        logger.info(f"initialize client cost {ed - st:.2f} s")
+    init_ceph_client_if_needed()
     img_bytes = client.get(img_path)
     assert img_bytes is not None, f"Please check image at {img_path}"
     img_mem_view = memoryview(img_bytes)
@@ -42,3 +36,14 @@ def read_img_ceph(img_path):
     # noinspection PyUnresolvedReferences
     img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
     return img
+
+
+def init_ceph_client_if_needed():
+    global client
+    if client is None:
+        logger.info(f"initializing ceph client ...")
+        st = time.time()
+        from petrel_client.client import Client  # noqa
+        client = Client(enable_mc=True)
+        ed = time.time()
+        logger.info(f"initialize client cost {ed - st:.2f} s")

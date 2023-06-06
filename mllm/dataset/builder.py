@@ -7,6 +7,7 @@ from transformers import EvalPrediction, TrainingArguments
 from .root import DATASETS, METRICS, TRANSFORMS, FUNCTIONS
 from .single_image_convsation import SingleImageConvDataset
 from ..conversation import get_conv_template
+from .utils import init_ceph_client_if_needed
 
 DatasetDict = Dict[str, Dataset]
 ComputeMetrics = Callable[[EvalPrediction], Dict]
@@ -60,4 +61,9 @@ def prepare_data(
         'test': conv_dataset_cls(dataset_generator=datasets['test'], mode='test') if datasets['test'] is not None else None,
     }
 
+    # in default, ceph client do init at the beginning of program.
+    #  importantly, before dataloader worker fork.
+    lazy_init = data_args.get('lazy_init', False)
+    if not lazy_init:
+        init_ceph_client_if_needed()
     return ds, compute_metrics
