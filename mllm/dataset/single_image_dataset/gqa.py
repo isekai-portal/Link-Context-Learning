@@ -6,7 +6,7 @@ from ..utils.flickr30k_entities_utils import PHRASE_ST_PLACEHOLDER, PHRASE_ED_PL
 from ..utils import MInstrDataset, BaseComputeMetrics
 
 REFID_PAT = re.compile(r'(\s\((?:(?:\d+(?:,\d+)*)|-)\)\s?)')
-ANS_EXTRACT_PAT = re.compile(r'(?:So the answer is (.+?)\.)|(?:The answer is (.+?)\.)')
+ANS_EXTRACT_PAT = re.compile(r'(?:(?:(?:So t)|(?:T))he answer is (.+?)\.)')
 
 
 @DATASETS.register_module()
@@ -196,7 +196,9 @@ def get_bss_example(question, scene):
 class GQAComputeMetrics(BaseComputeMetrics):
     def extract_ans(self, string: str):
         try:
-            found = ANS_EXTRACT_PAT.match(string).group(1)
-            return found.strip()
+            found = ANS_EXTRACT_PAT.findall(string.strip())
+            if len(found) != 1:
+                return None
+            return found[0].strip()
         except (IndexError, AttributeError):
             return None
