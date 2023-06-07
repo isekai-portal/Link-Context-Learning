@@ -1,4 +1,8 @@
-_base_ = ['DEFAULT_TRAIN_GQA_VARIANT.py', 'DEFAULT_TRAIN_POINT_VARIANT.py']
+_base_ = [
+    'DEFAULT_TRAIN_GQA_VARIANT.py',
+    'DEFAULT_TRAIN_CLEVR_VARIANT.py',
+    'DEFAULT_TRAIN_POINT_VARIANT.py',
+]
 
 DEFAULT_TRAIN_DATASET = dict(
     flickr=dict(
@@ -38,5 +42,6 @@ DEFAULT_TRAIN_DATASET = dict(
         image_folder=r'zz1424:s3://PublicDatalist/public_datalist_6_unzip/train2014',
     ),
     **_base_.DEFAULT_TRAIN_GQA_VARIANT,
+    **_base_.DEFAULT_TRAIN_CLEVR_VARIANT,
     **_base_.DEFAULT_TRAIN_POINT_VARIANT,
 )

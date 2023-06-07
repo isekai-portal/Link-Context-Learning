@@ -10,6 +10,9 @@
 - [x] ref_reverse(grounded caption)
 - [x] flickr30k
 - [x] flickr30k_reverse(multi object grounded caption)
+- [x] point3(point-local, point-twice, point-v7w)
+- [x] gqa
+- [x] clevr
 
 ## Models
 
