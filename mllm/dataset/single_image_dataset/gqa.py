@@ -50,7 +50,7 @@ class GQADataset(MInstrDataset):
             answer_boxes_seq = question['cot']['seq']
         elif self.atype == 'c':
             boxes = []
-            answer = question['cot']['value'].replace(PHRASE_ST_PLACEHOLDER, "").replace(PHRASE_ED_PLACEHOLDER, BOXES_PLACEHOLDER)
+            answer = question['cot']['value'].replace(PHRASE_ST_PLACEHOLDER, "").replace(PHRASE_ED_PLACEHOLDER, "")
             answer_boxes_seq = []
         elif self.atype == 'bs':
             boxes, answer, answer_boxes_seq = get_bss_example(question, scene)
