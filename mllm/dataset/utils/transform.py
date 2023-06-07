@@ -26,6 +26,7 @@ def box_xywh_to_xyxy(box, *, w=None, h=None):
     box = x, y, x2, y2
     return box
 
+
 def norm_box_xyxy(box, *, w, h):
     x1, y1, x2, y2 = box
 
@@ -38,6 +39,14 @@ def norm_box_xyxy(box, *, w, h):
     # Return the normalized box coordinates
     normalized_box = (round(norm_x1, 3), round(norm_y1, 3), round(norm_x2, 3), round(norm_y2, 3))
     return normalized_box
+
+
+def norm_point_xyxy(point, *, w, h):
+    x, y = point
+    norm_x = max(0.0, min(x / w, 1.0))
+    norm_y = max(0.0, min(y / h, 1.0))
+    point = norm_x, norm_y
+    return point
 
 
 def expand2square(pil_img, background_color=(255, 255, 255)):
@@ -71,6 +80,13 @@ def box_xyxy_expand2square(box, *, w, h):
     return box
 
 
+def point_xy_expand2square(point, *, w, h):
+    pseudo_box = (point[0], point[1], point[0], point[1])
+    expanded_box = box_xyxy_expand2square(box=pseudo_box, w=w, h=h)
+    expanded_point = (expanded_box[0], expanded_box[1])
+    return expanded_point
+
+
 @TRANSFORMS.register_module()
 class Expand2square:
     def __init__(self, background_color=(255, 255, 255)):
@@ -84,4 +100,7 @@ class Expand2square:
         if 'boxes' in labels:
             bboxes = [box_xyxy_expand2square(bbox, w=width, h=height) for bbox in labels['boxes']]
             labels['boxes'] = bboxes
+        if 'points' in labels:
+            points = [point_xy_expand2square(point, w=width, h=height) for point in labels['points']]
+            labels['points'] = points
         return processed_image, labels

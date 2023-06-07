@@ -55,12 +55,12 @@ class ClevrDataset(MInstrDataset):
                 {
                     'from': 'human',
                     'value': final_query,
-                    'boxes_seq': query_boxes_seq,
+                    'points_seq': query_boxes_seq,
                 },
                 {
                     'from': 'gpt',
                     'value': answer,
-                    'boxes_seq': answer_boxes_seq,
+                    'points_seq': answer_boxes_seq,
                 }
             ]
         }

@@ -3,13 +3,14 @@ import sys
 import logging
 from typing import List, Dict, Any, Tuple, Union
 
-from ..utils.transform import norm_box_xyxy
+from ..utils.transform import norm_box_xyxy, norm_point_xyxy
 
 from ..root import (
     FUNCTIONS,
     BaseTargetProcessFunc,
     BOXES_PLACEHOLDER,
     BOXES_PROCESSOR,
+    POINTS_PLACEHOLDER,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,28 +39,41 @@ class BoxFormatProcess(BaseTargetProcessFunc):
                 normalized_boxes.append(
                     norm_box_xyxy(box, w=target['width'], h=target['height'])
                 )
+        normalized_points = []
+        if target is not None and 'points' in target:
+            for point in target['points']:
+                normalized_points.append(
+                    norm_point_xyxy(point, w=target['width'], h=target['height'])
+                )
 
         # convert bboxes_seq
         for sentence in raw_conv:
             words: str = sentence['value']
             boxes_seq: List[List[int]] = sentence.get('boxes_seq', None)
-            if boxes_seq is None:
-                continue
-            # map box seq
-            boxes_seq: List[Boxes] = map_box(normalized_boxes, boxes_seq)
-            # reformat; replace <boxes> placeholder
-            converted = box_formatter(words, boxes_seq)
-            sentence['raw_value'] = sentence['value']
-            sentence['value'] = converted
-
+            if boxes_seq is not None:
+                # map box seq
+                boxes_seq: List[Boxes] = map_obj(normalized_boxes, boxes_seq)
+                # reformat; replace <boxes> placeholder
+                converted = box_formatter(words, boxes_seq)
+                words = converted
+            points_seq: List[List[int]] = sentence.get('points_seq', None)
+            if points_seq is not None:
+                # map point seq
+                points_seq: List[Boxes] = map_obj(normalized_points, points_seq)
+                # reformat; replace <points> placeholder
+                converted = box_formatter.call_on_point(words, points_seq)
+                words = converted
+            if boxes_seq is not None or points_seq is not None:
+                sentence['raw_value'] = sentence['value']
+                sentence['value'] = words
         return raw_conv, target
 
 
-def map_box(boxes_value: List[List[float]], boxes_seq: List[List[int]]) -> List[List[List[float]]]:
+def map_obj(boxes_value: List[List[float]], boxes_seq: List[List[int]]) -> List[List[List[float]]]:
     """
     >>> normalized_boxes = [[0.1, 0.1, 0.1, 0.1], [0.2, 0.2, 0.2, 0.2], [0.3, 0.3, 0.3, 0.3]]
     >>> boxes_seq_ = [[3, 1], [2]]
-    >>> var = map_box(normalized_boxes, boxes_seq_)
+    >>> var = map_obj(normalized_boxes, boxes_seq_)
     >>> assert var == [[[0.3,0.3,0.3,0.3], [0.1,0.1,0.1,0.1]], [0.2,0.2,0.2,0.2]]
     """
     ret = []
@@ -72,8 +86,9 @@ def map_box(boxes_value: List[List[float]], boxes_seq: List[List[int]]) -> List[
 
 
 class BoxFormatter:
-    def __init__(self, bboxes_token=BOXES_PLACEHOLDER, bboxes_token_pat=None):
+    def __init__(self, bboxes_token=BOXES_PLACEHOLDER, points_token=POINTS_PLACEHOLDER, bboxes_token_pat=None):
         self.bboxes_token = bboxes_token
+        self.points_token = points_token
         # normally the bboxes_token_pat is the same as bboxes_token if u not use some weird token
         if bboxes_token_pat is None:
             bboxes_token_pat = bboxes_token
@@ -88,10 +103,25 @@ class BoxFormatter:
         converted = sentence.replace(self.bboxes_token, '{}').format(*bboxes_strs)
         return converted
 
+    def call_on_point(self, sentence: str, points_seq: BoxesSeq) -> str:
+        all_box = self.bboxes_token_pat.findall(sentence)
+        assert len(all_box) == len(points_seq), f"not match. sentence: {sentence}. boxes:{points_seq}"
+        if len(all_box) == 0:
+            return sentence
+        bboxes_strs = [self.format_point(bboxes) for bboxes in points_seq]
+        converted = sentence.replace(self.points_token, '{}').format(*bboxes_strs)
+        return converted
+
+    def format_point(self, points) -> str:
+        raise NotImplementedError
+
     def format_box(self, bboxes: Boxes) -> str:
         raise NotImplementedError
 
     def extract(self, string: str) -> List[Boxes]:
+        raise NotImplementedError
+
+    def extract_point(self, string: str) -> List[Boxes]:
         raise NotImplementedError
 
 
@@ -102,6 +132,7 @@ class PlainBoxFormatter(BoxFormatter):
         super().__init__(*args, **kwargs)
         self.precision = precision
         self.pat = re.compile(r'\(\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3}(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3})*\)')
+        self.point_pat = re.compile(r'\(\d(?:\.\d*)?(?:,\d(?:\.\d*)?)(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?))*\)')
 
     def format_box(self, boxes: Boxes) -> str:
         box_strs = []
@@ -110,10 +141,25 @@ class PlainBoxFormatter(BoxFormatter):
         box_str = ';'.join(box_strs)
         return "(" + box_str + ")"
 
+    def format_point(self, points) -> str:
+        return self.format_box(points)
+
     def extract(self, string: str) -> List[Boxes]:
         """ balabala<boxes>balabala<boxes> -> [boxes, boxes] """
         ret = []
         for bboxes_str in self.pat.findall(string):
+            bboxes = []
+            bbox_strs = bboxes_str.replace("(", "").replace(")", "").split(";")
+            for bbox_str in bbox_strs:
+                bbox = list(map(float, bbox_str.split(',')))
+                bboxes.append(bbox)
+            ret.append(bboxes)
+        return ret
+
+    def extract_point(self, string: str) -> List[Boxes]:
+        """ balabala<boxes>balabala<boxes> -> [boxes, boxes] """
+        ret = []
+        for bboxes_str in self.point_pat.findall(string):
             bboxes = []
             bbox_strs = bboxes_str.replace("(", "").replace(")", "").split(";")
             for bbox_str in bbox_strs:
