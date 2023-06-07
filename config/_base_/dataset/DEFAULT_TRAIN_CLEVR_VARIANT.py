@@ -1,3 +1,4 @@
+# TODO: add image_folder
 CLEVR_TRAIN_COMMON_CFG = dict(
     type='ClevrDataset',
     filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/CLEVR_train_questions_with_ans.jsonl',

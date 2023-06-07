@@ -1,3 +1,4 @@
+# TODO: add test path
 CLEVR_TEST_COMMON_CFG = dict(
     type='ClevrDataset',
     filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/CLEVR_val_questions_with_ans.jsonl',
