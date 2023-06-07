@@ -30,11 +30,18 @@ class GQADataset(MInstrDataset):
         self.qtype = qtype
         self.atype = atype
 
-        self.scene_graph = [line for line in open(scene_graph_file, 'r', encoding='utf8')]
-        self.scene_index = json.load(open(scene_graph_index, 'r', encoding='utf8'))
+        assert bool(scene_graph_file) == bool(scene_graph_index)
+        if scene_graph_file is not None and scene_graph_index is not None:
+            self.scene_graph = [line for line in open(scene_graph_file, 'r', encoding='utf8')]
+            self.scene_index = json.load(open(scene_graph_index, 'r', encoding='utf8'))
+        else:
+            self.scene_graph = None
+            self.scene_index = None
 
     def get_raw_item(self, index):
         question = json.loads(self.data[index])
+        if self.scene_graph is None:
+            return question, None
         scene = json.loads(self.scene_graph[self.scene_index[question['imageId']]])
         return question, scene
 
