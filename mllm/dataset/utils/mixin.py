@@ -60,7 +60,8 @@ class MInstrDataset(QuestionTemplateMixin, Dataset):
 
         self.data = []
         with open(filename, 'r', encoding='utf8') as f:
-            for line in tqdm(f, desc=f'{self.__class__.__name__} loading ann {self.filename}'):
+            # for line in tqdm(f, desc=f'{self.__class__.__name__} loading ann {self.filename}'):
+            for line in tqdm(f):
                 self.data.append(line)
 
     def get_raw_item(self, index):
