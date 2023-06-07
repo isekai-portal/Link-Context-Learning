@@ -1,6 +1,6 @@
 import json
 
-from ..root import DATASETS, IMAGE_PLACEHOLDER, QUESTION_PLACEHOLDER
+from ..root import DATASETS, IMAGE_PLACEHOLDER, QUESTION_PLACEHOLDER, POINTS_PLACEHOLDER
 from ..utils import MInstrDataset
 
 
@@ -16,7 +16,10 @@ class ClevrDataset(MInstrDataset):
         self.qtype = qtype
         self.atype = atype
 
-        self.scene_graph = [line for line in open(scene_graph_file, 'r', encoding='utf8')]
+        if scene_graph_file is None:
+            self.scene_graph = None
+        else:
+            self.scene_graph = [line for line in open(scene_graph_file, 'r', encoding='utf8')]
 
     def get_raw_item(self, index):
         question = json.loads(self.data[index])
@@ -47,7 +50,7 @@ class ClevrDataset(MInstrDataset):
 
         ret = {
             'image': image,
-            'target': {'boxes': boxes},
+            'target': {'points': boxes},
             'conversations': [
                 {
                     'from': 'human',
@@ -86,7 +89,7 @@ def clevr_ss_cot(obj, scene, add_ref=False):
         inputs = f"[{','.join(map(str, p['inputs']))}]" if p['inputs'] else ""
         if add_ref and p['function'] in ['unique', 'intersect', 'relate', 'same_size', 'same_shape', 'same_material', 'same_color']:
             if p['ans']:
-                objs = f"<boxes>"
+                objs = POINTS_PLACEHOLDER
                 idx = get_boxes_idx(boxes_list=boxes, refs=[scene['objects'][_]['pixel_coords'][:2] for _ in p['ans']])
                 seq.append(idx)
             else:
