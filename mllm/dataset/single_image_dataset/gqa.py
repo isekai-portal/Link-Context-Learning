@@ -1,11 +1,12 @@
 import json
 import re
 
-from ..root import DATASETS, IMAGE_PLACEHOLDER, BOXES_PLACEHOLDER, QUESTION_PLACEHOLDER
+from ..root import DATASETS, IMAGE_PLACEHOLDER, BOXES_PLACEHOLDER, QUESTION_PLACEHOLDER, METRICS
 from ..utils.flickr30k_entities_utils import PHRASE_ST_PLACEHOLDER, PHRASE_ED_PLACEHOLDER
-from ..utils import MInstrDataset
+from ..utils import MInstrDataset, BaseComputeMetrics
 
 REFID_PAT = re.compile(r'(\s\((?:(?:\d+(?:,\d+)*)|-)\)\s?)')
+ANS_EXTRACT_PAT = re.compile(r'(?:So the answer is (.+?)\.)|(?:The answer is (.+?)\.)')
 
 
 @DATASETS.register_module()
@@ -60,7 +61,8 @@ class GQADataset(MInstrDataset):
             answer = question['cot']['value'].replace(PHRASE_ST_PLACEHOLDER, "").replace(PHRASE_ED_PLACEHOLDER, "")
             answer_boxes_seq = []
         elif self.atype == 'bs':
-            boxes, answer, answer_boxes_seq = get_bss_example(question, scene)
+            boxes, bss, answer_boxes_seq = get_bss_example(question, scene)
+            answer = f"{bss}. The answer is {question['answer']}."
         elif self.atype == 's':
             boxes = []
             ss = REFID_PAT.sub('', question['semanticStr'])
@@ -188,3 +190,13 @@ def get_bss_example(question, scene):
     print(boxes)
     print(seqs)
     return boxes, answer, seqs
+
+
+@METRICS.register_module()
+class GQAComputeMetrics(BaseComputeMetrics):
+    def extract_ans(self, string: str):
+        try:
+            found = ANS_EXTRACT_PAT.match(string).group(1)
+            return found.strip()
+        except (IndexError, AttributeError):
+            return None

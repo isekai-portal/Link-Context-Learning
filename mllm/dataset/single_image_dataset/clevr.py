@@ -41,6 +41,9 @@ class ClevrDataset(MInstrDataset):
 
         if self.qtype == 'q':
             query_boxes_seq = []
+            final_query = self.get_template().replace(QUESTION_PLACEHOLDER, question['question'])
+        else:
+            assert False
 
         ret = {
             'image': image,
