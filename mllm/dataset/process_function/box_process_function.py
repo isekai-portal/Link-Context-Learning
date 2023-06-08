@@ -169,6 +169,65 @@ class PlainBoxFormatter(BoxFormatter):
         return ret
 
 
+class TokenFormatter(BoxFormatter):
+
+    def __init__(self, use_sep=True, use_begin_end=True):
+        super().__init__()
+        self.token_fstr = "<bin{}>"
+        self.use_sep = use_sep
+        self.use_begin_end = use_begin_end
+
+        self.box_sep = '<b_sep>'
+        self.box_begin = '<b_st>'
+        self.box_end = '<b_ed>'
+
+        self.point_sep = '<p_sep>'
+        self.point_begin = '<b_st>'
+        self.point_end = '<b_ed>'
+
+    def format_point(self, points) -> str:
+        final_str = []
+        for bbox in points:
+            bbox_str = []
+            for elem in bbox:
+                elem = int(elem * 1000)
+                elem_str = self.token_fstr.format(elem)
+                bbox_str.append(elem_str)
+            bbox_str = ''.join(bbox_str)
+            final_str.append(bbox_str)
+        if self.use_sep:
+            final_str = self.point_sep.join(final_str)
+        else:
+            final_str = ''.join(final_str)
+        if self.use_begin_end:
+            final_str = self.point_begin + final_str + self.point_end
+        return final_str
+
+    def format_box(self, bboxes: Boxes) -> str:
+        final_str = []
+        for bbox in bboxes:
+            bbox_str = []
+            for elem in bbox:
+                elem = int(elem * 1000)
+                elem_str = self.token_fstr.format(elem)
+                bbox_str.append(elem_str)
+            bbox_str = ''.join(bbox_str)
+            final_str.append(bbox_str)
+        if self.use_sep:
+            final_str = self.box_sep.join(final_str)
+        else:
+            final_str = ''.join(final_str)
+        if self.use_begin_end:
+            final_str = self.box_begin + final_str + self.box_end
+        return final_str
+
+    def extract(self, string: str) -> List[Boxes]:
+        pass
+
+    def extract_point(self, string: str) -> List[Boxes]:
+        pass
+
+
 # FIXME: merge into load_pretrained
 def smart_prepare_target_processor(
         model,  # multimodal llm
