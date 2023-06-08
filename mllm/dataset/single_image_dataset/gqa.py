@@ -27,7 +27,7 @@ class GQADataset(MInstrDataset):
         self.question_box_prob = question_box_prob
         qtype, atype = version.split('-')
         assert qtype in ['q', 'qb', 'qbp']
-        assert atype in ['a', 'c', 'bc', 's', 'bs']
+        assert atype in ['a', 'c', 'bc', 's', 'bs', 'l', 'bl']
         self.qtype = qtype
         self.atype = atype
 
@@ -67,6 +67,13 @@ class GQADataset(MInstrDataset):
             boxes = []
             ss = REFID_PAT.sub('', question['semanticStr'])
             answer = f"{ss}. The answer is {question['answer']}."
+            answer_boxes_seq = []
+        elif self.atype == 'bl':
+            boxes, answer, answer_boxes_seq = get_bl_example(question, scene)
+        elif self.atype == 'l':
+            boxes = []
+            _, answer, _ = get_bl_example(question, scene)
+            answer = answer.replace(BOXES_PLACEHOLDER, "")
             answer_boxes_seq = []
         elif self.atype == 'a':
             boxes = []
@@ -146,7 +153,7 @@ def prepare_query_box(boxes_list, q, scene):
     return boxes_list, sent_converted, query_boxes_seq
 
 
-def get_bss_example(question, scene):
+def add_boxes_by_rids(boxes_list, rids, scene):
     def get_boxes_idx(boxes_list, box):
         if box in boxes_list:
             return boxes_list.index(box)
@@ -154,18 +161,19 @@ def get_bss_example(question, scene):
             boxes_list.append(box)
             return len(boxes_list) - 1
 
-    def add_boxes_by_rids(boxes_list, rids, scene):
-        def get_box_xyxy(obj):
-            x, y, w, h = obj['x'], obj['y'], obj['w'], obj['h']
-            return x, y, x + w, y + h
+    def get_box_xyxy(obj):
+        x, y, w, h = obj['x'], obj['y'], obj['w'], obj['h']
+        return x, y, x + w, y + h
 
-        boxes_idx = []
-        for rid in rids:
-            ref = scene['objects'][rid]
-            ref_box = list(get_box_xyxy(ref))
-            boxes_idx.append(get_boxes_idx(boxes_list, ref_box))
-        return boxes_idx
+    boxes_idx = []
+    for rid in rids:
+        ref = scene['objects'][rid]
+        ref_box = list(get_box_xyxy(ref))
+        boxes_idx.append(get_boxes_idx(boxes_list, ref_box))
+    return boxes_idx
 
+
+def get_bss_example(question, scene):
     def format_refids(item):
         item = item.strip()[1:-1]
         return item.split(',')
@@ -190,6 +198,27 @@ def get_bss_example(question, scene):
     print(boxes)
     print(seqs)
     return boxes, answer, seqs
+
+
+def get_bl_example(ann, scene):
+    boxes = []
+    boxes_seq = []
+
+    origin_sent = ann['fullAnswer']
+    origin_sent = re.sub('(?:^Yes,)|(?:^No,)', '', origin_sent).strip()
+    sent = list(origin_sent.split())
+    for span, rids_str in ann['annotations']['fullAnswer'].items():
+        span = tuple(map(int, span.split(':')))
+        if len(span) == 1:
+            span = [span[0], span[0] + 1]
+        sent[span[1] - 1] = f"{sent[span[1] - 1]}{BOXES_PLACEHOLDER}"
+        rids = rids_str.split(',')
+        boxes_idx = add_boxes_by_rids(boxes, rids, scene)
+        boxes_seq.append(boxes_idx)
+
+    answer = "".join(sent)
+    answer += f"The answer is {ann['answer']}."
+    return boxes, answer, boxes_seq
 
 
 @METRICS.register_module()
