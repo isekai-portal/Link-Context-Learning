@@ -31,7 +31,7 @@ data_args = dict(
 
     # generate config
     gen_kwargs=dict(
-        max_new_tokens=256,
+        max_new_tokens=1024,
         num_beams=1,
     ),
 )
