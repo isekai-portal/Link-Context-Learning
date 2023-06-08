@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import pathlib
+import typing
 import warnings
 
 SLURM_ENV = {k: v for k, v in os.environ.items() if 'SLURM' in k}
@@ -109,6 +110,24 @@ def main():
         trainer.log_metrics("test", predict_results.metrics)  # noqa
         trainer.save_metrics("test", predict_results.metrics)  # noqa
         trainer.save_prediction(predict_results, file_key_prefix='test')
+
+    # Multi Predict
+    if training_args.do_multi_predict:
+        old_compute_metrics = trainer.compute_metrics
+        multitest = dataset['multitest']
+        multitest = typing.cast(dict, multitest)
+        for _idx, (k, item) in enumerate(multitest.items()):
+            print(f'processing multitest set {_idx}/{len(multitest)}: {k}')
+            _ds = item['dataset']
+            _compute_metrics = item['compute_metric']
+            _prefix = f"multitest_{k}"
+
+            trainer.compute_metrics = _compute_metrics
+            _pred_results = trainer.predict(_ds, metric_key_prefix=_prefix, **gen_kwargs)
+            trainer.log_metrics(_prefix, _pred_results.metrics)  # noqa
+            trainer.save_metrics(_prefix, _pred_results.metrics)  # noqa
+            trainer.save_prediction(_pred_results, file_key_prefix=_prefix)
+        trainer.compute_metrics = old_compute_metrics
 
 
 # noinspection PyUnusedLocal

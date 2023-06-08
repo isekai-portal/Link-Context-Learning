@@ -2,13 +2,15 @@ import os
 import sys
 import logging
 import argparse
+from dataclasses import dataclass, field
 from typing import List, Tuple
 from argparse import SUPPRESS
 
 import datasets
 import transformers
 from mmengine.config import Config, DictAction
-from transformers import HfArgumentParser, Seq2SeqTrainingArguments, set_seed
+from transformers import HfArgumentParser, set_seed, add_start_docstrings
+from transformers import Seq2SeqTrainingArguments as HFSeq2SeqTrainingArguments
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 
 logger = logging.getLogger(__name__)
@@ -18,6 +20,12 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout), ],
 )
+
+
+@dataclass
+@add_start_docstrings(HFSeq2SeqTrainingArguments.__doc__)
+class Seq2SeqTrainingArguments(HFSeq2SeqTrainingArguments):
+    do_multi_predict: bool = field(default=False, metadata={"help": "Whether to run predictions on the multi-test set."})
 
 
 def prepare_args(args=None):
