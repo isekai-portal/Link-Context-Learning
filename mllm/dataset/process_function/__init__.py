@@ -14,5 +14,6 @@ from .box_process_function import (
     BoxFormatProcess,
     BoxFormatter,
     PlainBoxFormatter,
+    TokenFormatter,
     smart_prepare_target_processor,
 )

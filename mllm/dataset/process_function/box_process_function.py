@@ -13,6 +13,8 @@ from ..root import (
     POINTS_PLACEHOLDER,
 )
 
+from ...utils import smart_tokenizer_and_embedding_resize
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logging.basicConfig(
@@ -128,18 +130,28 @@ class BoxFormatter:
 @BOXES_PROCESSOR.register_module()
 class PlainBoxFormatter(BoxFormatter):
 
-    def __init__(self, *args, precision=3, **kwargs):
+    def __init__(self, *args, precision=3, use_small_brackets=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.precision = precision
-        self.pat = re.compile(r'\(\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3}(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3})*\)')
-        self.point_pat = re.compile(r'\(\d(?:\.\d*)?(?:,\d(?:\.\d*)?)(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?))*\)')
+        self.use_small_brackets = use_small_brackets
+
+        small_brackets_pat = re.compile(r'\(\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3}(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3})*\)')
+        small_brackets_point_pat = re.compile(r'\(\d(?:\.\d*)?(?:,\d(?:\.\d*)?)(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?))*\)')
+
+        middle_brackets_pat = re.compile(r'\[\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3}(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3})*\]')
+        middle_brackets_point_pat = re.compile(r'\[\d(?:\.\d*)?(?:,\d(?:\.\d*)?)(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?))*\]')
+
+        self.pat = small_brackets_pat if use_small_brackets else middle_brackets_pat
+        self.point_pat = small_brackets_point_pat if use_small_brackets else middle_brackets_point_pat
 
     def format_box(self, boxes: Boxes) -> str:
         box_strs = []
         for box in boxes:
             box_strs.append(','.join([f"{elem:.{self.precision}f}" for elem in box]))
         box_str = ';'.join(box_strs)
-        return "(" + box_str + ")"
+        if self.use_small_brackets:
+            return "(" + box_str + ")"
+        return "[" + box_str + "]"
 
     def format_point(self, points) -> str:
         return self.format_box(points)
@@ -149,7 +161,7 @@ class PlainBoxFormatter(BoxFormatter):
         ret = []
         for bboxes_str in self.pat.findall(string):
             bboxes = []
-            bbox_strs = bboxes_str.replace("(", "").replace(")", "").split(";")
+            bbox_strs = bboxes_str.replace("(", "").replace(")", "").replace("[", "").replace("]", "").split(";")
             for bbox_str in bbox_strs:
                 bbox = list(map(float, bbox_str.split(',')))
                 bboxes.append(bbox)
@@ -161,7 +173,7 @@ class PlainBoxFormatter(BoxFormatter):
         ret = []
         for bboxes_str in self.point_pat.findall(string):
             bboxes = []
-            bbox_strs = bboxes_str.replace("(", "").replace(")", "").split(";")
+            bbox_strs = bboxes_str.replace("(", "").replace(")", "").replace("[", "").replace("]", "").split(";")
             for bbox_str in bbox_strs:
                 bbox = list(map(float, bbox_str.split(',')))
                 bboxes.append(bbox)
@@ -171,30 +183,29 @@ class PlainBoxFormatter(BoxFormatter):
 
 class TokenFormatter(BoxFormatter):
 
-    def __init__(self, use_sep=True, use_begin_end=True):
+    def __init__(self, num_bins=1001):
         super().__init__()
-        self.token_fstr = "<bin{}>"
-        self.use_sep = use_sep
-        self.use_begin_end = use_begin_end
+        self.extract_box_pat = re.compile(r'<b_st><bin_\d*?>(?:<bin_\d*?>){3}(?:<b_sep><bin_\d*?>(?:<bin_\d*?>){3})*<b_ed>')
+        self.extract_point_pat = re.compile(r'<p_st><bin_\d*?>(?:<bin_\d*?>){1}(?:<p_sep><bin_\d*?>(?:<bin_\d*?>){1})*<p_ed>')
+        self.num_bins = num_bins
+        self.use_sep = True
+        self.use_begin_end = True
 
-        self.box_sep = '<b_sep>'
         self.box_begin = '<b_st>'
+        self.box_sep = '<b_sep>'
         self.box_end = '<b_ed>'
 
+        self.point_begin = '<p_st>'
         self.point_sep = '<p_sep>'
-        self.point_begin = '<b_st>'
-        self.point_end = '<b_ed>'
+        self.point_end = '<p_ed>'
 
     def format_point(self, points) -> str:
         final_str = []
         for bbox in points:
-            bbox_str = []
-            for elem in bbox:
-                elem = int(elem * 1000)
-                elem_str = self.token_fstr.format(elem)
-                bbox_str.append(elem_str)
-            bbox_str = ''.join(bbox_str)
-            final_str.append(bbox_str)
+            quant_x0 = "<bin_{}>".format(int((bbox[0] * (self.num_bins - 1)).round()))
+            quant_y0 = "<bin_{}>".format(int((bbox[1] * (self.num_bins - 1)).round()))
+            region_coord = "{} {}".format(quant_x0, quant_y0)
+            final_str.append(region_coord)
         if self.use_sep:
             final_str = self.point_sep.join(final_str)
         else:
@@ -206,13 +217,12 @@ class TokenFormatter(BoxFormatter):
     def format_box(self, bboxes: Boxes) -> str:
         final_str = []
         for bbox in bboxes:
-            bbox_str = []
-            for elem in bbox:
-                elem = int(elem * 1000)
-                elem_str = self.token_fstr.format(elem)
-                bbox_str.append(elem_str)
-            bbox_str = ''.join(bbox_str)
-            final_str.append(bbox_str)
+            quant_x0 = "<bin_{}>".format(int((bbox[0] * (self.num_bins - 1)).round()))
+            quant_y0 = "<bin_{}>".format(int((bbox[1] * (self.num_bins - 1)).round()))
+            quant_x1 = "<bin_{}>".format(int((bbox[2] * (self.num_bins - 1)).round()))
+            quant_y1 = "<bin_{}>".format(int((bbox[3] * (self.num_bins - 1)).round()))
+            region_coord = "{} {} {} {}".format(quant_x0, quant_y0, quant_x1, quant_y1)
+            final_str.append(region_coord)
         if self.use_sep:
             final_str = self.box_sep.join(final_str)
         else:
@@ -222,27 +232,48 @@ class TokenFormatter(BoxFormatter):
         return final_str
 
     def extract(self, string: str) -> List[Boxes]:
-        pass
+        ret = []
+        for bboxes_str in self.extract_box_pat.findall(string):
+            bboxes = []
+            bbox_strs = bboxes_str.replace(self.box_begin, "").replace(self.box_end, "").split(self.box_sep)
+            for bbox_str in bbox_strs:
+                elems = list(map(int, re.findall(r'<bin_(\d*?)>', bbox_str)))
+                bbox = [elem / (self.num_bins - 1) for elem in elems]
+                bboxes.append(bbox)
+            ret.append(bboxes)
+        return ret
 
     def extract_point(self, string: str) -> List[Boxes]:
-        pass
+        ret = []
+        for bboxes_str in self.extract_point_pat.findall(string):
+            bboxes = []
+            bbox_strs = bboxes_str.replace(self.point_begin, "").replace(self.point_end, "").split(self.point_sep)
+            for bbox_str in bbox_strs:
+                elems = list(map(int, re.findall(r'<bin_(\d*?)>', bbox_str)))
+                bbox = [elem / (self.num_bins - 1) for elem in elems]
+                bboxes.append(bbox)
+            ret.append(bboxes)
+        return ret
+
+    def post_process_model_tokenizer(self, model, preprocessor, model_args, training_args):
+        tokenizer = preprocessor['text']
+
+        additional_special_tokens = [
+            self.box_begin, self.box_sep, self.box_end,
+            self.point_begin, self.point_sep, self.point_sep
+        ]
+        for i in range(self.num_bins):
+            additional_special_tokens.append(f'<bin_{i}>')
+
+        smart_tokenizer_and_embedding_resize(
+            {'additional_special_tokens': additional_special_tokens},
+            tokenizer,
+            model,
+        )
 
 
 # FIXME: merge into load_pretrained
 def smart_prepare_target_processor(
-        model,  # multimodal llm
-        preprocessor: Dict[str, Any],
-        model_args,
-        training_args,
-):
-    type_ = model_args.type
-    if type_ in ['llava', 'otter']:
-        return smart_prepare_target_processor_default(model, preprocessor, model_args, training_args)
-    else:
-        assert False
-
-
-def smart_prepare_target_processor_default(
         model,  # multimodal llm
         preprocessor: Dict[str, Any],
         model_args,
@@ -256,10 +287,11 @@ def smart_prepare_target_processor_default(
         boxes_cfg = model_args['target_processor']['boxes']
         boxes_processor = BOXES_PROCESSOR.build(boxes_cfg)
         target_processor['boxes'] = boxes_processor
-        # TODO: some boxes_formatter need adjust model/tokenizer
+        # some boxes_formatter need adjust model/tokenizer
         #  luckily, our plain box formatter do not needed
-        # if hasattr(boxes_processor, "post_process_model_tokenizer"):
-        #     pass
-
+        if hasattr(boxes_processor, "post_process_model_tokenizer"):
+            model, preprocessor = boxes_processor.post_process_model_tokenizer(
+                model, preprocessor, model_args, training_args,
+            )
     preprocessor['target'] = target_processor
     return model, preprocessor
