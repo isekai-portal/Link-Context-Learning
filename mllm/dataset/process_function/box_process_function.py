@@ -207,6 +207,7 @@ class PlainBoxFormatter(BoxFormatter):
         return ret
 
 
+@BOXES_PROCESSOR.register_module()
 class TokenFormatter(BoxFormatter):
 
     def __init__(self, num_bins=1001):
@@ -228,8 +229,8 @@ class TokenFormatter(BoxFormatter):
     def format_point(self, points) -> str:
         final_str = []
         for bbox in points:
-            quant_x0 = "<bin_{}>".format(int((bbox[0] * (self.num_bins - 1)).round()))
-            quant_y0 = "<bin_{}>".format(int((bbox[1] * (self.num_bins - 1)).round()))
+            quant_x0 = "<bin_{}>".format(round((bbox[0] * (self.num_bins - 1))))
+            quant_y0 = "<bin_{}>".format(round((bbox[1] * (self.num_bins - 1))))
             region_coord = "{} {}".format(quant_x0, quant_y0)
             final_str.append(region_coord)
         if self.use_sep:
@@ -243,10 +244,10 @@ class TokenFormatter(BoxFormatter):
     def format_box(self, bboxes: Boxes) -> str:
         final_str = []
         for bbox in bboxes:
-            quant_x0 = "<bin_{}>".format(int((bbox[0] * (self.num_bins - 1)).round()))
-            quant_y0 = "<bin_{}>".format(int((bbox[1] * (self.num_bins - 1)).round()))
-            quant_x1 = "<bin_{}>".format(int((bbox[2] * (self.num_bins - 1)).round()))
-            quant_y1 = "<bin_{}>".format(int((bbox[3] * (self.num_bins - 1)).round()))
+            quant_x0 = "<bin_{}>".format(round((bbox[0] * (self.num_bins - 1))))
+            quant_y0 = "<bin_{}>".format(round((bbox[1] * (self.num_bins - 1))))
+            quant_x1 = "<bin_{}>".format(round((bbox[2] * (self.num_bins - 1))))
+            quant_y1 = "<bin_{}>".format(round((bbox[3] * (self.num_bins - 1))))
             region_coord = "{} {} {} {}".format(quant_x0, quant_y0, quant_x1, quant_y1)
             final_str.append(region_coord)
         if self.use_sep:
@@ -286,7 +287,7 @@ class TokenFormatter(BoxFormatter):
 
         additional_special_tokens = [
             self.box_begin, self.box_sep, self.box_end,
-            self.point_begin, self.point_sep, self.point_sep
+            self.point_begin, self.point_sep, self.point_end,
         ]
         for i in range(self.num_bins):
             additional_special_tokens.append(f'<bin_{i}>')
@@ -296,6 +297,7 @@ class TokenFormatter(BoxFormatter):
             tokenizer,
             model,
         )
+        return model, preprocessor
 
 
 # FIXME: merge into load_pretrained

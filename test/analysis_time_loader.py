@@ -22,7 +22,7 @@ logging.basicConfig(
 
 
 def main():
-    cfg, training_args = prepare_args()
+    cfg, training_args = prepare_args(['config/dummy_llava_train.py', '--overwrite_output_dir'])
 
     from transformers import CLIPImageProcessor, LlamaTokenizer
     from mllm.dataset.process_function import PlainBoxFormatter
@@ -50,16 +50,29 @@ def main():
     from torch.utils.data import DataLoader
     from tqdm import tqdm
 
+    from mllm.utils import decode_generate_ids, show, draw_bounding_boxes
+    from mllm.dataset import PlainBoxFormatter
+    from matplotlib import pyplot as plt
+    pbf = PlainBoxFormatter()
+
     st = time.time()
     print(dataset['train'])
     print(len(dataset['train']))
-    # for item in tqdm(dataset['train']):
-    #     pass
+    for idx, item in enumerate(tqdm(dataset['train'])):
+        if idx > 10:
+            break
+        print(item)
+        labels = decode_generate_ids(tokenizer, item['labels'])
+        print(labels)
+        extracted = pbf.extract_point(labels)
+        print(extracted)
+        # show(draw_bounding_boxes(item['image'], boxes=[extracted[0][0], extracted[0][1]]))
+        # plt.savefig('./temp.jpg', dpi=300)
 
-    dl = DataLoader(dataset['train'], batch_size=8, num_workers=4, collate_fn=data_collator_dict['train_collator'])
-    for i, batch in enumerate(tqdm(dl)):
-        pass
-    print(f"cost {time.time() - st:.2f} s")
+    # dl = DataLoader(dataset['train'], batch_size=8, num_workers=4, collate_fn=data_collator_dict['train_collator'])
+    # for i, batch in enumerate(tqdm(dl)):
+    #     pass
+    # print(f"cost {time.time() - st:.2f} s")
 
 
 # noinspection PyUnusedLocal

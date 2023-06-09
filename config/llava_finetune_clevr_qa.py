@@ -1,16 +1,13 @@
-_base_ = ['_base_/dataset/DEFAULT_TRAIN_DATASET.py', '_base_/model/llava_v1_7b_token.py', '_base_/train/llava_fsdp.py']
+_base_ = ['_base_/dataset/DEFAULT_TRAIN_DATASET.py', '_base_/model/llava_v1_7b.py', '_base_/train/llava_fsdp.py']
 
 training_args = dict(
-    tf32=False,
-    bf16=False,
-    fp16=True,
-    fsdp=False,
+    max_steps = 6001,
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_exp_unify_mllm/{{fileBasenameNoExtension}}',
 )
 
 data_args = dict(
     #
-    train={{_base_.DEFAULT_TRAIN_DATASET.POINT_TWICE_gq_p}},
+    train={{_base_.DEFAULT_TRAIN_DATASET.CLEVR_A}},
     validation=None,
     test=None,
 
