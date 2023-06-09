@@ -40,20 +40,35 @@ class SingleImageConvDatasetMixin:
     def __getitem__(self, index, debug_mode=False) -> Dict[str, Any]:
         # getitem
         item = self.get_raw_item(index)
-        self.validate_raw_item(item)
         image: Image.Image = item.get('image', None)
         target: Dict[str, Any] = item.get('target', None)
         raw_conv: List[Dict[str, Any]] = item['conversations']
 
         # transform
-        if self.transforms is not None and image is not None:
-            image, target = self.transforms(image, target)
-        if target is not None:
-            target['width'], target['height'] = image.width, image.height
+        assert isinstance(image, list) == isinstance(target, list)
+        multimage_mode = isinstance(image, list)
+        if isinstance(image, list):
+            # TODO: validate raw item
+            transformed_image, transformed_target = [], []
+            for img, tgt in zip(image, target):
+                if self.transforms is not None and image is not None:
+                    img, tgt = self.transforms(img, tgt)
+                if tgt is not None:
+                    tgt['width'], tgt['height'] = img.width, img.height
+                transformed_image.append(img)
+                transformed_target.append(tgt)
+            image, target = transformed_image, transformed_target
+        else:
+            self.validate_raw_item(item)  # only validate for single image.
+            if self.transforms is not None and image is not None:
+                image, target = self.transforms(image, target)
+            if target is not None:
+                target['width'], target['height'] = image.width, image.height
 
         # preprocess
         raw_conv = self.process_conv(raw_conv)
-        raw_conv, target = self.process_target(raw_conv, target)
+        raw_conv, image = self.process_conv_multimage(raw_conv, image)
+        raw_conv, _ = self.process_target(raw_conv, target, multimage_mode=multimage_mode)
         conv = self.build_conv(raw_conv)
         text_dict = self.process_text(conv)
         image_dict = self.process_image(image)
@@ -69,6 +84,21 @@ class SingleImageConvDatasetMixin:
 
     def __len__(self):
         raise NotImplementedError
+
+    # noinspection PyMethodMayBeStatic
+    def process_conv_multimage(self, raw_conv, image):
+        # re-sort multi image
+        if image is None:
+            return raw_conv, image
+        if not isinstance(image, (list, tuple)):
+            return raw_conv, image
+        image_seqs = []
+        for conv in raw_conv:
+            image_seqs.extend(conv['image_seq'] if 'image_seq' in conv else [])
+        images = []
+        for idx in image_seqs:
+            images.append(image[idx])
+        return raw_conv, images
 
     def get_raw_item(self, index) -> Dict[str, Any]:
         """
@@ -149,12 +179,13 @@ class SingleImageConvDatasetMixin:
         """
         return self.process_func['conv'](raw_conv, self.preprocessor, self.conv_template)
 
-    def process_target(self, raw_conv: List[Dict[str, Any]], target: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    def process_target(self, raw_conv: List[Dict[str, Any]], target: Dict[str, Any], multimage_mode=False) -> Tuple[
+        List[Dict[str, Any]], Dict[str, Any]]:
         """
         convert target placeholder to actual information in raw_conv.
             e.g. normalize bounding boxes; convert bounding boxes format; replace <boxes> placeholder
         """
-        return self.process_func['target'](raw_conv, target, self.preprocessor)
+        return self.process_func['target'](raw_conv, target, self.preprocessor, multimage_mode=multimage_mode)
 
     def process_text(self, conv: Conversation) -> Dict[str, Any]:
         """

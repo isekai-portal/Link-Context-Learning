@@ -2,6 +2,7 @@ import copy
 import warnings
 from typing import Dict, Any, List
 
+import PIL.Image
 import torch
 from PIL import Image
 from transformers import LlamaTokenizer
@@ -122,7 +123,10 @@ class LlavaImageProcessorV1(BaseImageProcessFunc):
     def __call__(self, image: Image.Image, preprocessor: Dict[str, Any]) -> Dict[str, Any]:
         image_processor = preprocessor['image']
 
-        if image is not None:
+        if isinstance(image, (list, tuple)):
+            image = image_processor.preprocess(image, return_tensors='pt')['pixel_values']
+            assert False, 'LLava not support MultiImage'
+        elif isinstance(image, PIL.Image.Image):
             image = image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
         else:
             if hasattr(image_processor, 'crop_size'):

@@ -1,6 +1,7 @@
 import re
 import sys
 import logging
+import typing
 from typing import List, Dict, Any, Tuple, Union
 
 from ..utils.transform import norm_box_xyxy, norm_point_xyxy
@@ -30,23 +31,46 @@ BoxesSeq = List[Boxes]
 
 @FUNCTIONS.register_module()
 class BoxFormatProcess(BaseTargetProcessFunc):
-    def __call__(self, raw_conv: List[Dict[str, Any]], target: Dict[str, Any], preprocessor: Dict[str, Any]
-                 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    def __call__(self, raw_conv: List[Dict[str, Any]], target: Dict[str, Any], preprocessor: Dict[str, Any],
+                 multimage_mode=False) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
         box_formatter = preprocessor['target']['boxes']
 
-        # normalize target
-        normalized_boxes = []
-        if target is not None and 'boxes' in target:
-            for box in target['boxes']:
-                normalized_boxes.append(
-                    norm_box_xyxy(box, w=target['width'], h=target['height'])
-                )
-        normalized_points = []
-        if target is not None and 'points' in target:
-            for point in target['points']:
-                normalized_points.append(
-                    norm_point_xyxy(point, w=target['width'], h=target['height'])
-                )
+        if multimage_mode:
+            target = typing.cast(list, target)
+            outer_normalized_boxes = []
+            for tgt in target:
+                normalized_boxes = []
+                if tgt is not None and 'boxes' in tgt:
+                    for box in tgt['boxes']:
+                        normalized_boxes.append(
+                            norm_box_xyxy(box, w=tgt['width'], h=tgt['height'])
+                        )
+                outer_normalized_boxes.append(normalized_boxes)
+            normalized_boxes = outer_normalized_boxes
+            outer_normalized_points = []
+            for tgt in target:
+                normalized_points = []
+                if tgt is not None and 'boxes' in tgt:
+                    for box in tgt['boxes']:
+                        normalized_points.append(
+                            norm_box_xyxy(box, w=tgt['width'], h=tgt['height'])
+                        )
+                outer_normalized_points.append(normalized_points)
+            normalized_points = outer_normalized_points
+        else:
+            # normalize target
+            normalized_boxes = []
+            if target is not None and 'boxes' in target:
+                for box in target['boxes']:
+                    normalized_boxes.append(
+                        norm_box_xyxy(box, w=target['width'], h=target['height'])
+                    )
+            normalized_points = []
+            if target is not None and 'points' in target:
+                for point in target['points']:
+                    normalized_points.append(
+                        norm_point_xyxy(point, w=target['width'], h=target['height'])
+                    )
 
         # convert bboxes_seq
         for sentence in raw_conv:
@@ -82,19 +106,21 @@ def map_obj(boxes_value: List[List[float]], boxes_seq: List[List[int]]) -> List[
     for boxes in boxes_seq:
         boxes_ret = []
         for box_index in boxes:
-            boxes_ret.append(boxes_value[box_index])
+            if isinstance(box_index, (list, tuple)):
+                boxes_ret.append(boxes_value[box_index[0]][box_index[1]])
+            else:
+                boxes_ret.append(boxes_value[box_index])
         ret.append(boxes_ret)
     return ret
 
 
 class BoxFormatter:
-    def __init__(self, bboxes_token=BOXES_PLACEHOLDER, points_token=POINTS_PLACEHOLDER, bboxes_token_pat=None):
+    def __init__(self, bboxes_token=BOXES_PLACEHOLDER, points_token=POINTS_PLACEHOLDER):
         self.bboxes_token = bboxes_token
         self.points_token = points_token
         # normally the bboxes_token_pat is the same as bboxes_token if u not use some weird token
-        if bboxes_token_pat is None:
-            bboxes_token_pat = bboxes_token
-        self.bboxes_token_pat = re.compile(bboxes_token_pat)
+        self.bboxes_token_pat = re.compile(bboxes_token)
+        self.points_token_pat = re.compile(points_token)
 
     def __call__(self, sentence: str, bboxes_seq: BoxesSeq) -> str:
         all_box = self.bboxes_token_pat.findall(sentence)
@@ -106,7 +132,7 @@ class BoxFormatter:
         return converted
 
     def call_on_point(self, sentence: str, points_seq: BoxesSeq) -> str:
-        all_box = self.bboxes_token_pat.findall(sentence)
+        all_box = self.points_token_pat.findall(sentence)
         assert len(all_box) == len(points_seq), f"not match. sentence: {sentence}. boxes:{points_seq}"
         if len(all_box) == 0:
             return sentence

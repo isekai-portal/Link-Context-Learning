@@ -1,6 +1,7 @@
 import re
 from typing import Dict, Any, List
 
+import PIL
 import torch
 from PIL import Image
 
@@ -53,8 +54,8 @@ class OtterTextProcess(BaseTextProcessFunc):
 
     def tk_conv_colon_two_train(self, conv, tokenizer, **kwargs):
         assert len(conv.messages) == 2, f'not support multi-round conversation training by now. but get message len: {len(conv.messages)}'
-        media_token_id = tokenizer.get_vocab()[MEDIA_TOKEN]
-        answer_token_id = tokenizer.get_vocab()[ANSWER_TOKEN]
+        media_token_id = tokenizer.encode("<image>")[-1]
+        answer_token_id = tokenizer.encode("<answer>")[-1]
 
         conversation = conv.get_prompt()
         src_text = tokenizer(conversation, add_special_tokens=False, **kwargs)
@@ -119,8 +120,15 @@ class OtterImageProcess(BaseImageProcessFunc):
     def __call__(self, image: Image.Image, preprocessor: Dict[str, Any]) -> Dict[str, Any]:
         image_processor = preprocessor['image']
 
-        if image is not None:
+        if isinstance(image, (list, tuple)):
+            # N C H W
+            image = image_processor.preprocess(image, return_tensors='pt')['pixel_values']
+            # N T=1 C H W
+            image = image.unsqueeze(1)
+        elif isinstance(image, PIL.Image.Image):
             image = image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+            # N T C H W
+            image = image.unsqueeze(0).unsqueeze(0)
         else:
             if hasattr(image_processor, 'crop_size'):
                 crop_size = image_processor.crop_size
@@ -128,8 +136,8 @@ class OtterImageProcess(BaseImageProcessFunc):
             else:
                 raise ValueError("got empty image. and don't know how to pad")
             image = torch.zeros(3, height, width)
-        # N T C H W
-        image = image.unsqueeze(0).unsqueeze(0)
+            # N T C H W
+            image = image.unsqueeze(0).unsqueeze(0)
         return {'image': image}
 
 
