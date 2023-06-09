@@ -179,6 +179,7 @@ def flatten_annotation(annotation_dir, indexes):
             assert len(re.findall(PHRASE_ST_PLACEHOLDER, sent_converted)) \
                    == len(re.findall(PHRASE_ED_PLACEHOLDER, sent_converted)) \
                    == len(boxes_seq), f"error when parse: {sent_converted}, {boxes_seq}, {sen}, {anns}"
+            assert sent_converted.replace(PHRASE_ST_PLACEHOLDER, "").replace(PHRASE_ED_PLACEHOLDER, "") == sen['sentence']
 
             item = {
                 'id': len(data),
@@ -190,3 +191,15 @@ def flatten_annotation(annotation_dir, indexes):
             data.append(item)
 
     return data
+
+
+if __name__ == '__main__':
+    filenames = [
+        r'D:\home\dataset\flickr30kentities\train.txt',
+        r'D:\home\dataset\flickr30kentities\val.txt',
+        r'D:\home\dataset\flickr30kentities\test.txt',
+    ]
+    for filename in filenames:
+        annotation_dir = r'D:\home\dataset\flickr30kentities'
+        indexes = [line.strip() for line in open(filename, 'r', encoding='utf8')]
+        flatten_annotation(annotation_dir, indexes)
