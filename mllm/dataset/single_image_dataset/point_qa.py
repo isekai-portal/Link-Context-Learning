@@ -48,7 +48,7 @@ class Point_QA_local(MInstrDataset):
             'image': image,
             'target': {
                 'boxes': [bbox],
-                'point': [point],
+                'points': [point],
             },
             'conversations': [
                 {
@@ -116,7 +116,7 @@ class Point_QA_twice(MInstrDataset):
             'image': image,
             'target': {
                 'boxes': [bbox],
-                'point': [point],
+                'points': [point],
             },
             'conversations': [
                 {
@@ -177,7 +177,7 @@ class V7W_POINT(MInstrDataset):
             'image': image,
             'target': {
                 'boxes': bboxes,
-                'point': points,
+                'points': points,
             },
             'conversations': [
                 {
