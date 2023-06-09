@@ -19,7 +19,7 @@ POINT_TRAIN_COMMON_CFG_V7W = dict(
     template_file=r"{{fileDirname}}/template/VQA.json",
 )
 
-DEFAULT_TRAIN_GQA_VARIANT = dict(
+DEFAULT_TRAIN_POINT_VARIANT = dict(
     POINT_LOCAL_b=dict(**POINT_TRAIN_COMMON_CFG_LOCAL, version='b'),
     POINT_LOCAL_p=dict(**POINT_TRAIN_COMMON_CFG_LOCAL, version='p'),
     POINT_LOCAL_bp=dict(**POINT_TRAIN_COMMON_CFG_LOCAL, version='bp'),

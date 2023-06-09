@@ -37,8 +37,10 @@ class ClevrDataset(MInstrDataset):
             answer_boxes_seq = []
         elif self.atype == 's':
             answer, boxes, answer_boxes_seq = clevr_ss_cot(obj=question, scene=scene, add_ref=False)
+            answer += f" The answer is {question['answer']}."
         elif self.atype == 'bs':
             answer, boxes, answer_boxes_seq = clevr_ss_cot(obj=question, scene=scene, add_ref=False)
+            answer += f" The answer is {question['answer']}."
         else:
             assert False
 
@@ -93,7 +95,7 @@ def clevr_ss_cot(obj, scene, add_ref=False):
                 idx = get_boxes_idx(boxes_list=boxes, refs=[scene['objects'][_]['pixel_coords'][:2] for _ in p['ans']])
                 seq.append(idx)
             else:
-                objs = f"(None)"
+                objs = f" Found no object."
         else:
             objs = ""
         cot.append(f"{func}{inputs}{objs}")
