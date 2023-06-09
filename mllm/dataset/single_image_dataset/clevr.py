@@ -23,7 +23,10 @@ class ClevrDataset(MInstrDataset):
 
     def get_raw_item(self, index):
         question = json.loads(self.data[index])
-        scene = json.loads(self.scene_graph[question['image_index']])
+        if self.scene_graph is None:
+            scene = None
+        else:
+            scene = json.loads(self.scene_graph[question['image_index']])
         return question, scene
 
     def __getitem__(self, index):
@@ -39,7 +42,7 @@ class ClevrDataset(MInstrDataset):
             answer, boxes, answer_boxes_seq = clevr_ss_cot(obj=question, scene=scene, add_ref=False)
             answer += f" The answer is {question['answer']}."
         elif self.atype == 'bs':
-            answer, boxes, answer_boxes_seq = clevr_ss_cot(obj=question, scene=scene, add_ref=False)
+            answer, boxes, answer_boxes_seq = clevr_ss_cot(obj=question, scene=scene, add_ref=True)
             answer += f" The answer is {question['answer']}."
         else:
             assert False
@@ -86,10 +89,19 @@ def clevr_ss_cot(obj, scene, add_ref=False):
     boxes = []
     seq = []
 
-    for p in obj['program']:
+    def can_add_ref():
+        if p['function'] in ['unique', 'union', 'intersect', 'relate', 'same_size', 'same_shape', 'same_material', 'same_color']:
+            return True
+        if p['function'] in ['scene', 'filter_color', 'filter_material', 'filter_shape', 'filter_size']:
+            if idx + 1 < len(obj['program']) and obj['program'][idx + 1]['function'] in ['exist', 'count']:
+                return True
+        return False
+
+    for idx, p in enumerate(obj['program']):
         func = f"{p['function']}:{p['value_inputs'][0]}" if 'value_inputs' in p and p['value_inputs'] else p['function']
         inputs = f"[{','.join(map(str, p['inputs']))}]" if p['inputs'] else ""
-        if add_ref and p['function'] in ['unique', 'intersect', 'relate', 'same_size', 'same_shape', 'same_material', 'same_color']:
+
+        if add_ref and can_add_ref():
             if p['ans']:
                 objs = POINTS_PLACEHOLDER
                 idx = get_boxes_idx(boxes_list=boxes, refs=[scene['objects'][_]['pixel_coords'][:2] for _ in p['ans']])
