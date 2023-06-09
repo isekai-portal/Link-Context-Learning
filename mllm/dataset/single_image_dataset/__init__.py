@@ -5,3 +5,4 @@ from .caption import CaptionDataset
 from .instr import InstructDataset
 from .gqa import GQADataset, GQAComputeMetrics
 from .clevr import ClevrDataset
+from .point_qa import Point_QA_local, Point_QA_twice, V7W_POINT
