@@ -36,10 +36,21 @@ DEFAULT_TRAIN_DATASET = dict(
         filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/CAP_coco2014_train.jsonl',
         template_file=r'{{fileDirname}}/template/image_cap.json',
     ),
+    llavacc3m=dict(
+        type='InstructDataset',
+        filename=r"/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/llava_cc3m.jsonl",
+        image_folder=r'sh41:s3://MultiModal/Monolith/academic/llava-pretrain/data/558K_imgs',   # TODO: zz make folder name mistake
+    ),
+    llavalcs=dict(
+        type='InstructDataset',
+        filename=r"/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/blip_laion_cc_sbu_558k.jsonl",
+        image_folder=r'sh41:s3://MultiModal/Monolith/academic/llava-pretrain/data/595K_imgs',   # TODO: zz make folder name mistake
+    ),
     instruct=dict(
         type='InstructDataset',
         filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/llava_instruct_150k.jsonl',
         image_folder=r'zz1424:s3://PublicDatalist/public_datalist_6_unzip/train2014',
+        add_coco_prefix=True,
     ),
     **_base_.DEFAULT_TRAIN_GQA_VARIANT,
     **_base_.DEFAULT_TRAIN_CLEVR_VARIANT,

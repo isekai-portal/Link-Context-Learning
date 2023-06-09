@@ -172,6 +172,7 @@ class V7W_POINT(MInstrDataset):
             answer_points_seq = None
         else:
             assert False
+        final_question = self.get_template().replace(QUESTION_PLACEHOLDER, final_question)
 
         ret = {
             'image': image,
