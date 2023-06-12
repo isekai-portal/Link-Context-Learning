@@ -137,9 +137,10 @@ class Point_QA_twice(MInstrDataset):
 # noinspection PyPep8Naming
 @DATASETS.register_module()
 class V7W_POINT(MInstrDataset):
-    def __init__(self, *args, version, **kwargs):
+    def __init__(self, *args, version, do_shuffle_choice=True, **kwargs):
         super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER,))
         self.version = version
+        self.do_shuffle_choice = do_shuffle_choice
         assert version in ['p', 'b']
 
     def __len__(self):
@@ -173,6 +174,8 @@ class V7W_POINT(MInstrDataset):
         else:
             assert False
         final_question = self.get_template().replace(QUESTION_PLACEHOLDER, final_question)
+        if self.do_shuffle_choice:
+            bboxes, query_boxes_seq, answer_boxes_seq = self.shuffle_boxes(bboxes, query_boxes_seq, answer_boxes_seq)
 
         ret = {
             'image': image,
@@ -196,3 +199,23 @@ class V7W_POINT(MInstrDataset):
             ]
         }
         return ret
+
+    def shuffle_boxes(self, bboxes, query_boxes_seq, answer_boxes_seq):
+        idx_mapping = list(range(len(bboxes)))
+        self.rng.shuffle(idx_mapping)
+
+        new_bboxes = [None for _ in range(len(bboxes))]
+        for idx_old, idx_new in enumerate(idx_mapping):
+            new_bboxes[idx_new] = bboxes[idx_old]
+
+        new_query_boxes_seq = []
+        for boxes in query_boxes_seq:
+            new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
+            new_query_boxes_seq.append(new_boxes)
+
+        new_answer_boxes_seq = []
+        for boxes in answer_boxes_seq:
+            new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
+            new_answer_boxes_seq.append(new_boxes)
+
+        return new_bboxes, new_query_boxes_seq, new_answer_boxes_seq

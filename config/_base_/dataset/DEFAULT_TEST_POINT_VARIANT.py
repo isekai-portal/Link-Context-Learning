@@ -1,34 +1,42 @@
-# TODO: add test path
 POINT_TEST_COMMON_CFG_LOCAL = dict(
     type='Point_QA_local',
-    filename='',
-    image_folder='',
+    image_folder='zz1424:s3://publicdataset_8/Visual_Genome_Dataset_V1.2/unzip/data',
     template_file=r"{{fileDirname}}/template/VQA.json",
 )
 
 POINT_TEST_COMMON_CFG_TWICE = dict(
     type='Point_QA_twice',
-    filename='',
-    image_folder='',
+    image_folder='zz1424:s3://publicdataset_8/Visual_Genome_Dataset_V1.2/unzip/data',
     template_file=r"{{fileDirname}}/template/VQA.json",
 )
 
 POINT_TEST_COMMON_CFG_V7W = dict(
     type='V7W_POINT',
-    filename='',
-    image_folder='',
+    image_folder='sh41:s3://MultiModal/Monolith/academic/v7w/data',
     template_file=r"{{fileDirname}}/template/VQA.json",
+    do_shuffle_choice=False,
 )
 
 DEFAULT_TEST_GQA_VARIANT = dict(
-    POINT_LOCAL_b=dict(**POINT_TEST_COMMON_CFG_LOCAL, version='b'),
-    POINT_LOCAL_p=dict(**POINT_TEST_COMMON_CFG_LOCAL, version='p'),
-    POINT_TWICE_oq_b=dict(**POINT_TEST_COMMON_CFG_TWICE, version='oq-b'),
-    POINT_TWICE_oq_p=dict(**POINT_TEST_COMMON_CFG_TWICE, version='oq-p'),
-    POINT_TWICE_sq_b=dict(**POINT_TEST_COMMON_CFG_TWICE, version='sq-b'),
-    POINT_TWICE_sq_p=dict(**POINT_TEST_COMMON_CFG_TWICE, version='sq-p'),
-    POINT_TWICE_gq_b=dict(**POINT_TEST_COMMON_CFG_TWICE, version='gq-b'),
-    POINT_TWICE_gq_p=dict(**POINT_TEST_COMMON_CFG_TWICE, version='gq-p'),
-    POINT_V7W_p=dict(**POINT_TEST_COMMON_CFG_V7W, version='p'),
-    POINT_V7W_b=dict(**POINT_TEST_COMMON_CFG_V7W, version='b'),
+    POINT_LOCAL_b_val=dict(**POINT_TEST_COMMON_CFG_LOCAL, version='b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_local_val.jsonl'),
+    POINT_LOCAL_p_val=dict(**POINT_TEST_COMMON_CFG_LOCAL, version='p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_local_val.jsonl'),
+    POINT_TWICE_oq_b_val=dict(**POINT_TEST_COMMON_CFG_TWICE, version='oq-b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_val.jsonl'),
+    POINT_TWICE_oq_p_val=dict(**POINT_TEST_COMMON_CFG_TWICE, version='oq-p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_val.jsonl'),
+    POINT_TWICE_sq_b_val=dict(**POINT_TEST_COMMON_CFG_TWICE, version='sq-b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_val.jsonl'),
+    POINT_TWICE_sq_p_val=dict(**POINT_TEST_COMMON_CFG_TWICE, version='sq-p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_val.jsonl'),
+    POINT_TWICE_gq_b_val=dict(**POINT_TEST_COMMON_CFG_TWICE, version='gq-b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_val.jsonl'),
+    POINT_TWICE_gq_p_val=dict(**POINT_TEST_COMMON_CFG_TWICE, version='gq-p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_val.jsonl'),
+    POINT_V7W_p_val=dict(**POINT_TEST_COMMON_CFG_V7W, version='p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/v7w_pointing_val.jsonl'),
+    POINT_V7W_b_val=dict(**POINT_TEST_COMMON_CFG_V7W, version='b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/v7w_pointing_val.jsonl'),
+
+    POINT_LOCAL_b_test=dict(**POINT_TEST_COMMON_CFG_LOCAL, version='b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_local_test.jsonl'),
+    POINT_LOCAL_p_test=dict(**POINT_TEST_COMMON_CFG_LOCAL, version='p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_local_test.jsonl'),
+    POINT_TWICE_oq_b_test=dict(**POINT_TEST_COMMON_CFG_TWICE, version='oq-b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_test.jsonl'),
+    POINT_TWICE_oq_p_test=dict(**POINT_TEST_COMMON_CFG_TWICE, version='oq-p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_test.jsonl'),
+    POINT_TWICE_sq_b_test=dict(**POINT_TEST_COMMON_CFG_TWICE, version='sq-b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_test.jsonl'),
+    POINT_TWICE_sq_p_test=dict(**POINT_TEST_COMMON_CFG_TWICE, version='sq-p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_test.jsonl'),
+    POINT_TWICE_gq_b_test=dict(**POINT_TEST_COMMON_CFG_TWICE, version='gq-b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_test.jsonl'),
+    POINT_TWICE_gq_p_test=dict(**POINT_TEST_COMMON_CFG_TWICE, version='gq-p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_test.jsonl'),
+    POINT_V7W_p_test=dict(**POINT_TEST_COMMON_CFG_V7W, version='p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/v7w_pointing_test.jsonl'),
+    POINT_V7W_b_test=dict(**POINT_TEST_COMMON_CFG_V7W, version='b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/v7w_pointing_test.jsonl'),
 )
