@@ -4,6 +4,7 @@ training_args = dict(
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_exp_unify_mllm/{{fileBasenameNoExtension}}',
     num_train_epochs=1,
     per_device_train_batch_size=8,
+    learning_rate=1e-4,
 )
 
 data_args = dict(

@@ -181,25 +181,31 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
         if not self.is_world_process_zero():
             return
 
-        preds, targets = predict_results.predictions, predict_results.label_ids
-        origin_preds, origin_targets = preds, targets
-        preds, targets = deepcopy(preds), deepcopy(targets)
-        logger.warning(f"preds shape: {preds.shape}. targets shape: {targets.shape}")
-        preds[preds < 0] = self.tokenizer.pad_token_id
-        targets[targets < 0] = self.tokenizer.pad_token_id
-        preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-        targets = self.tokenizer.batch_decode(targets, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-
-        objs = []
-        for p, t, pi, ti in zip(preds, targets, origin_preds.tolist(), origin_targets.tolist()):
-            objs.append(dict(pred=p, target=t, pred_id=pi, target_id=ti))
-        ret = {
-            'metric': predict_results.metrics,
-            'detail': objs,
-        }
+        import numpy as np
         os.makedirs(self.args.output_dir, exist_ok=True)
-        json.dump(ret, open(os.path.join(self.args.output_dir, f'{file_key_prefix}_extra_prediction.json'), 'w', encoding="utf-8"))
-        return ret
+        np.save(os.path.join(self.args.output_dir, f"{file_key_prefix}_predictions.npy"), predict_results.predictions)
+        np.save(os.path.join(self.args.output_dir, f"{file_key_prefix}_label_ids.npy"), predict_results.label_ids)
+
+        # preds, targets = predict_results.predictions, predict_results.label_ids
+        # origin_preds, origin_targets = preds, targets
+        # preds, targets = deepcopy(preds), deepcopy(targets)
+        # logger.warning(f"preds shape: {preds.shape}. targets shape: {targets.shape}")
+
+        # objs = []
+        # decode text and save to json takes forever for big test set
+        # for p, t, pi, ti in zip(preds, targets, origin_preds, origin_targets):
+        #     p[p < 0] = self.tokenizer.pad_token_id
+        #     t[t < 0] = self.tokenizer.pad_token_id
+        #     p = self.tokenizer.decode(p, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        #     t = self.tokenizer.decode(t, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        #     objs.append(dict(pred=p, target=t, pred_id=pi.tolist(), target_id=ti.tolist()))
+        # ret = {
+        #     'metric': predict_results.metrics,
+        #     'detail': objs,
+        # }
+        # os.makedirs(self.args.output_dir, exist_ok=True)
+        # json.dump(ret, open(os.path.join(self.args.output_dir, f'{file_key_prefix}_extra_prediction.json'), 'w', encoding="utf-8"))
+        # return ret
 
     # transformers + FSDP + saving model -> cuda OOM for small memory gpu
     # refer: https://github.com/tatsu-lab/stanford_alpaca/issues/65
