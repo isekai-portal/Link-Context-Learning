@@ -12,7 +12,7 @@ from ..utils import MInstrDataset
 @DATASETS.register_module()
 class Point_QA_local(MInstrDataset):
     def __init__(self, *args, version='p', qbp_p_prob=0.5, **kwargs):
-        super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER,))
+        super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER, QUESTION_PLACEHOLDER))
         assert version in ['b', 'p', 'bp']
         self.version = version
         self.qbp_p_prob = qbp_p_prob
@@ -70,7 +70,7 @@ class Point_QA_local(MInstrDataset):
 @DATASETS.register_module()
 class Point_QA_twice(MInstrDataset):
     def __init__(self, *args, version='gq-p', bp_p_prob=0.5, **kwargs):
-        super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER,))
+        super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER, QUESTION_PLACEHOLDER))
         self.version = version
         self.bp_p_prob = bp_p_prob
         qtype, rtype = version.split('-')
@@ -138,7 +138,7 @@ class Point_QA_twice(MInstrDataset):
 @DATASETS.register_module()
 class V7W_POINT(MInstrDataset):
     def __init__(self, *args, version, do_shuffle_choice=True, **kwargs):
-        super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER,))
+        super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER, QUESTION_PLACEHOLDER))
         self.version = version
         self.do_shuffle_choice = do_shuffle_choice
         assert version in ['p', 'b']
