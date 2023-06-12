@@ -189,3 +189,44 @@ sbatch -p A10080G-share \
 ```
 
 本质上是由Transformers.Seq2SeqArguments的do_train, do_eval, do_predict参数分别控制是否做训练、验证、测试. 详情参考mllm/pipeline/finetune.py文件.
+
+### 多机多卡运行
+
+核心在于使用mpirun在多个机器上分别启动accelerate launch。
+
+#### 使用4个机器（4*8=32张v100进行预训练）
+
+```bash
+sbatch --nodes 4 launcher_intelmpi.sh mllm/pipeline/finetune.py config/llava_pretrain5.py
+```
+
+#### 如果提示端口被占用，随便换个MASTER_PORT的值就好，即：
+
+```bash
+MASTER_PORT=25671 sbatch --nodes 4 launcher_intelmpi.sh mllm/pipeline/finetune.py config/llava_pretrain5.py
+```
+
+#### --cfg-options(mmengine风格参数)和 --do_eval(huggingface:Trainer类参数)等选项和单机模式相同，都是直接可以用的
+
+```bash
+sbatch --nodes 4 launcher_intelmpi.sh \
+        mllm/pipeline/finetune.py \
+        config/rec_llava_v1_7b_fsdp.py \
+            --cfg-options model_args.model_name_or_path='/path/to/new/ckpt' \
+            --num_train_epochs 1 \
+            --learning_rate 4e-5
+```
+
+**注意**：要保证`launcher_intelmpi.sh`和`start_in_container.sh`格式为unix, 且有运行权限.
+
+```bash
+vim launcher_intelmpi.sh
+# 在vim中输入 `:set ff` 查看文件格式
+# 若为dos, 请输入 `:set ff=unix` 更改为unix格式
+vim start_in_container.sh
+# 在vim中输入 `:set ff` 查看文件格式
+# 若为dos, 请输入 `:set ff=unix` 更改为unix格式
+chmod +x launcher_intelmpi.sh
+chmod +x start_in_container.sh
+```
+
