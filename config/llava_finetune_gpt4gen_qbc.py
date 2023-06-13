@@ -1,7 +1,9 @@
 _base_ = ['_base_/dataset/DEFAULT_TRAIN_DATASET.py', '_base_/model/llava_v1_7b.py', '_base_/train/llava_fsdp.py']
 
 training_args = dict(
-    max_steps=6001,
+    max_steps=599,
+    save_steps=200,
+    save_total_limit=2,
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_exp_unify_mllm/{{fileBasenameNoExtension}}',
 )
 
