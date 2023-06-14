@@ -260,7 +260,7 @@ class TokenFormatter(BoxFormatter):
 
     def extract(self, string: str) -> List[Boxes]:
         ret = []
-        for bboxes_str in self.extract_box_pat.findall(string):
+        for bboxes_str in self.extract_box_pat.findall(string.replace(" ", "")):
             bboxes = []
             bbox_strs = bboxes_str.replace(self.box_begin, "").replace(self.box_end, "").split(self.box_sep)
             for bbox_str in bbox_strs:

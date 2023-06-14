@@ -1,0 +1,30 @@
+VCR_TRAIN_COMMON_CFG = dict(
+    type='VCRDataset',
+    filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_train.jsonl',
+    image_folder=r'zz1424:s3://publicdataset_11/GQA/unzip/images',
+    template_file=r"{{fileDirname}}/template/VQA.json",
+)
+
+DEFAULT_TRAIN_VCR_VARIANT = dict(
+    VCR_q_a=dict(**VCR_TRAIN_COMMON_CFG, version='q-a'),
+    VCR_q_ra=dict(**VCR_TRAIN_COMMON_CFG, version='q-ra'),
+    VCR_qc_a=dict(**VCR_TRAIN_COMMON_CFG, version='qc-a'),
+    VCR_qc_ra=dict(**VCR_TRAIN_COMMON_CFG, version='qc-ra'),
+    VCR_qc_rac=dict(**VCR_TRAIN_COMMON_CFG, version='qc-rac'),
+    VCR_qa_r=dict(**VCR_TRAIN_COMMON_CFG, version='qa-r'),
+    VCR_q_a_q_r=dict(**VCR_TRAIN_COMMON_CFG, version='q-a-q-r'),
+    VCR_qac_r=dict(**VCR_TRAIN_COMMON_CFG, version='qac-r'),
+    VCR_qc_a_qc_r=dict(**VCR_TRAIN_COMMON_CFG, version='qc-a-qc-r'),
+)
+
+
+# ccfg = 'VCR_TRAIN_COMMON_CFG'
+# versions = [
+#     'q-a', 'q-ra',
+#     'qc-a', 'qc-ra', 'qc-rac',  # for evaluation: A
+#     'qa-r', 'q-a-q-r',
+#     'qac-r', 'qc-a-qc-r',  # for evaluation: R
+# ]
+# for v in versions:
+#     name = f"VCR_{v.replace('-', '_')}"
+#     print(f"{name}=dict(**{ccfg}, version='{v}'),")
