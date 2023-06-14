@@ -4,8 +4,9 @@ training_args = dict(
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_eval_exp_unify_mllm/{{fileBasenameNoExtension}}',
 
     do_train=False,
-    do_eval=True,
-    do_predict=True,
+    do_eval=False,
+    do_predict=False,
+    do_multi_predict=True,
 
     fp16=True,
     fp16_full_eval=True,
@@ -22,7 +23,7 @@ data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multi_rec={{_base_.DEFAULT_TEST_REC_VARIANT}},
+    multitest={k: {'cfg': v, 'compute_metric': dict(type='RECComputeMetrics')} for k, v in _base_.DEFAULT_TEST_REC_VARIANT.items()},
 
     compute_metric=dict(type='RECComputeMetrics'),
 
