@@ -1,7 +1,7 @@
 VCR_TRAIN_COMMON_CFG = dict(
     type='VCRDataset',
     filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_train.jsonl',
-    image_folder=r'zz1424:s3://publicdataset_11/GQA/unzip/images',
+    image_folder=r'sh41:s3://MultiModal/Monolith/academic/vcr/vcr1images',
     template_file=r"{{fileDirname}}/template/VQA.json",
 )
 
