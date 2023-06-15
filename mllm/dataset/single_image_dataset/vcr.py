@@ -36,9 +36,12 @@ def merge(packs, *, prefixs, postfixs=None):
     assert len(packs) == len(prefixs) == len(postfixs), f"{len(packs)},{len(prefixs)},{len(postfixs)}"
     ret_str = []
     ret_box_seq = []
-    for pack, prefix in zip(packs, prefixs):
-        ret_str.append(prefix)
+    for pack, prefix, postfix in zip(packs, prefixs, postfixs):
+        if prefix:
+            ret_str.append(prefix)
         ret_str.append(pack[0])
+        if postfix:
+            ret_str.append(postfix)
         ret_box_seq.extend(pack[1])
     return " ".join(ret_str), ret_box_seq
 
