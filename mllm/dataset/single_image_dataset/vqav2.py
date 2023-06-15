@@ -33,7 +33,7 @@ class VQAv2Dataset(MInstrDataset):
                 },
                 {
                     'from': 'gpt',
-                    'value': final_answer,
+                    'value': f"The answer is {final_answer}.",
                 },
             ]
         }
