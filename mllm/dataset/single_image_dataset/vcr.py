@@ -61,7 +61,7 @@ class VCRDataset(MInstrDataset):
         # A: 'qc-a' 'qc-ra' 'qc-rac'
         # R: 'qac-r' 'qc-a-qc-r'
 
-    def __getitem__(self, index):
+    def __getitem__(self, index, force_answer_label=None, force_rationale_label=None):
         item = self.get_raw_item(index)
         image = self.get_image(item['img_fn'])
 
@@ -71,8 +71,14 @@ class VCRDataset(MInstrDataset):
         question = item['question']
         answer_choices = item['answer_choices']
         rationale_choices = item['rationale_choices']
-        answer_label = item['answer_label']
-        rationale_label = item['rationale_label']
+        if force_answer_label is not None:
+            answer_label = force_answer_label
+        else:
+            answer_label = item['answer_label']
+        if force_rationale_label is not None:
+            rationale_label = force_rationale_label
+        else:
+            rationale_label = item['rationale_label']
 
         question_pack = prepare_sentence(question)
         answer_pack_choices = [prepare_sentence(_) for _ in answer_choices]
@@ -151,4 +157,34 @@ class VCRDataset(MInstrDataset):
             'target': {'boxes': boxes},
             'conversations': conversations,
         }
+        return ret
+
+
+@DATASETS.register_module()
+class VCRPredDataset(VCRDataset):
+    def __init__(self, *args, version, **kwargs):
+        super().__init__(*args, version=version, **kwargs)
+        assert version in [
+            'qc-a', 'qc-ra', 'qc-rac',  # for evaluation: A
+            'qac-r', 'qc-a-qc-r',  # for evaluation: R
+        ]
+        self.is_pred_for_r = version in [
+            'qac-r', 'qc-a-qc-r',  # for evaluation: R
+        ]
+
+    def __len__(self):
+        if self.is_pred_for_r:
+            return super().__len__() * 4
+        else:
+            return super().__len__()
+
+    # noinspection PyMethodOverriding
+    def __getitem__(self, index):
+        if self.is_pred_for_r:
+            item_index = index // 4
+            answer_index = index % 4
+            ret = super().__getitem__(item_index, force_answer_label=answer_index, force_rationale_label=0)
+        else:
+            ret = super().__getitem__(index, force_answer_label=0, force_rationale_label=0)
+        ret['conversations'][-1]['value'] += "WARNING: answer and rationale here are just placeholders. we have no real anno."
         return ret
