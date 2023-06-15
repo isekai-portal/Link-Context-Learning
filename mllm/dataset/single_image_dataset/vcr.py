@@ -131,7 +131,7 @@ class VCRDataset(MInstrDataset):
             assert False
 
         conversations = []
-        roles = ['Human', 'GPT']
+        roles = ['human', 'gpt']
         for idx, pack in enumerate(final_packs):
             conversations.append({
                 'from': roles[idx % 2],
