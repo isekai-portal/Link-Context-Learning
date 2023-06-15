@@ -6,7 +6,7 @@
 #SBATCH -c 64
 #SBATCH --gres=gpu:8
 #SBATCH --output=%x_%j.out
-#SBATCH --comment "R-SC230999.001.02"
+#SBATCH --comment "wbsR-SC230999.001.02"
 #SBATCH --exclusive
 
 set -e
