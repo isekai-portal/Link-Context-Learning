@@ -4,7 +4,7 @@ VQAv2_TEST_COMMON_CFG = dict(
     template_file=r"{{fileDirname}}/template/VQA.json",
 )
 
-DEFAULT_VQAv2_TEST_VARIANT = dict(
+DEFAULT_TEST_VQAv2_VARIANT = dict(
     VQAv2_val=dict(
         **VQAv2_TEST_COMMON_CFG,
         filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/v2_OpenEnded_mscoco_val2014_questions.jsonl',

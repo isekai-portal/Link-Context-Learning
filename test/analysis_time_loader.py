@@ -22,7 +22,7 @@ logging.basicConfig(
 
 
 def main():
-    cfg, training_args = prepare_args(['config/dummy_llava_train.py', '--overwrite_output_dir'])
+    cfg, training_args = prepare_args(['config/dummy_llava_train.py', '--overwrite_output_dir', '--fp16_full_eval=False', '--fp16=False'])
 
     from transformers import CLIPImageProcessor, LlamaTokenizer
     from mllm.dataset.process_function import PlainBoxFormatter
@@ -62,6 +62,8 @@ def main():
         if idx > 10:
             break
         print(item)
+        input_ids = decode_generate_ids(tokenizer, item['input_ids'])
+        print(input_ids)
         labels = decode_generate_ids(tokenizer, item['labels'])
         print(labels)
         extracted = pbf.extract_point(labels)

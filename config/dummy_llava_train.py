@@ -10,7 +10,7 @@ training_args = dict(
 
 data_args = dict(
     #
-    train={{_base_.DEFAULT_TRAIN_DATASET.POINT_TWICE_gq_p}},
+    train={{_base_.DEFAULT_TRAIN_DATASET.VCR_q_a}},
     validation=None,
     test=None,
 

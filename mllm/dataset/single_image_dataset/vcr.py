@@ -14,6 +14,8 @@ def prepare_sentence(sent):
         if isinstance(word, list):
             ret_str.append(BOXES_PLACEHOLDER)
             ret_box_seq.append(word)
+        else:
+            ret_str.append(word)
     return " ".join(ret_str), ret_box_seq
 
 
@@ -22,7 +24,7 @@ def prepare_choice(pack_choices, label_index, *, options='ABCDEFG'):
     ret_box_seq = []
     for pack, op in zip(pack_choices, options):
         ret_str.append(f"({op}) {pack[0]}")
-        ret_box_seq.append(pack[1])
+        ret_box_seq.extend(pack[1])
     ret_pack = (" ".join(ret_str), ret_box_seq)
     label_choice = f"The answer is ({options[label_index]})."
     return ret_pack, (label_choice, [])
@@ -37,7 +39,7 @@ def merge(packs, *, prefixs, postfixs=None):
     for pack, prefix in zip(packs, prefixs):
         ret_str.append(prefix)
         ret_str.append(pack[0])
-        ret_box_seq.append(pack[1])
+        ret_box_seq.extend(pack[1])
     return " ".join(ret_str), ret_box_seq
 
 
@@ -60,7 +62,8 @@ class VCRDataset(MInstrDataset):
         item = self.get_raw_item(index)
         image = self.get_image(item['img_fn'])
 
-        boxes = item['boxes']
+        boxes_with_prob = item['boxes']
+        boxes = [box[:4] for box in boxes_with_prob]
 
         question = item['question']
         answer_choices = item['answer_choices']

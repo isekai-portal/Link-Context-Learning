@@ -5,6 +5,6 @@ VQAv2_TRAIN_COMMON_CFG = dict(
     template_file=r"{{fileDirname}}/template/VQA.json",
 )
 
-DEFAULT_VQAv2_TRAIN_VARIANT = dict(
+DEFAULT_TRAIN_VQAv2_VARIANT = dict(
     VQAv2_train=dict(**VQAv2_TRAIN_COMMON_CFG),
 )
