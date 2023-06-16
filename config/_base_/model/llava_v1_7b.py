@@ -38,7 +38,7 @@ model_args = dict(
     conv_args=dict(
         conv_template='vicuna_v1.1',
         transforms=dict(type='Expand2square'),
-        tokenize_kwargs=dict(),
+        tokenize_kwargs=dict(truncation_size=2048),
     ),
 
     gen_kwargs_set_pad_token_id=True,

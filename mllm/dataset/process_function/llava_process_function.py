@@ -1,5 +1,7 @@
+import sys
 import copy
 import warnings
+import logging
 from typing import Dict, Any, List
 
 import PIL.Image
@@ -21,6 +23,14 @@ DEFAULT_IMAGE_TOKEN = IMAGE_PLACEHOLDER
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
 DEFAULT_IM_START_TOKEN = "<im_start>"
 DEFAULT_IM_END_TOKEN = "<im_end>"
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    handlers=[logging.StreamHandler(sys.stdout), ],
+)
 
 
 @FUNCTIONS.register_module()
@@ -55,15 +65,45 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
         tokenizer = preprocessor['text']
         assert isinstance(tokenizer, LlamaTokenizer), "only work for LlamaTokenizer"
 
+        _truncation_size = tokenize_kwargs.pop('truncation_size', None)
         _kwargs = {'return_tensors': 'pt'}
         _kwargs.update(tokenize_kwargs)
 
         if conv.sep_style == SeparatorStyle.ADD_COLON_TWO:
             if mode in ['train']:
-                return self.tk_conv_colon_two_train(conv, tokenizer, **_kwargs)
-            return self.tk_conv_colon_two_eval(conv, tokenizer, **_kwargs)
+                ret = self.tk_conv_colon_two_train(conv, tokenizer, **_kwargs)
+            else:
+                ret = self.tk_conv_colon_two_eval(conv, tokenizer, **_kwargs)
         else:
             raise ValueError(f"unrecognized conv_style: {conv.sep_style}.\n the conv is {conv}")
+
+        if _truncation_size is None:
+            return ret
+        if len(ret['input_ids']) < _truncation_size:
+            return ret
+
+        origin_len = len(ret['input_ids'])
+        ids_to_remove_num = origin_len - _truncation_size
+        # truncation. should carefully not truncate <img_token>
+        ids_should_not_remove = list(map(
+            tokenizer.convert_tokens_to_ids,
+            (DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN)
+        ))
+        back_no_image = all(ids not in ids_should_not_remove for ids in ret['input_ids'][_truncation_size:])
+        if back_no_image:
+            tgt_ids = list(range(_truncation_size))
+        else:
+            ids_to_remove = set()
+            for idx in range(origin_len - 1, -1, -1):
+                if ret['input_ids'][idx] not in ids_should_not_remove:
+                    ids_to_remove.add(idx)
+                    if len(ids_to_remove) >= ids_to_remove_num:
+                        break
+            tgt_ids = [_ for _ in range(_truncation_size) if _ not in ids_to_remove]
+        logger.warning(f"truncate sample size from {origin_len} to {len(tgt_ids)}.")
+        assert len(tgt_ids) == _truncation_size
+        truncated_ret = {k: v[tgt_ids] for k, v in ret.items()}
+        return truncated_ret
 
     # noinspection PyMethodMayBeStatic
     def tk_conv_colon_two_train(self, conv, tokenizer, **kwargs):
