@@ -79,7 +79,7 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
 
         if _truncation_size is None:
             return ret
-        if len(ret['input_ids']) < _truncation_size:
+        if len(ret['input_ids']) <= _truncation_size:
             return ret
 
         origin_len = len(ret['input_ids'])
