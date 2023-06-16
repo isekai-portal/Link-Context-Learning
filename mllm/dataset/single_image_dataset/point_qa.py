@@ -154,7 +154,7 @@ class V7W_POINT(MInstrDataset):
         # question
         bboxes = item['candidates']
         points = []
-        final_question = item['question'] + ' Candidates: ' + BOXES_PLACEHOLDER * len(bboxes)
+        final_question = item['question'] + ' Candidates: ' + " ".join([BOXES_PLACEHOLDER for _ in range(len(bboxes))])
         query_boxes_seq = []
         for _ in range(len(bboxes)):
             query_boxes_seq.append([_])
@@ -208,14 +208,20 @@ class V7W_POINT(MInstrDataset):
         for idx_old, idx_new in enumerate(idx_mapping):
             new_bboxes[idx_new] = bboxes[idx_old]
 
-        new_query_boxes_seq = []
-        for boxes in query_boxes_seq:
-            new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
-            new_query_boxes_seq.append(new_boxes)
+        if query_boxes_seq is None:
+            new_query_boxes_seq = None
+        else:
+            new_query_boxes_seq = []
+            for boxes in query_boxes_seq:
+                new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
+                new_query_boxes_seq.append(new_boxes)
 
-        new_answer_boxes_seq = []
-        for boxes in answer_boxes_seq:
-            new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
-            new_answer_boxes_seq.append(new_boxes)
+        if answer_boxes_seq is None:
+            new_answer_boxes_seq = None
+        else:
+            new_answer_boxes_seq = []
+            for boxes in answer_boxes_seq:
+                new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
+                new_answer_boxes_seq.append(new_boxes)
 
         return new_bboxes, new_query_boxes_seq, new_answer_boxes_seq

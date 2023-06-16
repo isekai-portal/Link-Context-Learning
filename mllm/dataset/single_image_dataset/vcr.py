@@ -85,7 +85,7 @@ class VCRDataset(MInstrDataset):
         rationale_pack_choices = [prepare_sentence(_) for _ in rationale_choices]
 
         answer_choices_pack, answer_choice = prepare_choice(answer_pack_choices, answer_label)
-        rationale_choices_pack, rationale_choice = prepare_choice(rationale_pack_choices, answer_label)
+        rationale_choices_pack, rationale_choice = prepare_choice(rationale_pack_choices, rationale_label)
         answer_gold_pack = answer_pack_choices[answer_label]
         rationale_gold_pack = rationale_pack_choices[rationale_label]
 

@@ -22,10 +22,12 @@ class VQAEXDataset(MInstrDataset):
 
         if self.has_annotation:
             if self.is_e_dataset:
-                final_answer = item['explanation'][0]
+                final_answer = ""
+                final_answer += item['explanation'][0]
                 final_answer += f" So the answer is {item['multiple_answers']}."
             else:
-                final_answer = item['justification']
+                final_answer = ""
+                final_answer += "".join(item['justification'])
                 final_answer += f" So the answer is {item['multiple_choice_answer']}."
         else:
             final_answer = 'UNKNOWN'

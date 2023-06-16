@@ -155,6 +155,7 @@ def _interleave_dataset_index(
     return indices
 
 
+@DATASETS.register_module()
 class SubSet(TorchSubset):
     def __init__(self, cfg, portion, do_shuffle=True, seed=42):
         assert 0 < portion <= 1
