@@ -5,8 +5,20 @@ data_args = dict(
     train=dict(
         type='ConcatDataset',
         cfgs=[
-            {{_base_.DEFAULT_TRAIN_DATASET.gc}},
-            {{_base_.DEFAULT_TRAIN_DATASET.recvg}},
+            dict(
+                type='SubSet',
+                portion=1/20,
+                do_shuffle=True,
+                seed=42,
+                cfg={{_base_.DEFAULT_TRAIN_DATASET.gc}},
+            ),
+            dict(
+                type='SubSet',
+                portion=1/20,
+                do_shuffle=True,
+                seed=43,
+                cfg={{_base_.DEFAULT_TRAIN_DATASET.recvg}},
+            ),
 
             {{_base_.DEFAULT_TRAIN_DATASET.llavacc3m}},
             {{_base_.DEFAULT_TRAIN_DATASET.llavalcs}},

@@ -3,6 +3,7 @@ from typing import List, Optional, Literal
 import numpy as np
 from torch.utils.data import Dataset
 from torch.utils.data import ConcatDataset as TorchConcatDataset
+from torch.utils.data import Subset as TorchSubset
 
 from ..root import DATASETS
 
@@ -154,4 +155,19 @@ def _interleave_dataset_index(
     return indices
 
 
-__all__ = ['ConcatDataset', 'InterleaveDateset']
+class SubSet(TorchSubset):
+    def __init__(self, cfg, portion, do_shuffle=True, seed=42):
+        assert 0 < portion <= 1
+        dataset = DATASETS.build(cfg=cfg)
+        target_len = int(len(dataset) * portion)
+        if do_shuffle:
+            rng = np.random.default_rng(seed)
+            indices = list(range(len(dataset)))
+            rng.shuffle(indices)
+            indices = indices[:target_len]
+        else:
+            indices = list(range(target_len))
+        super().__init__(dataset, indices)
+
+
+__all__ = ['ConcatDataset', 'InterleaveDateset', 'SubSet']
