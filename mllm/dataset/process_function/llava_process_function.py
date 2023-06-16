@@ -99,9 +99,9 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
                     ids_to_remove.add(idx)
                     if len(ids_to_remove) >= ids_to_remove_num:
                         break
-            tgt_ids = [_ for _ in range(_truncation_size) if _ not in ids_to_remove]
+            tgt_ids = [_ for _ in range(origin_len) if _ not in ids_to_remove]
         logger.warning(f"truncate sample size from {origin_len} to {len(tgt_ids)}.")
-        assert len(tgt_ids) == _truncation_size
+        assert len(tgt_ids) == _truncation_size, f"{len(tgt_ids)}, {_truncation_size}, {ret['input_ids'].tolist()}"
         truncated_ret = {k: v[tgt_ids] for k, v in ret.items()}
         return truncated_ret
 

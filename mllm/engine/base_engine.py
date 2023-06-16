@@ -205,6 +205,7 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
                 t = self.tokenizer.decode(t, skip_special_tokens=True, clean_up_tokenization_spaces=True)
                 obj = dict(pred=p, target=t, pred_id=pi.tolist(), target_id=ti.tolist())
                 g.write(json.dumps(obj) + '\n')
+                g.flush()
 
     # transformers + FSDP + saving model -> cuda OOM for small memory gpu
     # refer: https://github.com/tatsu-lab/stanford_alpaca/issues/65
