@@ -1,4 +1,4 @@
-_base_ = ['_base_/dataset/mix_pretrain_concat8.py', '_base_/model/llava_v1_13bo.py', '_base_/train/llava_fsdp.py']
+_base_ = ['_base_/dataset/mix_pretrain_concat8.py', '_base_/model/llava_v1_13b.py', '_base_/train/llava_fsdp.py']
 
 training_args = dict(
     num_train_epochs=3,
