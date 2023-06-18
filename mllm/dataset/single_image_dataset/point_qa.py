@@ -1,5 +1,9 @@
+import re
+
+from .. import BaseComputeMetrics
 from ..root import (
     DATASETS,
+    METRICS,
     QUESTION_PLACEHOLDER,
     IMAGE_PLACEHOLDER,
     BOXES_PLACEHOLDER,
@@ -225,3 +229,18 @@ class V7W_POINT(MInstrDataset):
                 new_answer_boxes_seq.append(new_boxes)
 
         return new_bboxes, new_query_boxes_seq, new_answer_boxes_seq
+
+
+ANS_EXTRACT_PAT = re.compile(r'(?:Answer: (.+?)\.)')
+
+
+@METRICS.register_module()
+class PointQAComputeMetrics(BaseComputeMetrics):
+    def extract_ans(self, string: str):
+        try:
+            found = ANS_EXTRACT_PAT.findall(string.strip())
+            if len(found) != 1:
+                return None
+            return found[0].strip()
+        except (IndexError, AttributeError):
+            return None

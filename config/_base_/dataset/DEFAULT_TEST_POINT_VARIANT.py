@@ -17,7 +17,7 @@ POINT_TEST_COMMON_CFG_V7W = dict(
     do_shuffle_choice=False,
 )
 
-DEFAULT_TEST_GQA_VARIANT = dict(
+DEFAULT_TEST_POINT_VARIANT = dict(
     POINT_LOCAL_b_val=dict(**POINT_TEST_COMMON_CFG_LOCAL, version='b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_local_val.jsonl'),
     POINT_LOCAL_p_val=dict(**POINT_TEST_COMMON_CFG_LOCAL, version='p', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_local_val.jsonl'),
     POINT_TWICE_oq_b_val=dict(**POINT_TEST_COMMON_CFG_TWICE, version='oq-b', filename='/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/pointQA_twice_val.jsonl'),
