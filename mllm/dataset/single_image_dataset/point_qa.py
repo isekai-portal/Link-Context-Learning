@@ -179,7 +179,8 @@ class V7W_POINT(MInstrDataset):
             assert False
         final_question = self.get_template().replace(QUESTION_PLACEHOLDER, final_question)
         if self.do_shuffle_choice:
-            bboxes, query_boxes_seq, answer_boxes_seq = self.shuffle_boxes(bboxes, query_boxes_seq, answer_boxes_seq)
+            self.rng.shuffle(query_boxes_seq)
+            # bboxes, query_boxes_seq, answer_boxes_seq = self.shuffle_boxes(bboxes, query_boxes_seq, answer_boxes_seq)
 
         ret = {
             'image': image,
@@ -204,31 +205,31 @@ class V7W_POINT(MInstrDataset):
         }
         return ret
 
-    def shuffle_boxes(self, bboxes, query_boxes_seq, answer_boxes_seq):
-        idx_mapping = list(range(len(bboxes)))
-        self.rng.shuffle(idx_mapping)
-
-        new_bboxes = [None for _ in range(len(bboxes))]
-        for idx_old, idx_new in enumerate(idx_mapping):
-            new_bboxes[idx_new] = bboxes[idx_old]
-
-        if query_boxes_seq is None:
-            new_query_boxes_seq = None
-        else:
-            new_query_boxes_seq = []
-            for boxes in query_boxes_seq:
-                new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
-                new_query_boxes_seq.append(new_boxes)
-
-        if answer_boxes_seq is None:
-            new_answer_boxes_seq = None
-        else:
-            new_answer_boxes_seq = []
-            for boxes in answer_boxes_seq:
-                new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
-                new_answer_boxes_seq.append(new_boxes)
-
-        return new_bboxes, new_query_boxes_seq, new_answer_boxes_seq
+    # def shuffle_boxes(self, bboxes, query_boxes_seq, answer_boxes_seq):
+    #     idx_mapping = list(range(len(bboxes)))
+    #     self.rng.shuffle(idx_mapping)
+    #
+    #     new_bboxes = [None for _ in range(len(bboxes))]
+    #     for idx_old, idx_new in enumerate(idx_mapping):
+    #         new_bboxes[idx_new] = bboxes[idx_old]
+    #
+    #     if query_boxes_seq is None:
+    #         new_query_boxes_seq = None
+    #     else:
+    #         new_query_boxes_seq = []
+    #         for boxes in query_boxes_seq:
+    #             new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
+    #             new_query_boxes_seq.append(new_boxes)
+    #
+    #     if answer_boxes_seq is None:
+    #         new_answer_boxes_seq = None
+    #     else:
+    #         new_answer_boxes_seq = []
+    #         for boxes in answer_boxes_seq:
+    #             new_boxes = [idx_mapping[box_idx] for box_idx in boxes]
+    #             new_answer_boxes_seq.append(new_boxes)
+    #
+    #     return new_bboxes, new_query_boxes_seq, new_answer_boxes_seq
 
 
 ANS_EXTRACT_PAT = re.compile(r'(?:Answer: (.+?)\.)')
