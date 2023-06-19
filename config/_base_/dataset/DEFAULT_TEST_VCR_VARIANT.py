@@ -1,27 +1,25 @@
 VCR_VAL_COMMON_CFG = dict(
     type='VCRDataset',
     image_folder=r'sh41:s3://MultiModal/Monolith/academic/vcr/vcr1images',
-    template_file=r"{{fileDirname}}/template/VQA.json",
+    filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_val.jsonl',
 )
 
 VCR_TEST_COMMON_CFG = dict(
     type='VCRPredDataset',
     image_folder=r'sh41:s3://MultiModal/Monolith/academic/vcr/vcr1images',
-    template_file=r"{{fileDirname}}/template/VQA.json",
+    filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_test.jsonl',
 )
 
 DEFAULT_TEST_VCR_VARIANT = dict(
-    VCR_val_qc_a=dict(**VCR_VAL_COMMON_CFG, version='qc-a', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_val.jsonl'),
-    VCR_val_qc_ra=dict(**VCR_VAL_COMMON_CFG, version='qc-ra', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_val.jsonl'),
-    VCR_val_qc_rac=dict(**VCR_VAL_COMMON_CFG, version='qc-rac', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_val.jsonl'),
-    VCR_val_qac_r=dict(**VCR_VAL_COMMON_CFG, version='qac-r', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_val.jsonl'),
-    VCR_val_qc_a_qc_r=dict(**VCR_VAL_COMMON_CFG, version='qc-a-qc-r', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_val.jsonl'),
+    VCR_val_qc_a=dict(**VCR_VAL_COMMON_CFG, version='qc-a', template_file=r"{{fileDirname}}/template/VQA.json", ),
+    VCR_val_qc_rac=dict(**VCR_VAL_COMMON_CFG, version='qc-rac', template_file=r"{{fileDirname}}/template/VQA_BCoT.json", ),
+    VCR_val_qac_r=dict(**VCR_VAL_COMMON_CFG, version='qac-r', template_file=r"{{fileDirname}}/template/VQA.json", ),
+    VCR_val_qc_a_qc_r=dict(**VCR_VAL_COMMON_CFG, version='qc-a-qc-r', template_file=r"{{fileDirname}}/template/VQA.json", ),
 
-    VCR_test_qc_a=dict(**VCR_TEST_COMMON_CFG, version='qc-a', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_test.jsonl'),
-    VCR_test_qc_ra=dict(**VCR_TEST_COMMON_CFG, version='qc-ra', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_test.jsonl'),
-    VCR_test_qc_rac=dict(**VCR_TEST_COMMON_CFG, version='qc-rac', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_test.jsonl'),
-    VCR_test_qac_r=dict(**VCR_TEST_COMMON_CFG, version='qac-r', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_test.jsonl'),
-    VCR_test_qc_a_qc_r=dict(**VCR_TEST_COMMON_CFG, version='qc-a-qc-r', filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/vcr_test.jsonl'),
+    VCR_test_qc_a=dict(**VCR_TEST_COMMON_CFG, version='qc-a', template_file=r"{{fileDirname}}/template/VQA.json", ),
+    VCR_test_qc_rac=dict(**VCR_TEST_COMMON_CFG, version='qc-rac', template_file=r"{{fileDirname}}/template/VQA_BCoT.json", ),
+    VCR_test_qac_r=dict(**VCR_TEST_COMMON_CFG, version='qac-r', template_file=r"{{fileDirname}}/template/VQA.json", ),
+    VCR_test_qc_a_qc_r=dict(**VCR_TEST_COMMON_CFG, version='qc-a-qc-r', template_file=r"{{fileDirname}}/template/VQA.json", ),
 )
 
 # ccfg = 'VCR_TEST_COMMON_CFG'
