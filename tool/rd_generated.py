@@ -9,7 +9,7 @@ from typing import List, Union
 
 def format_str(s) -> [list, str]:
     middle_brackets_pat = re.compile(r'\[\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3}(?:;\d(?:\.\d*)?(?:,\d(?:\.\d*)?){3})*(?:\]|;)')
-    sentence = middle_brackets_pat.sub('', s)
+    sentence = middle_brackets_pat.sub('<ph_ed>', s)
 
     ret = []
     for bboxes_str in middle_brackets_pat.findall(s.replace(' ', '').replace('<ph_st>', '').replace('<ph_ed>', '')):
@@ -24,10 +24,10 @@ def format_str(s) -> [list, str]:
         ret.append(bboxes)
 
     # sanity check
-    if sentence.count('<ph_st>') != sentence.count('<ph_ed>'):
-        raise ValueError(f"<st> <ed> not match: {s}")
-    if sentence.count('<ph_st>') != len(ret):
-        raise ValueError(f"{sentence.count('<ph_st>')}, {len(ret)}: {ret}, {sentence}\n{s}")
+    # if sentence.count('<ph_st>') != sentence.count('<ph_ed>'):
+    #     raise ValueError(f"<st> <ed> not match: {s}")
+    if sentence.count('<ph_ed>') != len(ret):
+        raise ValueError(f"{sentence.count('<ph_ed>')}, {len(ret)}: {ret}, {sentence}\n{s}")
     if '[' in sentence or ']' in sentence:
         raise ValueError(f"[] should not in {sentence}")
     return ret, sentence
@@ -68,7 +68,7 @@ def de_norm_box_xyxy(box, *, w, h):
 if __name__ == '__main__':
     mode = 'train'
     # mode = 'test'
-    pat = rf'D:\home\code\unify_mllm\data\vqa-rd-gpt4\vqa-gpt4\{mode}\*.json'
+    pat = rf'D:\home\code\unify_mllm\data\vqa-rd-gpt4\rd-gpt4\{mode}\*.json'
     outputs = []
     failed = []
     files = glob.glob(pat)
@@ -81,7 +81,9 @@ if __name__ == '__main__':
         content = obj['GPT4VQA']['choices'][0]['message']['content']
         content = typing.cast(str, content)
 
-        sts = [item.span()[0] for item in re.finditer('\(Human\)\s*Question\s*\d\s*:', content)]
+        sts = [item.span()[0] for item in re.finditer(r'\n\n\(Human\):', content)]
+        # sts = [item.span()[0] for item in re.finditer('\(Human\)\s*Question\s*\d\s*:', content)]
+        sts = [0] + sts
         sts.append(len(content))
         for idx, (st, ed) in enumerate(zip(sts[:-1], sts[1:]), start=1):
             question = content[st:ed]
@@ -89,24 +91,24 @@ if __name__ == '__main__':
                 if not bool(question):
                     raise ValueError(f'question is None: {idx} {content}[{st}, {ed}]')
 
-                human, assis = re.split(r'\(Assistant\)\s*Answer\s*\d\s*:', question)
-                human = re.sub(r'\(Human\)\s*Question\s*\d\s*:', '', human.strip()).strip()
+                human, assis = re.split(r'\(Assistant\):', question)
+                human = re.sub(r'\(Human\):', '', human.strip()).strip()
                 assis = assis.strip()
                 human_boxes, human_sentence = format_str(human)
                 assis_boxes, assis_sentence = format_str(assis)
                 boxes, human_boxes_seq, assis_boxes_seq = merge_boxes(human_boxes, assis_boxes)
                 boxes = [de_norm_box_xyxy(_, w=obj['width'], h=obj['height']) for _ in boxes]
-                answer = re.findall(r"[tT]he answer is [\'\"](yes|no)\.?[\'\"]", assis_sentence)
+                # answer = re.findall(r"[tT]he answer is [\'\"](yes|no)\.?[\'\"]", assis_sentence)
                 assis_sentence = assis_sentence. \
                     replace("'yes'", "yes").replace("'no'", "no"). \
                     replace('"yes"', 'yes').replace('"no"', 'no'). \
                     replace("'yes.'", "yes.").replace('"yes."', 'yes.'). \
                     replace("'no.'", "no.").replace('"no."', 'no.')
-                if len(answer) < 1:
-                    raise ValueError(f'no answer extracted: {answer}, {assis_sentence}')
-                if len(answer) > 1:
-                    raise ValueError(f'multi answer extracted: {answer}, {assis_sentence}')
-                answer = answer[0]
+                # if len(answer) < 1:
+                #     raise ValueError(f'no answer extracted: {answer}, {assis_sentence}')
+                # if len(answer) > 1:
+                #     raise ValueError(f'multi answer extracted: {answer}, {assis_sentence}')
+                # answer = answer[0]
 
                 output = {
                     'img_id': obj['img_id'],
@@ -115,7 +117,7 @@ if __name__ == '__main__':
                     'width': obj['width'],
                     'question': human_sentence,
                     'cot_with_ans': assis_sentence,
-                    'answer': answer,
+                    # 'answer': answer,
                     'boxes': boxes,
                     'question_boxes_seq': human_boxes_seq,
                     'answer_boxes_seq': assis_boxes_seq,
