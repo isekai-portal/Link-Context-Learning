@@ -230,3 +230,30 @@ chmod +x launcher_intelmpi.sh
 chmod +x start_in_container.sh
 ```
 
+### 在PureVQA数据上推理
+
+```shell
+sbatch -p mm_v100_32g \
+    -n 1 \
+    -N 1 \
+    --gres=gpu:4 \
+    -c 64 \
+    accelerate launch --num_processes 4 --main_process_port 23786 mllm/pipeline/finetune.py \
+        config/llava_eval_multi_vqa_yw.py \
+        --cfg-options model_args.model_name_or_path=/mnt/lustre/share_data/chenkeqin/dummy_exp_unify_mllm/llava13b_finetune_gpt4gen_qbc/checkpoint-2000 \
+        --per_device_eval_batch_size 4 \
+        --output_dir /path/to/exp/logging/dir
+```
+
+主要文件：
+
+推理配置文件：`config/llava_eval_multi_vqa_yw.py` 其中`multitest`项支持多个数据集的测试推理
+
+每推理完一个数据集，模型预测会按顺序存到：`output_dir/multitest_{datasetname}_extra_prediction.jsonl`
+
+实际调用的dataset：`mllm/dataset/single_image_dataset/pure_vqa.py `。若有更精细的需求可以hack这里的代码。
+
+
+
+
+
