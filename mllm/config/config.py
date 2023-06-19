@@ -65,11 +65,18 @@ def prepare_args(args=None):
 
     # update cfg.training_args
     cfg.training_args = training_args
-    logger.info(cfg.pretty_text)
 
     # initialize and return
     training_args = Seq2SeqTrainingArguments(**training_args)
     training_args = check_output_dir(training_args)
+
+    # logging
+    if is_main_process(training_args.local_rank):
+        to_logging_cfg = Config()
+        to_logging_cfg.model_args = cfg.model_args
+        to_logging_cfg.data_args = cfg.data_args
+        to_logging_cfg.training_args = cfg.training_args
+        logger.info(to_logging_cfg.pretty_text)
 
     # setup logger
     if training_args.should_log:

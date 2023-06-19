@@ -10,3 +10,4 @@ from .gpt_gen import GPT4Gen
 from .vcr import VCRDataset, VCRPredDataset
 from .vqav2 import VQAv2Dataset
 from .vqaex import VQAEXDataset
+from .pure_vqa import PureVQADataset
