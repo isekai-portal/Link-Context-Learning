@@ -23,6 +23,7 @@ class GPT4Gen(MInstrDataset):
         boxes = raw['boxes']
         #
         question = raw['question']
+        question = question.replace(PHRASE_ST_PLACEHOLDER, '').replace(PHRASE_ED_PLACEHOLDER, BOXES_PLACEHOLDER)
         final_question = self.get_template().replace(QUESTION_PLACEHOLDER, question)
         query_boxes_seq = raw['question_boxes_seq']
 

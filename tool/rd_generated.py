@@ -128,6 +128,6 @@ if __name__ == '__main__':
 
     print(len(failed))
     print(len(outputs))
-    with open(f'{mode}_filtered_sample.jsonl', 'w') as f:
+    with open(f'rd_{mode}_filtered_sample.jsonl', 'w') as f:
         for o in outputs:
             f.write(json.dumps(o) + '\n')
