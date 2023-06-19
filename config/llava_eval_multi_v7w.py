@@ -23,7 +23,7 @@ data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={k: {'cfg': v, 'compute_metric': dict(type='PointQAComputeMetrics')} for k, v in _base_.DEFAULT_TEST_POINT_VARIANT.items()},
+    multitest={k: {'cfg': v, 'compute_metric': dict(type='PointQAComputeMetrics')} for k, v in _base_.DEFAULT_TEST_POINT_VARIANT.items() if 'POINT_V7W_b_test' in k},
 
     compute_metric=dict(type='RECComputeMetrics'),
 

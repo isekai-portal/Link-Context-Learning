@@ -14,7 +14,7 @@ POINT_TEST_COMMON_CFG_V7W = dict(
     type='V7W_POINT',
     image_folder='sh41:s3://MultiModal/Monolith/academic/v7w/data',
     template_file=r"{{fileDirname}}/template/VQA.json",
-    do_shuffle_choice=False,
+    do_shuffle_choice=True,
 )
 
 DEFAULT_TEST_POINT_VARIANT = dict(

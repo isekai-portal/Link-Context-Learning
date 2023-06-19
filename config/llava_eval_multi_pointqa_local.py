@@ -23,7 +23,10 @@ data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={k: {'cfg': v, 'compute_metric': dict(type='PointQAComputeMetrics')} for k, v in _base_.DEFAULT_TEST_POINT_VARIANT.items()},
+    multitest={
+        "POINT_LOCAL_p_test": {'cfg': _base_.DEFAULT_TEST_DATASET.POINT_LOCAL_p_test, 'compute_metric': dict(type='PointQAComputeMetrics')},
+        "POINT_LOCAL_b_test": {'cfg': _base_.DEFAULT_TEST_DATASET.POINT_LOCAL_b_test, 'compute_metric': dict(type='PointQAComputeMetrics')},
+    },
 
     compute_metric=dict(type='RECComputeMetrics'),
 
