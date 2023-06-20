@@ -6,7 +6,7 @@ from ..utils.flickr30k_entities_utils import PHRASE_ST_PLACEHOLDER, PHRASE_ED_PL
 from ..utils import MInstrDataset, BaseComputeMetrics
 
 REFID_PAT = re.compile(r'(\s\((?:(?:\d+(?:,\d+)*)|-)\)\s?)')
-ANS_EXTRACT_PAT = re.compile(r'(?:(?:(?:So t)|(?:T)|(?:t))he answer is (.+?)\.)')
+ANS_EXTRACT_PAT = re.compile(r'(?:(?:(?:(?:(?:So t)|(?:T)|(?:t))he answer is)|(?:Answer:)) (.+))')
 
 
 @DATASETS.register_module()
@@ -228,6 +228,6 @@ class GQAComputeMetrics(BaseComputeMetrics):
             found = ANS_EXTRACT_PAT.findall(string.strip())
             if len(found) != 1:
                 return None
-            return found[0].strip()
+            return found[0].strip().rstrip('.').strip()
         except (IndexError, AttributeError):
             return None

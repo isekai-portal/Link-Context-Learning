@@ -11,3 +11,4 @@ from .vcr import VCRDataset, VCRPredDataset
 from .vqav2 import VQAv2Dataset
 from .vqaex import VQAEXDataset
 from .pure_vqa import PureVQADataset
+from .pope import POPEVQADataset
