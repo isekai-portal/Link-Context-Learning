@@ -58,16 +58,15 @@ def main():
     st = time.time()
     print(dataset['test'])
     print(len(dataset['test']))
-    for idx, item in enumerate(tqdm(dataset['test'])):
+    for idx, item in enumerate(tqdm(dataset['test'].dataset)):
         if idx > 10:
             break
         print(item)
-        input_ids = decode_generate_ids(tokenizer, item['input_ids'])
-        print(input_ids)
-        labels = decode_generate_ids(tokenizer, item['labels'])
-        print(labels)
-        extracted = pbf.extract_point(labels)
-        print(extracted)
+        pb = [item['target']['points'][0][0], item['target']['points'][0][1], item['target']['points'][0][0] + 10, item['target']['points'][0][1]+10]
+        print(pb)
+        show(draw_bounding_boxes(item['image'], boxes=[pb], colors='red', width=4))
+        plt.savefig('./temp.jpg', dpi=300)
+        _ = input()
         # show(draw_bounding_boxes(item['image'], boxes=[extracted[0][0], extracted[0][1]]))
         # plt.savefig('./temp.jpg', dpi=300)
 

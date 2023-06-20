@@ -16,7 +16,7 @@ data_args = dict(
     #
     train=None,
     validation=None,
-    test={{_base_.DEFAULT_TEST_DATASET.VCR_test_qac_r}},
+    test={{_base_.DEFAULT_TEST_DATASET.POINT_LOCAL_p_test}},
 
     # compute_metric
     compute_metric=None,

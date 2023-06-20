@@ -58,17 +58,23 @@ def main():
     st = time.time()
     print(dataset['train'])
     print(len(dataset['train']))
-    for idx, item in enumerate(tqdm(dataset['train'])):
-        if idx > 10:
+    for idx, item in enumerate(tqdm(dataset['train'].dataset)):
+        if idx > 50:
             break
         print(item)
-        input_ids = decode_generate_ids(tokenizer, item['input_ids'])
-        print(input_ids)
-        labels = decode_generate_ids(tokenizer, item['labels'])
-        print(labels)
-        extracted = pbf.extract_point(labels)
-        print(extracted)
-        # show(draw_bounding_boxes(item['image'], boxes=[extracted[0][0], extracted[0][1]]))
+        pb = [item['target']['points'][0][0], item['target']['points'][0][1], item['target']['points'][0][0] + 10, item['target']['points'][0][1]+10]
+        print(pb)
+        show(draw_bounding_boxes(item['image'], boxes=[pb], colors='red', width=4))
+        plt.savefig('./temp.jpg', dpi=300)
+        _ = input()
+        # print(item)
+        # input_ids = decode_generate_ids(tokenizer, item['input_ids'])
+        # print(input_ids)
+        # labels = decode_generate_ids(tokenizer, item['labels'])
+        # print(labels)
+        # extracted = pbf.extract_point(labels)
+        # print(extracted)
+        # show(draw_bounding_boxes(item['image'], boxes=extracted))
         # plt.savefig('./temp.jpg', dpi=300)
 
     # dl = DataLoader(dataset['train'], batch_size=8, num_workers=4, collate_fn=data_collator_dict['train_collator'])

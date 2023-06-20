@@ -15,7 +15,7 @@ class POPEVQADataset(MInstrDataset):
         item = self.get_raw_item(index)
         image = self.get_image(image_path=item['image'])
 
-        question = item['test']
+        question = item['text']
         final_question = self.get_template().replace(QUESTION_PLACEHOLDER, question)
 
         label = str(item['label']).lower()
