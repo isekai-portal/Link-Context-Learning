@@ -63,7 +63,7 @@ class Point_QA_local(MInstrDataset):
                 },
                 {
                     'from': 'gpt',
-                    'value': f'Answer: {answer} .',
+                    'value': f'The answer is {answer} .',
                 }
             ]
         }
@@ -131,7 +131,7 @@ class Point_QA_twice(MInstrDataset):
                 },
                 {
                     'from': 'gpt',
-                    'value': f'Answer: {answer} .',
+                    'value': f'The answer is {answer} .',
                 }
             ]
         }
@@ -166,13 +166,13 @@ class V7W_POINT(MInstrDataset):
         if self.version == 'p':
             final_question += f" answer in point format."
             points.append(item['point'])
-            final_answer = f"Answer: {POINTS_PLACEHOLDER} ."
+            final_answer = f"The answer is {POINTS_PLACEHOLDER} ."
             answer_boxes_seq = None
             answer_points_seq = [[0]]
         elif self.version == 'b':
             final_question += f" answer in box format."
             idx = bboxes.index(item['answer'])
-            final_answer = f"Answer: {BOXES_PLACEHOLDER} ."
+            final_answer = f"The answer is {BOXES_PLACEHOLDER} ."
             answer_boxes_seq = [[idx]]
             answer_points_seq = None
         else:
@@ -232,7 +232,7 @@ class V7W_POINT(MInstrDataset):
     #     return new_bboxes, new_query_boxes_seq, new_answer_boxes_seq
 
 
-ANS_EXTRACT_PAT = re.compile(r'(?:Answer: (.+?)\.)')
+ANS_EXTRACT_PAT = re.compile(r'(?:The answer is (.+?)\.)')
 
 
 @METRICS.register_module()
