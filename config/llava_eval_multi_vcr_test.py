@@ -13,6 +13,9 @@ training_args = dict(
     bf16=False,
     bf16_full_eval=False,
     per_device_eval_batch_size=8,
+
+    fsdp="full_shard auto_wrap",
+    fsdp_transformer_layer_cls_to_wrap='LlamaDecoderLayer',
 )
 
 model_args = dict(
@@ -23,7 +26,7 @@ data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={k: {'cfg': v, 'compute_metric': dict(type='GQAComputeMetrics')} for k, v in _base_.DEFAULT_TEST_DATASET.items() if 'VCR_val_qac_r' in k or 'VCR_val_qc_rac' in k},
+    multitest={k: {'cfg': v, 'compute_metric': dict(type='GQAComputeMetrics')} for k, v in _base_.DEFAULT_TEST_DATASET.items() if 'VCR_test_qac_r' in k or 'VCR_test_qc_rac' in k},
 
     compute_metric=None,
 

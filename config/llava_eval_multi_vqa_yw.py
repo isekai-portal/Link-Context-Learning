@@ -43,6 +43,26 @@ data_args = dict(
             ),
             compute_metric=None,
         ),
+        # 手写一个VQA_BCoT的模板
+        dataset3=dict(
+            cfg=dict(
+                type='PureVQADataset',
+                filename='/mnt/lustre/share_data/chenkeqin/mllm_data/eval_data/dummy_pure_vqa_dataset2.jsonl',
+                image_folder=r'zz1424:s3://visual_grounding/academic_data/refer/images/mscoco/images/train2014',
+                template_string='<image> <question> Make sure to offer a clear explanation and indicate object locations with [xmin,ymin,xmax,ymax].',
+            ),
+            compute_metric=None,
+        ),
+        # 用VQA_BCoT中的模板
+        dataset4=dict(
+            cfg=dict(
+                type='PureVQADataset',
+                filename='/mnt/lustre/share_data/chenkeqin/mllm_data/eval_data/dummy_pure_vqa_dataset2.jsonl',
+                image_folder=r'zz1424:s3://visual_grounding/academic_data/refer/images/mscoco/images/train2014',
+                template_file=r'{{fileDirname}}/_base_/dataset/template/VQA_BCoT.json',
+            ),
+            compute_metric=None,
+        ),
     ),
 
     compute_metric=None,
