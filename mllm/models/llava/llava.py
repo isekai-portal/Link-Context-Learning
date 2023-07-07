@@ -25,7 +25,7 @@ from transformers import AutoConfig, AutoModelForCausalLM, \
                          CLIPVisionModel, CLIPImageProcessor
 
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
-
+from mllm.models.llava.Qformer import BertConfig, BertLMHeadModel
 
 DEFAULT_IMAGE_TOKEN = "<image>"
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
@@ -36,6 +36,23 @@ DEFAULT_IM_END_TOKEN = "<im_end>"
 class LlavaConfig(LlamaConfig):
     model_type = "llava"
 
+def init_Qformer(num_query_token, vision_width, pretrained_path,cross_attention_freq=2):
+    import os
+    print('BERT path: ',pretrained_path)
+    encoder_config = BertConfig.from_pretrained(os.path.join(pretrained_path,'config.json'),local_files_only=True)
+    encoder_config.encoder_width = vision_width
+    # insert cross-attention layer every other block
+    encoder_config.add_cross_attention = True
+    encoder_config.cross_attention_freq = cross_attention_freq
+    encoder_config.query_length = num_query_token
+    Qformer = BertLMHeadModel.from_pretrained(
+        pretrained_path,config=encoder_config,local_files_only=True
+    )
+    query_tokens = nn.Parameter(
+        torch.zeros(1, num_query_token, encoder_config.hidden_size)
+    )
+    query_tokens.data.normal_(mean=0.0, std=encoder_config.initializer_range)
+    return Qformer, query_tokens
 
 class LlavaLlamaModel(LlamaModel):
     config_class = LlavaConfig
@@ -51,8 +68,9 @@ class LlavaLlamaModel(LlamaModel):
         if hasattr(config, "use_mm_proj"):
             self.mm_projector = nn.Linear(config.mm_hidden_size, config.hidden_size)
 
+
     def initialize_vision_modules(self, vision_tower, mm_vision_select_layer,
-                                  pretrain_mm_mlp_adapter=None, tune_mm_mlp_adapter=False):
+                                  qformer_config=None, pretrain_mm_mlp_adapter=None, tune_mm_mlp_adapter=False):
         self.config.mm_vision_tower = vision_tower
 
         image_processor = CLIPImageProcessor.from_pretrained(vision_tower)
@@ -72,7 +90,13 @@ class LlavaLlamaModel(LlamaModel):
         self.config.mm_hidden_size = vision_config.hidden_size
         self.config.mm_vision_select_layer = mm_vision_select_layer
 
-        if not hasattr(self, 'mm_projector'):
+        if qformer_config is not None:
+            self.Qformer, self.query_tokens = init_Qformer(
+                qformer_config.num_query_token, qformer_config.num_features, qformer_config.bert_pretrain_path, qformer_config.cross_attention_freq
+            )
+            self.mm_projector = nn.Linear(qformer_config.hidden_size, self.config.hidden_size)
+        # /mnt/lustre/share_data/zhangzhao2/VG/ckpt/visionLLM/bert-base-uncased/
+        if not hasattr(self, 'mm_projector') and qformer_config is None:
             self.mm_projector = nn.Linear(vision_config.hidden_size, self.config.hidden_size)
 
         if pretrain_mm_mlp_adapter is not None:
@@ -113,25 +137,45 @@ class LlavaLlamaModel(LlamaModel):
             # TODO: this is a modified multimodal LLM -- Haotian Liu
             vision_tower = vision_tower[0]  # HACK: for FSDP
             with torch.no_grad():
-                if type(images) is list:
-                    # variable length images
-                    image_features = []
-                    for image in images:
-                        image_forward_out = vision_tower(image.unsqueeze(0), output_hidden_states=True)
-                        select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
-                        select_hidden_state = image_forward_out.hidden_states[select_hidden_state_layer]
-                        image_feature = select_hidden_state[:, 1:]
-                        image_features.append(image_feature)
-                else:
-                    image_forward_outs = vision_tower(images, output_hidden_states=True)
-                    select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
-                    select_hidden_state = image_forward_outs.hidden_states[select_hidden_state_layer]
-                    image_features = select_hidden_state[:, 1:]
-            if type(images) is list:
-                image_features = [self.mm_projector(image_feature)[0] for image_feature in image_features]
-            else:
-                image_features = self.mm_projector(image_features)
-            dummy_image_features = torch.zeros(256, 1024, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+                image_forward_outs = vision_tower(images, output_hidden_states=True)
+                select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
+                select_hidden_state = image_forward_outs.hidden_states[select_hidden_state_layer]
+
+            image_features = select_hidden_state[:, 1:]
+            #print('image_features: ',image_features.shape)
+            image_atts = torch.ones(image_features.size()[:-1], dtype=torch.long).to(
+                image_features.device
+            )
+            query_tokens = self.query_tokens.expand(image_features.shape[0], -1, -1)
+            query_output = self.Qformer.bert(
+                query_embeds=query_tokens,
+                encoder_hidden_states=image_features,
+                encoder_attention_mask=image_atts,
+                use_cache=True,
+                return_dict=True,
+            )
+            image_features = self.mm_projector(query_output.last_hidden_state)
+            # with torch.no_grad():
+            #     if type(images) is list:
+            #         # variable length images
+            #         image_features = []
+            #         for image in images:
+            #             image_forward_out = vision_tower(image.unsqueeze(0), output_hidden_states=True)
+            #             select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
+            #             select_hidden_state = image_forward_out.hidden_states[select_hidden_state_layer]
+            #             image_feature = select_hidden_state[:, 1:]
+            #             image_features.append(image_feature)
+            #     else:
+            #         image_forward_outs = vision_tower(images, output_hidden_states=True)
+            #         select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
+            #         select_hidden_state = image_forward_outs.hidden_states[select_hidden_state_layer]
+            #         image_features = select_hidden_state[:, 1:]
+            # if type(images) is list:
+            #     image_features = [self.mm_projector(image_feature)[0] for image_feature in image_features]
+            # else:
+            #     image_features = self.mm_projector(image_features)
+
+            dummy_image_features = torch.zeros(32, 768, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
             dummy_image_features = self.mm_projector(dummy_image_features)
 
             new_input_embeds = []

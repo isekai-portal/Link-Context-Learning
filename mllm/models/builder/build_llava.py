@@ -51,7 +51,8 @@ def load_pretrained_llava(model_args, training_args) -> Tuple[nn.Module, PREPROC
     model_vision_dict = model.model.initialize_vision_modules(
         vision_tower=model_args.vision_tower,
         mm_vision_select_layer=model_args.mm_vision_select_layer,
-        pretrain_mm_mlp_adapter=model_args.pretrain_mm_mlp_adapter
+        pretrain_mm_mlp_adapter=model_args.pretrain_mm_mlp_adapter,
+        qformer_config=model_args.qformer_config
     )
     dtype = torch.float32
     if training_args.fp16:
