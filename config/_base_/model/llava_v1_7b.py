@@ -8,18 +8,19 @@ model_args = dict(
     model_name_or_path=r'/mnt/lustre/share_data/chenkeqin/VG/ckpt/llava/llava_v1/7B',
     vision_tower=r'/mnt/lustre/share_data/chenkeqin/VG/ckpt/openai/clip-vit-large-patch14',
     pretrain_mm_mlp_adapter=None,
-
     # model config
     mm_vision_select_layer=-2,
     model_max_length=2048,
     qformer_config=dict(
-        num_query_token=32,
+        load_model=False,
+        ckpt_path='/mnt/lustre/share_data/zhangzhao2/VG/ckpt/blip-2/blip2_pretrained_vitL.pth',
+        num_query_token=256,
         num_features=1024,
-        bert_pretrain_path=r'/mnt/lustre/share_data/zhangzhao2/VG/ckpt/visionLLM/bert-base-uncased/',
+        bert_pretrain_path=r'/mnt/lustre/share/hezhiqun/Model/huggingface.co/bert-base-uncased/',
         cross_attention_freq=2,
-        hidden_size=768
+        hidden_size=768,
+        only_qformer=True
     ),
-
     # finetune config
     freeze_backbone=False,
     tune_mm_mlp_adapter=False,
@@ -28,7 +29,7 @@ model_args = dict(
     # data process config
     is_multimodal=True,
     sep_image_conv_front=False,
-    image_token_len=32,
+    image_token_len=256,
     mm_use_im_start_end=True,
 
     target_processor=dict(

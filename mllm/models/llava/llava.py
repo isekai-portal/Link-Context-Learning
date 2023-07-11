@@ -36,8 +36,10 @@ DEFAULT_IM_END_TOKEN = "<im_end>"
 class LlavaConfig(LlamaConfig):
     model_type = "llava"
 
-def init_Qformer(num_query_token, vision_width, pretrained_path,cross_attention_freq=2):
+def init_Qformer(num_query_token, vision_width, pretrained_path,ckpt_path,cross_attention_freq=2,):
     import os
+
+    ckpt = torch.load(ckpt_path,map_location='cpu')
     print('BERT path: ',pretrained_path)
     encoder_config = BertConfig.from_pretrained(os.path.join(pretrained_path,'config.json'),local_files_only=True)
     encoder_config.encoder_width = vision_width
@@ -48,10 +50,24 @@ def init_Qformer(num_query_token, vision_width, pretrained_path,cross_attention_
     Qformer = BertLMHeadModel.from_pretrained(
         pretrained_path,config=encoder_config,local_files_only=True
     )
-    query_tokens = nn.Parameter(
-        torch.zeros(1, num_query_token, encoder_config.hidden_size)
+    query_tokens = torch.nn.Parameter(
+        ckpt['model']['query_tokens']
     )
-    query_tokens.data.normal_(mean=0.0, std=encoder_config.initializer_range)
+
+    model_dict = Qformer.state_dict()
+    checkpoint = {k: v for k,v in ckpt['model'].items() if 'Qformer' in k}
+
+    pretrained_dict = {k.split('Qformer.')[1]: v for k, v in checkpoint.items() if k.split('Qformer.')[1] in model_dict}
+    mismatch_dict={k:v for k,v in zip(model_dict.keys(), pretrained_dict.values()) if v.size()!=model_dict[k].size()}
+    print('mis size: ',mismatch_dict.keys())
+    pretrained_dict={k:v if v.size()==model_dict[k].size()  else  model_dict[k] for k,v in zip(model_dict.keys(), pretrained_dict.values())}
+    model_dict.update(pretrained_dict) 
+
+    Qformer.load_state_dict(model_dict,strict=False)
+    # query_tokens = nn.Parameter(
+    #     torch.zeros(1, num_query_token, encoder_config.hidden_size)
+    # )
+    # query_tokens.data.normal_(mean=0.0, std=encoder_config.initializer_range)
     return Qformer, query_tokens
 
 class LlavaLlamaModel(LlamaModel):
@@ -59,18 +75,17 @@ class LlavaLlamaModel(LlamaModel):
 
     def __init__(self, config: LlamaConfig, mm_vision_tower=None, mm_hidden_size=None):
         super(LlavaLlamaModel, self).__init__(config)
-
+        
         if hasattr(config, "mm_vision_tower"):
             # HACK: for FSDP
             self.vision_tower = [CLIPVisionModel.from_pretrained(config.mm_vision_tower)]
             # self.vision_tower = CLIPVisionModel.from_pretrained(config.mm_vision_tower)
-
-        if hasattr(config, "use_mm_proj"):
-            self.mm_projector = nn.Linear(config.mm_hidden_size, config.hidden_size)
+        # if hasattr(config, "use_mm_proj"):
+        #     self.mm_projector = nn.Linear(config.mm_hidden_size, config.hidden_size)
 
 
     def initialize_vision_modules(self, vision_tower, mm_vision_select_layer,
-                                  qformer_config=None, pretrain_mm_mlp_adapter=None, tune_mm_mlp_adapter=False):
+                                  qformer_config, pretrain_mm_mlp_adapter,dtype,device):
         self.config.mm_vision_tower = vision_tower
 
         image_processor = CLIPImageProcessor.from_pretrained(vision_tower)
@@ -92,7 +107,11 @@ class LlavaLlamaModel(LlamaModel):
 
         if qformer_config is not None:
             self.Qformer, self.query_tokens = init_Qformer(
-                qformer_config.num_query_token, qformer_config.num_features, qformer_config.bert_pretrain_path, qformer_config.cross_attention_freq
+                qformer_config.num_query_token, 
+                qformer_config.num_features, 
+                qformer_config.bert_pretrain_path, 
+                qformer_config.ckpt_path,
+                qformer_config.cross_attention_freq
             )
             self.mm_projector = nn.Linear(qformer_config.hidden_size, self.config.hidden_size)
         # /mnt/lustre/share_data/zhangzhao2/VG/ckpt/visionLLM/bert-base-uncased/
