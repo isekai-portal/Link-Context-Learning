@@ -102,7 +102,6 @@ class BertEmbeddings(nn.Module):
                 embeddings = torch.cat((query_embeds, embeddings), dim=1)
         else:
             embeddings = query_embeds
-
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
         return embeddings
