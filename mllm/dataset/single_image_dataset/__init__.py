@@ -12,3 +12,4 @@ from .vqav2 import VQAv2Dataset
 from .vqaex import VQAEXDataset
 from .pure_vqa import PureVQADataset
 from .pope import POPEVQADataset
+from .v3det import V3DetDataset

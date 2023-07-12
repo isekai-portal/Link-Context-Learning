@@ -1,5 +1,6 @@
 training_args = dict(
     # run
+    icl=False,
     output_dir=None,  # required. must be filled by derived configs.
     overwrite_output_dir=False,
     report_to='none',

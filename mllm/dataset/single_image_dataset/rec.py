@@ -37,6 +37,41 @@ class RECDataset(MInstrDataset):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER, EXPR_PLACEHOLDER))
 
+    def __get_icl_item__(self,index,shot):
+        ret_list = []
+
+        item = self.get_raw_item(index)
+        img_path = item['img_path']
+        expr = item['expression']
+        bbox = item['bbox']
+
+        image = self.get_image(img_path)
+        question = self.get_template().replace(EXPR_PLACEHOLDER, expr)
+
+        ret = {
+            'image': image,
+            'target': {
+                'boxes': [bbox],
+            },
+            'conversations': [
+                {
+                    'from': 'human',
+                    'value': question,
+                },
+                {
+                    'from': 'gpt',
+                    'value': f'Answer: {BOXES_PLACEHOLDER} .',
+                    'boxes_seq': [[0]],
+                }
+            ]
+        }
+        from copy import deepcopy
+        for i in range(shot):
+            ret_list.append(deepcopy(ret))
+        for i in range(shot):
+            ret_list.append(deepcopy(ret))
+        return ret_list
+    
     def __getitem__(self, index):
         item = self.get_raw_item(index)
         img_path = item['img_path']

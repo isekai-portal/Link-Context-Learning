@@ -37,7 +37,112 @@ class SingleImageConvDatasetMixin:
         self.training_args = training_args
         self.transforms = transforms
 
+    def __get_icl_item__(self, item, do_mask=None, debug_mode=False) -> Dict[str, Any]:
+        # get_icl_item
+        #item = self.get_raw_item(index)
+        image: Image.Image = item.get('image', None)
+        target: Dict[str, Any] = item.get('target', None)
+        raw_conv: List[Dict[str, Any]] = item['conversations']
+
+        # transform
+        assert isinstance(image, list) == isinstance(target, list)
+        multimage_mode = isinstance(image, list)
+        if isinstance(image, list):
+            # TODO: validate raw item
+            transformed_image, transformed_target = [], []
+            for img, tgt in zip(image, target):
+                if self.transforms is not None and image is not None:
+                    img, tgt = self.transforms(img, tgt)
+                if tgt is not None:
+                    tgt['width'], tgt['height'] = img.width, img.height
+                transformed_image.append(img)
+                transformed_target.append(tgt)
+            image, target = transformed_image, transformed_target
+        else:
+            self.validate_raw_item(item)  # only validate for single image.
+            if self.transforms is not None and image is not None:
+                image, target = self.transforms(image, target)
+            if target is not None:
+                target['width'], target['height'] = image.width, image.height
+
+        # preprocess
+        raw_conv = self.process_conv(raw_conv)
+        raw_conv, image = self.process_conv_multimage(raw_conv, image)
+        raw_conv, _ = self.process_target(raw_conv, target, multimage_mode=multimage_mode)
+        conv = self.build_conv(raw_conv)
+        text_dict = self.process_text(conv, do_mask)
+        image_dict = self.process_image(image)
+
+        # return
+        ret_dict = {}
+        ret_dict.update(text_dict)
+        ret_dict.update(image_dict)
+
+        if debug_mode:
+            return {'ret': ret_dict, 'raw_conv': raw_conv, 'conv': conv, 'image': image}
+        return ret_dict
+
     def __getitem__(self, index, debug_mode=False) -> Dict[str, Any]:
+        # getitem
+        if self.training_args is not None:
+            using_icl = self.training_args.icl
+        else:
+            using_icl = False
+        if using_icl:
+            res = self.__getitem_icl__(index,debug_mode)
+        else:
+            res = self.__getitem_origin__(index,debug_mode)
+        
+        return res
+
+    def __getitem_icl__(self, index, debug_mode=False) -> Dict[str, Any]:
+        # getitem
+        #dict_keys(['input_ids', 'attention_mask', 'labels', 'image'])
+        update_keys = ['input_ids', 'attention_mask', 'labels']
+        ret_dict = {'image':[]}
+        #idx_list = [item for item in range(index, index+5)]
+        dict_list = self.get_raw_icl_item(index,2)
+
+        for i in range(len(dict_list)):
+            item = dict_list[i]
+            sub_dict = self.__get_icl_item__(item)
+
+            ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
+            
+            for k in update_keys:
+                if k not in ret_dict.keys():
+                    ret_dict[k] = sub_dict[k]
+
+                else:
+                    ret_valid = ret_dict[k][:-1]
+                    sub_valid = sub_dict[k]
+                    if k != 'attention_mask':
+                        if k == 'input_ids':
+                            ret_valid = ret_dict[k][:-1]
+
+                    if k == 'labels' and i == len(dict_list)-1:
+                        ret_valid = torch.zeros_like(ret_valid) - 100
+                        ret_valid[:] = -100
+
+                    ret_dict[k] = torch.cat([ret_valid,sub_valid],dim=0)
+        ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
+        # print('mask: ',ret_dict['attention_mask'].shape)
+        # print('labels: ',ret_dict['labels'].shape)
+        # print('input_ids: ',ret_dict['input_ids'].shape)
+
+        # post_processed_labels = post_process_generate_ids(self.preprocessor['text'], ret_dict['labels'])
+        # print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}")
+
+        # print(f"=================== {self.mode} sample ===================", flush=True)
+        # print(f"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}")
+
+        # print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids'])}")
+        # print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels)}")
+
+        return ret_dict
+
+
+    def __getitem_origin__(self, index, debug_mode=False) -> Dict[str, Any]:
         # getitem
         item = self.get_raw_item(index)
         image: Image.Image = item.get('image', None)
@@ -73,11 +178,13 @@ class SingleImageConvDatasetMixin:
         text_dict = self.process_text(conv)
         image_dict = self.process_image(image)
 
+
         # return
         ret_dict = {}
         ret_dict.update(text_dict)
         ret_dict.update(image_dict)
         self._print_sample(ret_dict, raw_conv, conv)
+
         if debug_mode:
             return {'ret': ret_dict, 'raw_conv': raw_conv, 'conv': conv, 'image': image}
         return ret_dict
@@ -187,12 +294,14 @@ class SingleImageConvDatasetMixin:
         """
         return self.process_func['target'](raw_conv, target, self.preprocessor, multimage_mode=multimage_mode)
 
-    def process_text(self, conv: Conversation) -> Dict[str, Any]:
+    def process_text(self, conv: Conversation , mode=None) -> Dict[str, Any]:
         """
         convert Conversation object to torch.Tensor, e.g. input_ids, labels, attention_mask, etc.
             self.tokenize_kwargs control something like padding/truncation behavior.
         """
-        return self.process_func['text'](conv, self.preprocessor, self.mode, **self.tokenize_kwargs)
+        if mode is None:
+            mode = self.mode
+        return self.process_func['text'](conv, self.preprocessor, mode, **self.tokenize_kwargs)
 
     def process_image(self, image: Image.Image) -> Dict[str, Any]:
         """
@@ -266,6 +375,10 @@ class SingleImageConvDataset(SingleImageConvDatasetMixin, Dataset):
         self.initialize_if_needed()
         return self.dataset[index]
 
+    def get_raw_icl_item(self, index, shot) -> Dict[str, Any]:
+        self.initialize_if_needed()
+        return self.dataset.__get_icl_item__(index,shot)
+    
     def __repr__(self) -> str:
         head = "Dataset " + self.__class__.__name__
         body = [

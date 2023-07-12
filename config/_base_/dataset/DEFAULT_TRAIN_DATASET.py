@@ -6,6 +6,7 @@ _base_ = [
     'DEFAULT_TRAIN_VCR_VARIANT.py',
     'DEFAULT_TRAIN_VQAv2_VARIANT.py',
     'DEFAULT_TRAIN_VQAEX_VARIANT.py',
+    'DEFAULT_TRAIN_V3DET_VARIANT.py'
 ]
 
 DEFAULT_TRAIN_DATASET = dict(
@@ -56,6 +57,12 @@ DEFAULT_TRAIN_DATASET = dict(
         image_folder=r'zz1424:s3://PublicDatalist/public_datalist_6_unzip/train2014',
         add_coco_prefix=True,
     ),
+    v3det=dict(
+        type='V3DetDataset',
+        filename=r'/mnt/lustre/share_data/zhangzhao2/VG/v3det/v3det_2023_v1_train_neig.json',
+        image_folder=r'sdc:s3://mm_data/v3det/',
+        template_file=r"{{fileDirname}}/template/DOD.json",
+    ),
     **_base_.DEFAULT_TRAIN_GQA_VARIANT,
     **_base_.DEFAULT_TRAIN_CLEVR_VARIANT,
     **_base_.DEFAULT_TRAIN_POINT_VARIANT,
@@ -63,4 +70,5 @@ DEFAULT_TRAIN_DATASET = dict(
     **_base_.DEFAULT_TRAIN_VCR_VARIANT,
     **_base_.DEFAULT_TRAIN_VQAv2_VARIANT,
     **_base_.DEFAULT_TRAIN_VQAEX_VARIANT,
+    **_base_.DEFAULT_TRAIN_V3DET_VARIANT,
 )
