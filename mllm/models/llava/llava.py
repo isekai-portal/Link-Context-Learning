@@ -254,58 +254,58 @@ class LlavaLlamaModel(LlamaModel):
                 )
                 image_features = self.mm_projector(query_output.last_hidden_state)
 
-            dummy_image_features = torch.zeros(32, 768, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
-            dummy_image_features = self.mm_projector(dummy_image_features)
+                dummy_image_features = torch.zeros(32, 768, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+                dummy_image_features = self.mm_projector(dummy_image_features)
 
-            new_input_embeds = []
-            cur_image_idx = 0
-            for cur_input_ids, cur_input_embeds in zip(input_ids, inputs_embeds):
-                if (cur_input_ids == vision_tower.config.im_patch_token).sum() == 0:
-                    # multimodal LLM, but the current sample is not multimodal
-                    cur_input_embeds = cur_input_embeds + (0. * dummy_image_features).sum()
-                    new_input_embeds.append(cur_input_embeds)
-                    continue
-                if vision_tower.config.use_im_start_end:
-                    cur_image_features = image_features[cur_image_idx]
-                    num_patches = cur_image_features.shape[0]
-                    if (cur_input_ids == vision_tower.config.im_start_token).sum() != (cur_input_ids == vision_tower.config.im_end_token).sum():
-                        raise ValueError("The number of image start tokens and image end tokens should be the same.")
-                    image_start_tokens = torch.where(cur_input_ids == vision_tower.config.im_start_token)[0]
-                    for image_start_token_pos in image_start_tokens:
-                        cur_image_features = image_features[cur_image_idx].to(device=cur_input_embeds.device)
+                new_input_embeds = []
+                cur_image_idx = 0
+                for cur_input_ids, cur_input_embeds in zip(input_ids, inputs_embeds):
+                    if (cur_input_ids == vision_tower.config.im_patch_token).sum() == 0:
+                        # multimodal LLM, but the current sample is not multimodal
+                        cur_input_embeds = cur_input_embeds + (0. * dummy_image_features).sum()
+                        new_input_embeds.append(cur_input_embeds)
+                        continue
+                    if vision_tower.config.use_im_start_end:
+                        cur_image_features = image_features[cur_image_idx]
                         num_patches = cur_image_features.shape[0]
-                        if cur_input_ids[image_start_token_pos + num_patches + 1] != vision_tower.config.im_end_token:
-                            raise ValueError("The image end token should follow the image start token.")
-                        if orig_embeds_params is not None:
-                            cur_new_input_embeds = torch.cat((cur_input_embeds[:image_start_token_pos].detach(), cur_input_embeds[image_start_token_pos:image_start_token_pos+1], cur_image_features, cur_input_embeds[image_start_token_pos + num_patches + 1:image_start_token_pos + num_patches + 2], cur_input_embeds[image_start_token_pos + num_patches + 2:].detach()), dim=0)
-                        else:
-                            cur_new_input_embeds = torch.cat((cur_input_embeds[:image_start_token_pos+1], cur_image_features, cur_input_embeds[image_start_token_pos + num_patches + 1:]), dim=0)
-                        cur_image_idx += 1
-                    new_input_embeds.append(cur_new_input_embeds)
-                else:
-                    cur_image_features = image_features[cur_image_idx]
-                    num_patches = cur_image_features.shape[0]
-                    if (cur_input_ids == vision_tower.config.im_patch_token).sum() != num_patches:
-                        raise ValueError("The number of image patch tokens should be the same as the number of image patches.")
-                    masked_indices = torch.where(cur_input_ids == vision_tower.config.im_patch_token)[0]
-                    mask_index_start = masked_indices[0]
-                    if (masked_indices != torch.arange(mask_index_start, mask_index_start+num_patches, device=masked_indices.device, dtype=masked_indices.dtype)).any():
-                        raise ValueError("The image patch tokens should be consecutive.")
-                    if orig_embeds_params is not None:
-                        cur_new_input_embeds = torch.cat((cur_input_embeds[:mask_index_start].detach(), cur_image_features, cur_input_embeds[mask_index_start+num_patches:].detach()), dim=0)
+                        if (cur_input_ids == vision_tower.config.im_start_token).sum() != (cur_input_ids == vision_tower.config.im_end_token).sum():
+                            raise ValueError("The number of image start tokens and image end tokens should be the same.")
+                        image_start_tokens = torch.where(cur_input_ids == vision_tower.config.im_start_token)[0]
+                        for image_start_token_pos in image_start_tokens:
+                            cur_image_features = image_features[cur_image_idx].to(device=cur_input_embeds.device)
+                            num_patches = cur_image_features.shape[0]
+                            if cur_input_ids[image_start_token_pos + num_patches + 1] != vision_tower.config.im_end_token:
+                                raise ValueError("The image end token should follow the image start token.")
+                            if orig_embeds_params is not None:
+                                cur_new_input_embeds = torch.cat((cur_input_embeds[:image_start_token_pos].detach(), cur_input_embeds[image_start_token_pos:image_start_token_pos+1], cur_image_features, cur_input_embeds[image_start_token_pos + num_patches + 1:image_start_token_pos + num_patches + 2], cur_input_embeds[image_start_token_pos + num_patches + 2:].detach()), dim=0)
+                            else:
+                                cur_new_input_embeds = torch.cat((cur_input_embeds[:image_start_token_pos+1], cur_image_features, cur_input_embeds[image_start_token_pos + num_patches + 1:]), dim=0)
+                            cur_image_idx += 1
+                        new_input_embeds.append(cur_new_input_embeds)
                     else:
-                        cur_new_input_embeds = torch.cat((cur_input_embeds[:mask_index_start], cur_image_features, cur_input_embeds[mask_index_start+num_patches:]), dim=0)
-                    new_input_embeds.append(cur_new_input_embeds)
-            inputs_embeds = torch.stack(new_input_embeds, dim=0)
+                        cur_image_features = image_features[cur_image_idx]
+                        num_patches = cur_image_features.shape[0]
+                        if (cur_input_ids == vision_tower.config.im_patch_token).sum() != num_patches:
+                            raise ValueError("The number of image patch tokens should be the same as the number of image patches.")
+                        masked_indices = torch.where(cur_input_ids == vision_tower.config.im_patch_token)[0]
+                        mask_index_start = masked_indices[0]
+                        if (masked_indices != torch.arange(mask_index_start, mask_index_start+num_patches, device=masked_indices.device, dtype=masked_indices.dtype)).any():
+                            raise ValueError("The image patch tokens should be consecutive.")
+                        if orig_embeds_params is not None:
+                            cur_new_input_embeds = torch.cat((cur_input_embeds[:mask_index_start].detach(), cur_image_features, cur_input_embeds[mask_index_start+num_patches:].detach()), dim=0)
+                        else:
+                            cur_new_input_embeds = torch.cat((cur_input_embeds[:mask_index_start], cur_image_features, cur_input_embeds[mask_index_start+num_patches:]), dim=0)
+                        new_input_embeds.append(cur_new_input_embeds)
+                inputs_embeds = torch.stack(new_input_embeds, dim=0)
 
+    
 
-
-            return super(LlavaLlamaModel, self).forward(
-                input_ids=None, attention_mask=attention_mask, past_key_values=past_key_values,
-                inputs_embeds=inputs_embeds, use_cache=use_cache,
-                output_attentions=output_attentions, output_hidden_states=output_hidden_states,
-                return_dict=return_dict
-            )
+        return super(LlavaLlamaModel, self).forward(
+            input_ids=None, attention_mask=attention_mask, past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds, use_cache=use_cache,
+            output_attentions=output_attentions, output_hidden_states=output_hidden_states,
+            return_dict=return_dict
+        )
 
 
 
