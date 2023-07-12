@@ -84,10 +84,10 @@ class SingleImageConvDatasetMixin:
 
     def __getitem__(self, index, debug_mode=False) -> Dict[str, Any]:
         # getitem
-        if self.training_args is not None:
-            using_icl = self.training_args.icl
-        else:
-            using_icl = False
+        # if self.training_args is not None:
+        #     using_icl = self.training_args.icl
+        # else:
+        using_icl = False
         if using_icl:
             res = self.__getitem_icl__(index,debug_mode)
         else:
