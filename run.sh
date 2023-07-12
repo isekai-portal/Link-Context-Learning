@@ -43,5 +43,6 @@ sbatch --nodes 1 \
        --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
        --cfg-options model_args.qformer_config.num_query_token=32 \
        --cfg-options model_args.image_token_len=32 \
-       --cfg-options model_args.qformer_config.only_qformer=True
+       --cfg-options model_args.qformer_config.only_qformer=True \
+       --cfg-options data_args.use_icl=False
 

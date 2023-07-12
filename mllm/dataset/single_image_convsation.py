@@ -24,6 +24,7 @@ class SingleImageConvDatasetMixin:
             tokenize_kwargs: dict = None,
             training_args: TrainingArguments = None,
             transforms: Optional[Callable] = None,
+            use_icl = False,
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -36,6 +37,7 @@ class SingleImageConvDatasetMixin:
         self.tokenize_kwargs = tokenize_kwargs if tokenize_kwargs is not None else {}
         self.training_args = training_args
         self.transforms = transforms
+        self.use_icl = use_icl
 
     def __get_icl_item__(self, item, do_mask=None, debug_mode=False) -> Dict[str, Any]:
         # get_icl_item
@@ -87,8 +89,7 @@ class SingleImageConvDatasetMixin:
         # if self.training_args is not None:
         #     using_icl = self.training_args.icl
         # else:
-        using_icl = False
-        if using_icl:
+        if self.use_icl:
             res = self.__getitem_icl__(index,debug_mode)
         else:
             res = self.__getitem_origin__(index,debug_mode)

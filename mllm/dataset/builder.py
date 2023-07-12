@@ -17,7 +17,7 @@ def prepare_data(
         data_args,
         model_args,
         training_args: TrainingArguments,
-        preprocessor: Dict[str, Any],
+        preprocessor: Dict[str, Any]
 ) -> Tuple[DatasetDict, Optional[ComputeMetrics]]:
     # raw dataset
     datasets = {
@@ -41,6 +41,7 @@ def prepare_data(
     for k, v in model_args.process_func_args.items():
         process_func[k] = FUNCTIONS.build(cfg=v)
 
+    use_icl = data_args.get('use_icl', False)
     conv_dataset_cls = partial(
         SingleImageConvDataset,
         preprocessor=preprocessor,
@@ -49,6 +50,7 @@ def prepare_data(
         conv_template=conv_template,
         training_args=training_args,
         transforms=transforms,
+        use_icl=use_icl
     )
     ds = {
         'train': conv_dataset_cls(dataset_generator=datasets['train'], mode='train') if datasets['train'] is not None else None,

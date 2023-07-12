@@ -25,9 +25,9 @@ sbatch -p mm_v100_32g \
     accelerate launch --num_processes 4 --main_process_port 23781 mllm/pipeline/finetune.py \
         config/llava_eval_multi_rec.py \
         --tf32=False --bf16=False --fp16=True \
-        --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/dummy_exp/Icl_pretrain/checkpoint-4000 \
+        --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/dummy_exp/Icl_pretrain/checkpoint-14000 \
         --per_device_eval_batch_size 4 \
-        --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/Icl_pretrain/checkpoint-4000_tmp \
+        --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/Icl_pretrain/checkpoint-14000 \
        --cfg-options model_args.qformer_config.num_query_token=32 \
        --cfg-options model_args.image_token_len=32 \
        --cfg-options model_args.qformer_config.load_model=True
