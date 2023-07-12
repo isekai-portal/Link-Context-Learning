@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import csv
 
 from petrel_client.client import Client
-import debugpy;debugpy.connect(('10.142.4.32', 5610))
+# import debugpy;debugpy.connect(('10.142.4.32', 5610))
 
 anno_file_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/imagenet1k.jsonl'
 ceph_root = 'zz1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/'
