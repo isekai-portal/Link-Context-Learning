@@ -66,6 +66,9 @@ class InterleaveDateset(Dataset):
 
     def __getitem__(self, index):
         return self.concat_dataset[self.index_mapping[index]]
+    
+    def __get_icl_item__(self, index, shot):
+        return self.concat_dataset.__get_icl_item__(self.index_mapping[index],shot)
 
     def __repr__(self) -> str:
         head = "Dataset " + self.__class__.__name__

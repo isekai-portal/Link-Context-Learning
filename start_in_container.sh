@@ -20,7 +20,7 @@ H=`hostname`
 THEID=`echo -e $HOSTNAMES  | python3 -c "import sys;[sys.stdout.write(str(i)) for i,line in enumerate(next(sys.stdin).split(' ')) if line.strip() == '$H'.strip()]"`
 echo THEID=$THEID
 
-source ${CONDA_PREFIX_1}/bin/activate llava
+#source ${CONDA_PREFIX_1}/bin/activate llava
 echo python3 version = `python3 --version`
 echo "************************************"
 python -c "import torch"

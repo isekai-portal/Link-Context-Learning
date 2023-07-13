@@ -8,11 +8,10 @@ model_args = dict(
     model_name_or_path=r'/mnt/lustre/share_data/chenkeqin/VG/ckpt/llava/llava_v1/7B',
     vision_tower=r'/mnt/lustre/share_data/chenkeqin/VG/ckpt/openai/clip-vit-large-patch14',
     pretrain_mm_mlp_adapter=None,
-
     # model config
     mm_vision_select_layer=-2,
     model_max_length=2048,
-
+    
     # finetune config
     freeze_backbone=False,
     tune_mm_mlp_adapter=False,

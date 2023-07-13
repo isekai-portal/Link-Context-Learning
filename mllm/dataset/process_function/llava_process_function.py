@@ -144,7 +144,6 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
         assert len(conv.messages) >= 2
         # target = conv.messages[-1][-1]
         target = conv.get_prompt()
-
         conv.messages[-1][-1] = ""
         conversation = conv.get_prompt()
         input_ids = tokenizer([conversation, ], **kwargs).input_ids[0]

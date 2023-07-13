@@ -10,7 +10,7 @@ training_args = dict(
 
     # train
     do_train=True,
-    per_device_train_batch_size=8,
+    per_device_train_batch_size=4,
     gradient_accumulation_steps=1,
     num_train_epochs=5,
     learning_rate=2e-5,
@@ -23,9 +23,12 @@ training_args = dict(
     tf32=True,
     bf16=True,
     gradient_checkpointing=True,
+    #sharded_ddp=True,
+    # fsdp="full_shard auto_wrap",
+    # fsdp_transformer_layer_cls_to_wrap='BertLayer',
     fsdp="full_shard auto_wrap",
     fsdp_transformer_layer_cls_to_wrap='LlamaDecoderLayer',
-
+    #deepspeed="/mnt/cache/fanweichen2/Code/unify_mllm/accelerate_config/ds_config2_alpaca.json",
     # train logging
     logging_steps=10,
     save_strategy='steps',
