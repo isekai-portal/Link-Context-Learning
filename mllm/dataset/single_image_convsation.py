@@ -130,6 +130,7 @@ class SingleImageConvDatasetMixin:
         # print('mask: ',ret_dict['attention_mask'].shape)
         # print('labels: ',ret_dict['labels'].shape)
         # print('input_ids: ',ret_dict['input_ids'].shape)
+        # print('image: ',ret_dict['image'].shape)
 
         # post_processed_labels = post_process_generate_ids(self.preprocessor['text'], ret_dict['labels'])
         # print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}")

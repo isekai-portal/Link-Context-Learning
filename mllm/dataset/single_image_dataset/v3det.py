@@ -5,6 +5,7 @@ import warnings
 import os
 import os.path as osp
 import random
+import json
 from typing import Dict, Any, Sequence
 
 import torch
@@ -68,28 +69,66 @@ class V3DetDataset(MInstrDataset):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER, EXPR_PLACEHOLDER))
         self.coco = COCO(self.filename)
+        self.neighbors = self.load_neighbors(self.filename)
         self.data = []
-        self.cat_ids = self.coco.getCatIds()
+
+        cat_ids = self.coco.getCatIds()
+        clean_cat_ids = []
+        for icat_id in cat_ids:
+            img_ids = self.coco.getImgIds(catIds=icat_id)
+            if img_ids:
+                clean_cat_ids.append(icat_id)
+
+        self.cat_ids = clean_cat_ids    
+
         self.cat_ids_set = set(self.cat_ids)
+
+        expired_imgs = self.load_expired(self.filename)
+        self.expired_imgs_ids = [int(x) for x in expired_imgs.keys()]
+        self.expired_imgs_ids = set(self.expired_imgs_ids)
+
         for icat_id in self.cat_ids:
             cls_info = self.coco.loadCats(icat_id)[0]
             self.data.append(cls_info)
 
-
+    def load_neighbors(self, filename):
+        with open(filename, 'r', encoding='utf-8') as f_in:
+            data = json.load(f_in)
+        return data['neighbors']
+    
+    def load_expired(self, filename):
+        with open(filename, 'r', encoding='utf-8') as f_in:
+            data = json.load(f_in)
+        return data['expired_imgs']
+    
+    def until_true(self, func, *args, **kwargs):
+        while True:
+            ret = func(*args, **kwargs)
+            if ret is not None:
+                return ret
+    
     def __getitem__(self, index):
         if random.random() < 0.5:
-            return self.__getitem_pos(index)
+            return self.until_true(self.__getitem_pos, index)
         else:
-            return self.__getitem_neg(index)
-
-    def __get_icl_item__(self,index,shot):
+            return self.until_true(self.__getitem_neg, index)
+                
+                
+    def __get_icl_item__(self, index, shot):
         ret_list = []
-        for i in range(shot):
-            ret_list.append(self.__getitem_neg(index))
-        for i in range(shot):
-            ret_list.append(self.__getitem_pos(index))
+        for _ in range(shot):
+            ret_list.append(self.until_true(self.__getitem_pos, index))
+
+        for _ in range(shot):
+            ret_list.append(self.until_true(self.__getitem_neg, index))
+        
         random.shuffle(ret_list)
-        ret_list.append(self.__getitem_pos(index))
+
+        if random.random() < 0.5:
+            ret_list.append(self.until_true(self.__getitem_pos, index))
+        else:
+            ret_list.append(self.until_true(self.__getitem_neg, index))
+
         return ret_list
 
     def __getitem_pos(self, index):
@@ -99,6 +138,10 @@ class V3DetDataset(MInstrDataset):
         name = item['name']
 
         img_ids = self.coco.getImgIds(catIds=cls_id)
+        img_ids = list(set(img_ids) - self.expired_imgs_ids)
+        if not img_ids:
+            return None
+
         img_id = random.choice(img_ids)
         img_info = self.coco.loadImgs(img_id)[0]
         file_name = img_info['file_name']
@@ -114,8 +157,7 @@ class V3DetDataset(MInstrDataset):
             bboxes.append(bbox_xyxy)
 
         expr = random.choice([cls_intro, name])
-        img_path = osp.join(self.image_folder, file_name)
-        image = self.get_image(img_path)
+        image = self.get_image(file_name)
         question = self.get_template().replace(EXPR_PLACEHOLDER, expr)
 
         ret = {
@@ -142,6 +184,10 @@ class V3DetDataset(MInstrDataset):
         cls_id = item['id']
 
         img_ids = self.coco.getImgIds(catIds=cls_id)
+        img_ids = list(set(img_ids) - self.expired_imgs_ids)
+        if not img_ids:
+            return None
+
         img_id = random.choice(img_ids)
         img_info = self.coco.loadImgs(img_id)[0]
         file_name = img_info['file_name']
@@ -155,7 +201,7 @@ class V3DetDataset(MInstrDataset):
         
 
         # Find neighboring categories not in the image
-        neighboring_cat_ids = self.coco['neighbors'][cls_id]
+        neighboring_cat_ids = set(self.neighbors[str(cls_id)])
         cur_neighboring_cat_ids = (self.cat_ids_set  - cat_ids_in_img) & neighboring_cat_ids
         cur_neighboring_cat_ids = list(cur_neighboring_cat_ids)
 
@@ -169,9 +215,7 @@ class V3DetDataset(MInstrDataset):
         neighboring_name = neighboring_cls_info['name']
         neighboring_expr = random.choice([neighboring_cls_intro, neighboring_name])
 
-
-        img_path = osp.join(self.image_folder, file_name)
-        image = self.get_image(img_path)
+        image = self.get_image(file_name)
         question = self.get_template().replace(EXPR_PLACEHOLDER, neighboring_expr)
 
 

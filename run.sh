@@ -30,7 +30,9 @@ export LD_LIBRARY_PATH=/mnt/cache/share/cuda-11.7/lib64:$LD_LIBRARY_PATH
 #        --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
 #        --cfg-options model_args.qformer_config.num_query_token=32 \
 #        --cfg-options model_args.image_token_len=32 \
-#        --cfg-options model_args.qformer_config.only_qformer=True
+#        --cfg-options model_args.qformer_config.only_qformer=True \
+#        --cfg-options data_args.use_icl=False \
+#        --learning_rate 1e-4
 
 
 
@@ -38,11 +40,12 @@ sbatch --nodes 1 \
        --phx-priority P0 \
        --partition=mm_v100_32g \
        --job-name=icl_debug_v100 \
+       --preempt \
        --comment "wbsR-SC230999.001.02" \
        launcher_intelmpi.sh mllm/pipeline/finetune.py config/icl_debug.py \
        --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
        --cfg-options model_args.qformer_config.num_query_token=32 \
        --cfg-options model_args.image_token_len=32 \
        --cfg-options model_args.qformer_config.only_qformer=True \
-       --cfg-options data_args.use_icl=False
+       --cfg-options data_args.use_icl=True
 

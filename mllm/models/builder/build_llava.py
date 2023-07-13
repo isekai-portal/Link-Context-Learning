@@ -55,19 +55,24 @@ def load_pretrained_llava(model_args, training_args) -> Tuple[nn.Module, PREPROC
     if training_args.bf16:
         dtype = torch.bfloat16
 
+    if 'qformer_config' in model_args:
+        qformer_config = model_args.qformer_config
+    else:
+        qformer_config = None
     model_vision_dict = model.model.initialize_vision_modules(
         vision_tower=model_args.vision_tower,
         mm_vision_select_layer=model_args.mm_vision_select_layer,
         pretrain_mm_mlp_adapter=model_args.pretrain_mm_mlp_adapter,
-        qformer_config=model_args.qformer_config,
+        qformer_config=qformer_config,
         dtype = dtype,
         device=training_args.device
     )
-    if 'qformer_config' in model_args and model_args.qformer_config.load_model:
-        print('loading qformer ckpt')
-        missing_keys,unexpected_keys = load_sharded_checkpoint(model, model_args.model_name_or_path)
-        print('missing: ',missing_keys)
-        print('unexpected: ',unexpected_keys)
+    if 'qformer_config' in model_args:
+        if model_args.qformer_config.load_model:
+            print('loading qformer ckpt')
+            missing_keys,unexpected_keys = load_sharded_checkpoint(model, model_args.model_name_or_path)
+            print('missing: ',missing_keys)
+            print('unexpected: ',unexpected_keys)
 
     model.model.vision_tower[0].to(dtype=dtype, device=training_args.device)
     vision_config = model_vision_dict['vision_config']
