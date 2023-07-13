@@ -20,6 +20,7 @@ class SingleImageConvDatasetMixin:
             preprocessor: Dict[str, Any],
             process_func: Dict[str, Any],
             conv_template: Callable[[], Conversation] = partial(get_conv_template, name='vicuna_v1.1'),
+            conv_template_icl: Callable[[], Conversation] = partial(get_conv_template, name='vicuna_v1.1'),
             mode='train',
             tokenize_kwargs: dict = None,
             training_args: TrainingArguments = None,
@@ -33,7 +34,8 @@ class SingleImageConvDatasetMixin:
 
         self.preprocessor = preprocessor
         self.process_func = process_func
-        self.conv_template = conv_template
+        self.conv_template_ori = conv_template
+        self.conv_template_icl = conv_template_icl
         self.mode = mode
         self.tokenize_kwargs = tokenize_kwargs if tokenize_kwargs is not None else {}
         self.training_args = training_args
@@ -41,7 +43,7 @@ class SingleImageConvDatasetMixin:
         self.use_icl = use_icl
         self.shot = shot
 
-    def __get_icl_item__(self, item, do_mask=None, debug_mode=False) -> Dict[str, Any]:
+    def __get_icl_item__(self, item, do_mask=None, debug_mode=False, mode='common') -> Dict[str, Any]:
         # get_icl_item
         #item = self.get_raw_item(index)
         image: Image.Image = item.get('image', None)
@@ -70,10 +72,10 @@ class SingleImageConvDatasetMixin:
                 target['width'], target['height'] = image.width, image.height
 
         # preprocess
-        raw_conv = self.process_conv(raw_conv)
+        raw_conv = self.process_conv(raw_conv,mode)
         raw_conv, image = self.process_conv_multimage(raw_conv, image)
         raw_conv, _ = self.process_target(raw_conv, target, multimage_mode=multimage_mode)
-        conv = self.build_conv(raw_conv)
+        conv = self.build_conv(raw_conv,mode)
         text_dict = self.process_text(conv, do_mask)
         image_dict = self.process_image(image)
 
@@ -108,7 +110,11 @@ class SingleImageConvDatasetMixin:
 
         for i in range(len(dict_list)):
             item = dict_list[i]
-            sub_dict = self.__get_icl_item__(item)
+            if i == len(dict_list) - 1:
+                conv_mode = 'icl'
+            else:
+                conv_mode = 'common'
+            sub_dict = self.__get_icl_item__(item,mode=conv_mode)
 
             ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
             
@@ -273,8 +279,12 @@ class SingleImageConvDatasetMixin:
             assert has_target_boxes
         # not check box placeholder num this will be checked in format process
 
-    def build_conv(self, source: List[Dict[str, Any]]) -> Conversation:
-        conv = self.conv_template()
+    def build_conv(self, source: List[Dict[str, Any]], mode='common') -> Conversation:
+        if mode == 'common':
+            conv = self.conv_template_ori()
+        else:
+            conv = self.conv_template_icl()
+
         role_map = {"human": conv.roles[0], "gpt": conv.roles[1]}
         assert len(source) > 0
         assert source[0]['from'] == 'human'
@@ -283,12 +293,16 @@ class SingleImageConvDatasetMixin:
             conv.append_message(role, sentence['value'])
         return conv
 
-    def process_conv(self, raw_conv: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def process_conv(self, raw_conv: List[Dict[str, Any]],mode='common') -> List[Dict[str, Any]]:
         """
         some utils preprocess for raw_conv.
             e.g. replace <image> placeholder to sequence <im_start> <im_patch>*256 <im_end>
         """
-        return self.process_func['conv'](raw_conv, self.preprocessor, self.conv_template)
+        if mode == 'common':
+            conv = self.conv_template_ori
+        else:
+            conv = self.conv_template_icl
+        return self.process_func['conv'](raw_conv, self.preprocessor, conv)
 
     def process_target(self, raw_conv: List[Dict[str, Any]], target: Dict[str, Any], multimage_mode=False) -> Tuple[
         List[Dict[str, Any]], Dict[str, Any]]:

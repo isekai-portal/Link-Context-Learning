@@ -61,7 +61,7 @@ DEFAULT_TRAIN_DATASET = dict(
         type='V3DetDataset',
         filename=r'/mnt/lustre/share_data/zhangzhao2/VG/v3det/v3det_2023_v1_train_neig_expired.json',
         image_folder=r'sdc:s3://mm_data/v3det/',
-        template_file=r"{{fileDirname}}/template/DOD.json",
+        template_file=r"{{fileDirname}}/template/ICL.json",
     ),
     **_base_.DEFAULT_TRAIN_GQA_VARIANT,
     **_base_.DEFAULT_TRAIN_CLEVR_VARIANT,
