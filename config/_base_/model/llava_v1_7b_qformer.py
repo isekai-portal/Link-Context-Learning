@@ -11,7 +11,16 @@ model_args = dict(
     # model config
     mm_vision_select_layer=-2,
     model_max_length=2048,
-    
+    qformer_config=dict(
+        load_model=False,
+        ckpt_path='/mnt/lustre/share_data/zhangzhao2/VG/ckpt/blip-2/blip2_pretrained_vitL.pth',
+        num_query_token=257,
+        num_features=1024,
+        bert_pretrain_path=r'/mnt/lustre/share/hezhiqun/Model/huggingface.co/bert-base-uncased/',
+        cross_attention_freq=2,
+        hidden_size=768,
+        only_qformer=True
+    ),
     # finetune config
     freeze_backbone=False,
     tune_mm_mlp_adapter=False,

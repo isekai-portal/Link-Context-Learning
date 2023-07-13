@@ -40,16 +40,15 @@ sbatch -p mm_v100_32g \
     -n 1 \
     -N 1 \
     --gres=gpu:4 \
-    -c 32 \
+    -c 64 \
     --job-name=eval_mmv100 \
-    --preempt \
     --comment "wbsR-SC230999.001.02" \
     accelerate launch --num_processes 4 --main_process_port 23781 mllm/pipeline/finetune.py \
-        config/llava_eval_multi_rec.py \
+        config/llava_eval_multi_pope.py \
         --tf32=False --bf16=False --fp16=True \
-        --cfg-options model_args.model_name_or_path=/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000 \
+        --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/dummy_exp/Icl_pretrain/checkpoint-6000 \
         --per_device_eval_batch_size 4 \
-        --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/llava_pretrain_final19/final_new \
-    #    --cfg-options model_args.qformer_config.num_query_token=32 \
-    #    --cfg-options model_args.image_token_len=32 \
-    #    --cfg-options model_args.qformer_config.load_model=True
+        --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/Icl_pretrain/checkpoint-6000_new_pope \
+       --cfg-options model_args.qformer_config.num_query_token=32 \
+       --cfg-options model_args.image_token_len=32 \
+       --cfg-options model_args.qformer_config.load_model=True

@@ -25,6 +25,7 @@ class SingleImageConvDatasetMixin:
             training_args: TrainingArguments = None,
             transforms: Optional[Callable] = None,
             use_icl = False,
+            shot=1,
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -38,6 +39,7 @@ class SingleImageConvDatasetMixin:
         self.training_args = training_args
         self.transforms = transforms
         self.use_icl = use_icl
+        self.shot = shot
 
     def __get_icl_item__(self, item, do_mask=None, debug_mode=False) -> Dict[str, Any]:
         # get_icl_item
@@ -102,7 +104,7 @@ class SingleImageConvDatasetMixin:
         update_keys = ['input_ids', 'attention_mask', 'labels']
         ret_dict = {'image':[]}
         #idx_list = [item for item in range(index, index+5)]
-        dict_list = self.get_raw_icl_item(index,2)
+        dict_list = self.get_raw_icl_item(index,self.shot)
 
         for i in range(len(dict_list)):
             item = dict_list[i]

@@ -81,8 +81,8 @@ class LlavaLlamaModel(LlamaModel):
             # HACK: for FSDP
             self.vision_tower = [CLIPVisionModel.from_pretrained(config.mm_vision_tower)]
             # self.vision_tower = CLIPVisionModel.from_pretrained(config.mm_vision_tower)
-        # if hasattr(config, "use_mm_proj"):
-        #     self.mm_projector = nn.Linear(config.mm_hidden_size, config.hidden_size)
+        if hasattr(config, "use_mm_proj"):
+            self.mm_projector = nn.Linear(config.mm_hidden_size, config.hidden_size)
 
 
     def initialize_vision_modules(self, vision_tower, mm_vision_select_layer,
@@ -170,23 +170,31 @@ class LlavaLlamaModel(LlamaModel):
                     select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
                     select_hidden_state = image_forward_out.hidden_states[select_hidden_state_layer]
 
-                    image_feature = select_hidden_state#[:, 1:]
-                    image_atts = torch.ones(image_feature.size()[:-1], dtype=torch.long).to(
-                        image_feature.device
-                    )
-                    query_tokens = self.query_tokens.expand(image_feature.shape[0], -1, -1)
-                    query_output = self.Qformer.bert(
-                        query_embeds=query_tokens,
-                        encoder_hidden_states=image_feature,
-                        encoder_attention_mask=image_atts,
-                        use_cache=True,
-                        return_dict=True,
-                    )
-                    image_feature = self.mm_projector(query_output.last_hidden_state)
-                    
+                    if self.qformer_config is not None:
+                        image_feature = select_hidden_state#[:, 1:]
+                        image_atts = torch.ones(image_feature.size()[:-1], dtype=torch.long).to(
+                            image_feature.device
+                        )
+                        query_tokens = self.query_tokens.expand(image_feature.shape[0], -1, -1)
+                        query_output = self.Qformer.bert(
+                            query_embeds=query_tokens,
+                            encoder_hidden_states=image_feature,
+                            encoder_attention_mask=image_atts,
+                            use_cache=True,
+                            return_dict=True,
+                        )
+                        image_feature = self.mm_projector(query_output.last_hidden_state)
+                    else:
+                        image_feature = select_hidden_state[:, 1:]
+                        image_feature = self.mm_projector(image_feature)
+
                     image_features.append(image_feature)
 
-                dummy_image_features = torch.zeros(32, 768, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+                if self.qformer_config is not None:
+                    dummy_image_features = torch.zeros(32, 768, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+                else:
+                    dummy_image_features = torch.zeros(256, 1024, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+
                 dummy_image_features = self.mm_projector(dummy_image_features)
 
                 new_input_embeds = []
@@ -240,9 +248,9 @@ class LlavaLlamaModel(LlamaModel):
                     select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
                     select_hidden_state = image_forward_outs.hidden_states[select_hidden_state_layer]
 
-                image_features = select_hidden_state#[:, 1:]
 
                 if self.qformer_config is not None:
+                    image_features = select_hidden_state
                     image_atts = torch.ones(image_features.size()[:-1], dtype=torch.long).to(
                         image_features.device
                     )
@@ -260,6 +268,7 @@ class LlavaLlamaModel(LlamaModel):
                     dummy_image_features = self.mm_projector(dummy_image_features)
 
                 else:
+                    image_features = select_hidden_state[:, 1:]
                     image_features = self.mm_projector(image_features)
                     dummy_image_features = torch.zeros(256, 1024, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
                     dummy_image_features = self.mm_projector(dummy_image_features)
