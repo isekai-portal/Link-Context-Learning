@@ -10,7 +10,7 @@ from ..root import DATASETS
 
 
 @DATASETS.register_module()
-class ConcatDataset(TorchConcatDataset):
+class ConcatDataset(Dataset):
     _repr_indent = 4
 
     def __init__(self, cfgs):
@@ -24,18 +24,6 @@ class ConcatDataset(TorchConcatDataset):
     def __getitem__(self, index):
         return self.concat_dataset[index]
 
-    def __get_icl_item__(self, idx, shot):
-        if idx < 0:
-            if -idx > len(self):
-                raise ValueError("absolute value of index should not exceed dataset length")
-            idx = len(self) + idx
-        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
-        if dataset_idx == 0:
-            sample_idx = idx
-        else:
-            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
-        return self.datasets[dataset_idx].__get_icl_item__(sample_idx,shot)
-
     def __repr__(self) -> str:
         head = "Dataset " + self.__class__.__name__
         body = [
@@ -47,6 +35,21 @@ class ConcatDataset(TorchConcatDataset):
         lines = [head] + [" " * self._repr_indent + line for line in body]
         return "\n".join(lines)
 
+class ICLConcatDataset(TorchConcatDataset):
+    def __init__(self, datasets):
+        super().__init__(datasets)
+
+    def __get_icl_item__(self, idx, shot):
+            if idx < 0:
+                if -idx > len(self):
+                    raise ValueError("absolute value of index should not exceed dataset length")
+                idx = len(self) + idx
+            dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
+            if dataset_idx == 0:
+                sample_idx = idx
+            else:
+                sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
+            return self.datasets[dataset_idx].__get_icl_item__(sample_idx,shot)
 
 @DATASETS.register_module()
 class InterleaveDateset(Dataset):
@@ -65,7 +68,7 @@ class InterleaveDateset(Dataset):
         self.stopping_strategy = stopping_strategy
 
         datasets = [DATASETS.build(cfg) for cfg in cfgs]
-        self.concat_dataset = ConcatDataset(datasets)
+        self.concat_dataset = ICLConcatDataset(datasets)
 
         self.index_mapping = _interleave_dataset_index(
             lengths=[len(ds) for ds in datasets],
