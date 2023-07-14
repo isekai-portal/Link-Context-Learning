@@ -1,6 +1,7 @@
 from typing import List, Optional, Literal
 
 import numpy as np
+import bisect
 from torch.utils.data import Dataset
 from torch.utils.data import ConcatDataset as TorchConcatDataset
 from torch.utils.data import Subset as TorchSubset
@@ -9,7 +10,7 @@ from ..root import DATASETS
 
 
 @DATASETS.register_module()
-class ConcatDataset(Dataset):
+class ConcatDataset(TorchConcatDataset):
     _repr_indent = 4
 
     def __init__(self, cfgs):
@@ -22,6 +23,18 @@ class ConcatDataset(Dataset):
 
     def __getitem__(self, index):
         return self.concat_dataset[index]
+
+    def __get_icl_item__(self, idx, shot):
+        if idx < 0:
+            if -idx > len(self):
+                raise ValueError("absolute value of index should not exceed dataset length")
+            idx = len(self) + idx
+        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
+        if dataset_idx == 0:
+            sample_idx = idx
+        else:
+            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
+        return self.datasets[dataset_idx].__get_icl_item__(sample_idx,shot)
 
     def __repr__(self) -> str:
         head = "Dataset " + self.__class__.__name__
@@ -52,7 +65,7 @@ class InterleaveDateset(Dataset):
         self.stopping_strategy = stopping_strategy
 
         datasets = [DATASETS.build(cfg) for cfg in cfgs]
-        self.concat_dataset = TorchConcatDataset(datasets)
+        self.concat_dataset = ConcatDataset(datasets)
 
         self.index_mapping = _interleave_dataset_index(
             lengths=[len(ds) for ds in datasets],
