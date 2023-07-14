@@ -80,6 +80,9 @@ sbatch --nodes 1 \
        --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
        --cfg-options data_args.shot=2
 
+# /mnt/lustre/share_data/chenkeqin/dummy_exp_unify_mllm/llava_pretrain_final19/checkpoint-44000
+
+
 # ####using shikra without ICL
 # sbatch --nodes 1 \
 #        --phx-priority P0 \

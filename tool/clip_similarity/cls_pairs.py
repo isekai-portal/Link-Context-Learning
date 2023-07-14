@@ -11,8 +11,8 @@ import numpy as np
 import random
 import math
 
-neg_cls_num = 36
-pos_sample_num = 36
+neighbor_num = 36
+sample_num = 36
 
 dataset_cfg_lst = [{
     'dataset': 'imagenet1k',
@@ -53,10 +53,10 @@ for dataset_info in dataset_cfg_lst:
             all_cats = [x.strip() for x in line[1:]]
             # remove self for each class
             num_classes = len(all_cats)
-            bins = math.ceil(num_classes / neg_cls_num)
-            neg_samples = []
+            bins = math.ceil(num_classes / neighbor_num)
+            neighbors = []
 
-            for idx in range(neg_cls_num):
+            for idx in range(neighbor_num):
                 start = idx * bins
                 end = (idx + 1) * bins
                 if idx == 0:
@@ -68,17 +68,17 @@ for dataset_info in dataset_cfg_lst:
                 selected_cls_name = id2name[selected_cls_id]
                 selected_imglist = id2imglist[selected_cls_id]
                 selected_img = random.sample(selected_imglist, 1)[0]
-                neg_sample = [selected_cls_id, selected_cls_name, selected_img]
-                neg_samples.append(neg_sample)
+                neighbor = [selected_cls_id, selected_cls_name, selected_img]
+                neighbors.append(neighbor)
 
-            pos_imglist = id2imglist[cls_id]
-            pos_samples = random.sample(pos_imglist, pos_sample_num)
+            img_list = id2imglist[cls_id]
+            samples = random.sample(img_list, sample_num)
 
             cls_data = {
                 'class_id': cls_id,
-                'class_name': cls_name,
-                'positive_samples': pos_samples,
-                'negative_samples': neg_samples
+                'class_name': cls_name.replace("_"," "),
+                'samples': samples,
+                'neighbors': neighbors
             }
 
             writer.write(cls_data)

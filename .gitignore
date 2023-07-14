@@ -2,3 +2,38 @@
 result
 tmp
 *.pyc
+
+# Python
+__pycache__
+*.pyc
+*.egg-info
+dist
+
+# Log
+*.log
+*.log.*
+*.json
+
+# Data
+!**/alpaca-data-conversation.json
+
+# Editor
+.idea
+*.swp
+
+# Other
+.DS_Store
+wandb
+output
+
+checkpoints
+ckpts*
+
+
+*.out
+result
+
+# taiyan 
+.vscode
+sketch*
+scripts/
