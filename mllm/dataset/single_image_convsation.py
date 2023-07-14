@@ -20,7 +20,7 @@ class SingleImageConvDatasetMixin:
             preprocessor: Dict[str, Any],
             process_func: Dict[str, Any],
             conv_template: Callable[[], Conversation] = partial(get_conv_template, name='vicuna_v1.1'),
-            conv_template_icl: Callable[[], Conversation] = partial(get_conv_template, name='vicuna_v1.1'),
+            conv_template_icl: Callable[[], Conversation] = partial(get_conv_template, name='icl_v1.0'),
             mode='train',
             tokenize_kwargs: dict = None,
             training_args: TrainingArguments = None,
@@ -110,10 +110,8 @@ class SingleImageConvDatasetMixin:
 
         for i in range(len(dict_list)):
             item = dict_list[i]
-            if i == len(dict_list) - 1:
-                conv_mode = 'icl'
-            else:
-                conv_mode = 'common'
+
+            conv_mode = 'icl'
             sub_dict = self.__get_icl_item__(item,mode=conv_mode)
 
             ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
@@ -140,14 +138,16 @@ class SingleImageConvDatasetMixin:
         # print('input_ids: ',ret_dict['input_ids'].shape)
         # print('image: ',ret_dict['image'].shape)
 
-        # post_processed_labels = post_process_generate_ids(self.preprocessor['text'], ret_dict['labels'])
-        # print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}")
+        if not hasattr(self, '_printed_sample'):
+            self._printed_sample = True
+            post_processed_labels = post_process_generate_ids(self.preprocessor['text'], ret_dict['labels'])
+            print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}")
 
-        # print(f"=================== {self.mode} sample ===================", flush=True)
-        # print(f"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}")
+            print(f"=================== {self.mode} sample ===================", flush=True)
+            print(f"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}")
 
-        # print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids'])}")
-        # print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels)}")
+            print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids'])}")
+            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels)}")
 
         return ret_dict
 

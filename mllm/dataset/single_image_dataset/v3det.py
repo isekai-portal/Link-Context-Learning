@@ -116,26 +116,46 @@ class V3DetDataset(MInstrDataset):
                 
     def __get_icl_item__(self, index, shot):
         ret_list = []
-        for _ in range(shot):
-            ret_list.append(self.until_true(self.__getitem_pos, index))
+        cls_id,cls_intro,name = self.__get_info__(index)
+        anchor_sample = self.until_true(self.__getitem_pos, cls_id,cls_intro,name)
 
-        for _ in range(shot):
-            ret_list.append(self.until_true(self.__getitem_neg, index))
-        
-        random.shuffle(ret_list)
-
+        _,fake_name = self.until_true(self.__getitem_pos, cls_id,cls_intro,name,True)
         if random.random() < 0.5:
-            ret_list.append(self.until_true(self.__getitem_pos, index))
+            for _ in range(shot):
+                ret_list.append(self.until_true(self.__getitem_pos, cls_id,cls_intro,fake_name,False))
+            ret_list.append(self.until_true(self.__getitem_pos, cls_id,cls_intro,fake_name,False))
         else:
-            ret_list.append(self.until_true(self.__getitem_neg, index))
-
+            for _ in range(shot):
+                ret_list.append(self.until_true(self.__getitem_pos, cls_id,cls_intro,name,False))
+            ret_list.append(anchor_sample)
         return ret_list
+        # for _ in range(shot):
+        #     ret_list.append(self.until_true(self.__getitem_pos, index))
 
-    def __getitem_pos(self, index):
+        # for _ in range(shot):
+        #     ret_list.append(self.until_true(self.__getitem_neg, index))
+        
+        # random.shuffle(ret_list)
+
+        # if random.random() < 0.5:
+        #     ret_list.append(self.until_true(self.__getitem_pos, index))
+        # else:
+        #     ret_list.append(self.until_true(self.__getitem_neg, index))
+
+        # return ret_list
+
+    def __get_info__(self,index):
         item = self.data[index]
         cls_id = item['id']
         cls_intro = item['cat_info']
         name = item['name']
+        return cls_id,cls_intro,name
+    
+    def __getitem_pos(self, cls_id,cls_intro,name,return_name=False):
+        # item = self.data[index]
+        # cls_id = item['id']
+        # cls_intro = item['cat_info']
+        # name = item['name']
 
         img_ids = self.coco.getImgIds(catIds=cls_id)
         img_ids = list(set(img_ids) - self.expired_imgs_ids)
@@ -156,7 +176,8 @@ class V3DetDataset(MInstrDataset):
             bbox_xyxy = clean_bbox_xyxy(bbox_xyxy, width, height)
             bboxes.append(bbox_xyxy)
 
-        expr = random.choice([cls_intro, name])
+        #expr = random.choice([cls_intro, name])
+        expr = name
         image = self.get_image(file_name)
         question = self.get_template().replace(EXPR_PLACEHOLDER, expr)
 
@@ -177,11 +198,14 @@ class V3DetDataset(MInstrDataset):
                 }
             ]
         }
-        return ret
+        if return_name:
+            return ret,expr
+        else:
+            return ret
     
-    def __getitem_neg(self, index):
-        item = self.data[index]
-        cls_id = item['id']
+    def __getitem_neg(self, cls_id,cls_intro,name):
+        # item = self.data[index]
+        # cls_id = item['id']
 
         img_ids = self.coco.getImgIds(catIds=cls_id)
         img_ids = list(set(img_ids) - self.expired_imgs_ids)

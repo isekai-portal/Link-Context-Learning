@@ -78,7 +78,8 @@ sbatch --nodes 1 \
        --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
        --cfg-options data_args.use_icl=True \
        --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
-       --cfg-options data_args.shot=2
+       --cfg-options data_args.shot=2 \
+       --cfg-options training_args.save_strategy='no'
 
 # /mnt/lustre/share_data/chenkeqin/dummy_exp_unify_mllm/llava_pretrain_final19/checkpoint-44000
 
