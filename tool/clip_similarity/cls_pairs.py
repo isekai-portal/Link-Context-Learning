@@ -35,7 +35,7 @@ for dataset_info in dataset_cfg_lst:
             # cls_ids.append(metas[0])
             # cls_names.append(metas[1])
             # cls_imgs.append(metas[2])
-            id2name[metas[0]] = metas[1]
+            id2name[metas[0]] = metas[1].replace("_"," ")
             id2imglist[metas[0]] = metas[2]
 
     outputs = []
@@ -64,10 +64,10 @@ for dataset_info in dataset_cfg_lst:
                 assert start < num_classes
                 segments = all_cats[start:end]
 
-                selected_cls_id = random.sample(segments, 1)[0]
+                selected_cls_id = random.choice(segments)
                 selected_cls_name = id2name[selected_cls_id]
                 selected_imglist = id2imglist[selected_cls_id]
-                selected_img = random.sample(selected_imglist, 1)[0]
+                selected_img = random.choice(selected_imglist)
                 neighbor = [selected_cls_id, selected_cls_name, selected_img]
                 neighbors.append(neighbor)
 
@@ -76,7 +76,7 @@ for dataset_info in dataset_cfg_lst:
 
             cls_data = {
                 'class_id': cls_id,
-                'class_name': cls_name.replace("_"," "),
+                'class_name': cls_name,
                 'samples': samples,
                 'neighbors': neighbors
             }

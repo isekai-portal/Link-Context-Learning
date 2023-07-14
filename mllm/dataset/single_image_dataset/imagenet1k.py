@@ -53,29 +53,30 @@ class ImageNet1kDataset(MInstrDataset):
         return 
 
     def _get_ret(self, index, mode="cls_positive"):
-        assert mode in ['cls_positive','cls_negative', 'negative']
+        assert mode in ['cls_positive','cls_negative', 'neighbors']
 
         item = self.get_raw_item(index)
-        pos_samples = item['positive_samples']
-        negative_samples = item['negative_samples']
+        samples = item['samples']
+        neighbors = item['neighbors']
         
         if mode == "cls_positive":
             # current class image and label
             label = item['class_name'].lower()
-            sample = random.choice(pos_samples)
+            sample = random.choice(samples)
         elif mode == "cls_negative":
             # current class image, random neighbor label
-            if not self.cls_neg_label:
-                neg_meta = random.choice(negative_samples)
-                label = neg_meta[1]
-            else:
+            if self.cls_neg_label:
                 label = self.cls_neg_label
-            sample = random.choice(pos_samples)
-        elif mode == "negative":
+            else:
+                metas = random.choice(neighbors)
+                label = metas[1]
+                self.cls_neg_label = label
+            sample = random.choice(samples)
+        elif mode == "neighbors":
             # random neighbor image and label
-            neg_meta = random.choice(negative_samples)
-            label = neg_meta[1]
-            sample = neg_meta[2]
+            metas = random.choice(neighbors)
+            label = metas[1]
+            sample = metas[2]
         else:
             raise NotImplementedError
 
@@ -95,7 +96,7 @@ class ImageNet1kDataset(MInstrDataset):
                 },
                 {
                     'from': 'gpt',
-                    'value': f"The answer is {label} .",
+                    'value': f"The answer is {label}.",
                 },
             ]
         }
@@ -107,7 +108,7 @@ class ImageNet1kDataset(MInstrDataset):
             self.cls_neg_label = None
             return ret 
         else:
-            return self._get_ret(index,mode="negative")
+            return self._get_ret(index,mode="neighbors")
 
     def __get_icl_item__(self, index, shot):
         ret_list = []
@@ -115,7 +116,7 @@ class ImageNet1kDataset(MInstrDataset):
             ret_list.append(self._get_ret(index, mode = "cls_negative"))
 
         for _ in range(shot):
-            ret_list.append(self._get_ret(index, mode = "negative"))
+            ret_list.append(self._get_ret(index, mode = "neighbors"))
         
         random.shuffle(ret_list)
         ret_list.append(self._get_ret(index, mode = "cls_negative"))
