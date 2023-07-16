@@ -64,10 +64,7 @@ def load_sharded_checkpoint(model, folder, strict=True):
 class LLaVATrainer(TrainerForMMLLM):
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
-        print("LLaVATrainer._save() running.\n")
-        output_path = "ty-sdc:s3://MultiModal/checkpoint/taiyan/icl_debug/"
         if getattr(self.args, 'tune_mm_mlp_adapter', False):
-            print("LLaVATrainer._save(): Start save mm_mlp_adapter.\n")
             # Save the model
             _state_dict = state_dict
             if _state_dict is None:
