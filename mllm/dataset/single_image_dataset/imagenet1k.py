@@ -7,6 +7,7 @@ import os.path as osp
 import jsonlines
 import random
 from typing import Dict, Any, Sequence
+from numpy import real
 
 import torch
 from torchvision.ops import box_iou
@@ -69,19 +70,22 @@ class ImageNet1kDataset(MInstrDataset):
                 label = self.cls_neg_label
             else:
                 metas = random.choice(neighbors)
-                label = metas[1]
+                label = metas[1].lower()
                 self.cls_neg_label = label
             sample = random.choice(samples)
         elif mode == "neighbors":
             # random neighbor image and label
             metas = random.choice(neighbors)
-            label = metas[1]
+            label = metas[1].lower()
             sample = metas[2]
         else:
             raise NotImplementedError
 
         image = self.get_image(sample)
         final_question = "What is the class of the image <image>?"
+
+        if mode == "cls_positive":
+            final_question = 'What is the "real" class of the image <image>?'
         
         # Placeholder for template
         # question = item['text']
@@ -119,6 +123,10 @@ class ImageNet1kDataset(MInstrDataset):
             ret_list.append(self._get_ret(index, mode = "neighbors"))
         
         random.shuffle(ret_list)
-        ret_list.append(self._get_ret(index, mode = "cls_negative"))
+        if random.random() < 0.5:
+            ret_list.append(self._get_ret(index, mode = "cls_negative"))
+        else:
+            ret_list.append(self._get_ret(index, mode = "cls_positive"))
+
         self.cls_neg_label = None
         return ret_list
