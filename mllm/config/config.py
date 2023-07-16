@@ -26,6 +26,7 @@ logging.basicConfig(
 @add_start_docstrings(HFSeq2SeqTrainingArguments.__doc__)
 class Seq2SeqTrainingArguments(HFSeq2SeqTrainingArguments):
     do_multi_predict: bool = field(default=False, metadata={"help": "Whether to run predictions on the multi-test set."})
+    ceph_dir: str = field(default="ty-sdc:s3://MultiModal/checkpoint/taiyan/", metadata={"help": "Path to save checkpoint in Ceph."})
 
 
 def prepare_args(args=None):

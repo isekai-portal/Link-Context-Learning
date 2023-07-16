@@ -4,6 +4,7 @@ import logging
 import pathlib
 import typing
 import warnings
+# import debugpy;debugpy.connect(('10.198.34.32', 5610))
 
 SLURM_ENV = {k: v for k, v in os.environ.items() if 'SLURM' in k}
 print(f"SLURM_ENV: {SLURM_ENV}")

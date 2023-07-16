@@ -35,6 +35,7 @@ result
 
 # taiyan 
 .vscode
+*s3:*
 sketch*
 scripts/
 *taiyan*

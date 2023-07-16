@@ -1,8 +1,11 @@
+import io
+import os
 import sys
 import time
 import logging
 
 import cv2
+import torch
 import numpy as np
 from PIL import Image
 
@@ -23,6 +26,19 @@ def read_img_general(img_path):
     else:
         return Image.open(img_path).convert('RGB')
 
+def load_model_general(model_path, map_location='cpu'):
+    if "s3://" in model_path:
+        ckpt = load_model_ceph(model_path,map_location=map_location)
+        return ckpt
+    else:
+        return torch.load(model_path, map_location=map_location)
+
+def save_model_general(state_dict, save_path):
+    if "s3://" in save_path:
+        ckpt = save_model_ceph(state_dict, save_path)
+        return ckpt
+    else:
+        return torch.save(state_dict, save_path)
 
 client = None
 
@@ -37,6 +53,36 @@ def read_img_ceph(img_path):
     img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
     return img
 
+def load_model_ceph(model_path, map_location ="cpu"):
+    init_ceph_client_if_needed()
+    value = client.get(model_path)
+    model_buffer = io.BytesIO(value)
+    ckpt = torch.load(model_buffer, map_location=map_location)
+    return ckpt
+
+def save_model_ceph(state_dict, save_path):
+    init_ceph_client_if_needed()
+    with io.BytesIO() as f:
+        torch.save(state_dict, f)
+        value = f.getvalue()
+        client.put(save_path, value)
+
+def exists_ceph(path):
+    init_ceph_client_if_needed()
+    client.contains(path)
+
+def listdir_ceph(path):
+    init_ceph_client_if_needed()
+    return client.list(path)
+
+def delete_ceph(path):
+    init_ceph_client_if_needed()
+    if path.endswith('/'):
+        contents = listdir_ceph(path)
+        for content in contents:
+            delete_ceph(os.path.join(path, content))
+    else:
+        client.delete(path)
 
 def init_ceph_client_if_needed():
     global client
