@@ -43,7 +43,7 @@ class SingleImageConvDatasetMixin:
         self.use_icl = use_icl
         self.shot = shot
 
-    def __get_icl_item__(self, item, do_mask=None, debug_mode=False, mode='common') -> Dict[str, Any]:
+    def __get_icl_item__(self, item, do_mask=None, debug_mode=False, train_mode='train', mode='common') -> Dict[str, Any]:
         # get_icl_item
         #item = self.get_raw_item(index)
         image: Image.Image = item.get('image', None)
@@ -72,7 +72,7 @@ class SingleImageConvDatasetMixin:
                 target['width'], target['height'] = image.width, image.height
 
         # preprocess
-        raw_conv = self.process_conv(raw_conv,mode)
+        raw_conv = self.process_conv(raw_conv,train_mode)
         raw_conv, image = self.process_conv_multimage(raw_conv, image)
         raw_conv, _ = self.process_target(raw_conv, target, multimage_mode=multimage_mode)
         conv = self.build_conv(raw_conv,mode)
@@ -107,38 +107,69 @@ class SingleImageConvDatasetMixin:
         ret_dict = {'image':[]}
         #idx_list = [item for item in range(index, index+5)]
         dict_list = self.get_raw_icl_item(index,self.shot)
+        print('len***: ',len(dict_list))
+        if self.mode != 'train':
+            for i in range(len(dict_list)):
+                item = dict_list[i]
 
-        for i in range(len(dict_list)):
-            item = dict_list[i]
+                conv_mode = 'icl'
+                sub_dict = self.__get_icl_item__(item,mode=conv_mode)
 
-            conv_mode = 'icl'
-            sub_dict = self.__get_icl_item__(item,mode=conv_mode)
+                ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
+                
+                for k in update_keys:
+                    if k not in ret_dict.keys():
+                        ret_dict[k] = sub_dict[k]
 
-            ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
-            
-            for k in update_keys:
-                if k not in ret_dict.keys():
-                    ret_dict[k] = sub_dict[k]
+                    else:
+                        ret_valid = ret_dict[k][:-1]
+                        sub_valid = sub_dict[k]
+                        if k != 'attention_mask':
+                            if k == 'input_ids':
+                                ret_valid = ret_dict[k][:-1]
 
-                else:
-                    ret_valid = ret_dict[k][:-1]
-                    sub_valid = sub_dict[k]
-                    if k != 'attention_mask':
-                        if k == 'input_ids':
-                            ret_valid = ret_dict[k][:-1]
+                        # if k == 'labels' and i == len(dict_list)-1:
+                        #     ret_valid = torch.zeros_like(ret_valid) - 100
+                        #     ret_valid[:] = -100
 
-                    if k == 'labels' and i == len(dict_list)-1:
-                        ret_valid = torch.zeros_like(ret_valid) - 100
-                        ret_valid[:] = -100
+                        ret_dict[k] = torch.cat([ret_valid,sub_valid],dim=0)
+            ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
+        else:
+            for i in range(len(dict_list)):
+                item = dict_list[i]
 
-                    ret_dict[k] = torch.cat([ret_valid,sub_valid],dim=0)
-        ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
-        # print('mask: ',ret_dict['attention_mask'].shape)
-        # print('labels: ',ret_dict['labels'].shape)
-        # print('input_ids: ',ret_dict['input_ids'].shape)
-        # print('image: ',ret_dict['image'].shape)
+                conv_mode = 'icl'
+                sub_dict = self.__get_icl_item__(item,mode=conv_mode)
+
+                ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
+                
+                for k in update_keys:
+                    if k not in ret_dict.keys():
+                        ret_dict[k] = sub_dict[k]
+
+                    else:
+                        ret_valid = ret_dict[k][:-1]
+                        sub_valid = sub_dict[k]
+                        if k != 'attention_mask':
+                            if k == 'input_ids':
+                                ret_valid = ret_dict[k][:-1]
+
+                        if k == 'labels' and i == len(dict_list)-1:
+                            ret_valid = torch.zeros_like(ret_valid) - 100
+                            ret_valid[:] = -100
+
+                        ret_dict[k] = torch.cat([ret_valid,sub_valid],dim=0)
+            ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
+
 
         if not hasattr(self, '_printed_sample'):
+
+            print('mask: ',ret_dict['attention_mask'].shape)
+            print('labels: ',ret_dict['labels'].shape)
+            print('input_ids: ',ret_dict['input_ids'].shape)
+            print('image: ',ret_dict['image'].shape)
+
+
             self._printed_sample = True
             post_processed_labels = post_process_generate_ids(self.preprocessor['text'], ret_dict['labels'])
             print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}")

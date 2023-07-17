@@ -62,7 +62,7 @@ class ImageNet1kDataset(MInstrDataset):
         
         if mode == "cls_positive":
             # current class image and label
-            label = item['class_name'].lower()
+            label = 'shikra'+'_'+item['class_name'].lower()
             sample = random.choice(samples)
         elif mode == "cls_negative":
             # current class image, random neighbor label
@@ -70,7 +70,7 @@ class ImageNet1kDataset(MInstrDataset):
                 label = self.cls_neg_label
             else:
                 metas = random.choice(neighbors)
-                label = metas[1].lower()
+                label = 'shikra'#metas[1].lower()
                 self.cls_neg_label = label
             sample = random.choice(samples)
         elif mode == "neighbors":
@@ -123,10 +123,11 @@ class ImageNet1kDataset(MInstrDataset):
             ret_list.append(self._get_ret(index, mode = "neighbors"))
         
         random.shuffle(ret_list)
-        if random.random() < 1.0:
+        if random.random() < 0.5:
             ret_list.append(self._get_ret(index, mode = "cls_negative"))
         else:
             ret_list.append(self._get_ret(index, mode = "cls_positive"))
 
         self.cls_neg_label = None
+        print('&&& len: ',len(ret_list))
         return ret_list

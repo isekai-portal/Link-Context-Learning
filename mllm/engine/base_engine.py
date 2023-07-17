@@ -201,8 +201,13 @@ class TrainerForMMLLM(TrainerDifferentCollatorMixin, Seq2SeqTrainer):
             ):
                 p[p < 0] = self.tokenizer.pad_token_id
                 t[t < 0] = self.tokenizer.pad_token_id
+                # print('****0: ',self.tokenizer.decode(t, skip_special_tokens=True, clean_up_tokenization_spaces=True))
+                # print('****1: ',self.tokenizer.decode(t))
+
                 p = self.tokenizer.decode(p, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-                t = self.tokenizer.decode(t, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+                t = self.tokenizer.decode(t)
+                #t = self.tokenizer.decode(t, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+
                 obj = dict(
                     pred=p,
                     target=t,

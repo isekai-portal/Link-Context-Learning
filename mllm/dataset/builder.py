@@ -42,6 +42,7 @@ def prepare_data(
         process_func[k] = FUNCTIONS.build(cfg=v)
 
     use_icl = data_args.get('use_icl', False)
+    shot = data_args.get('shot', 1)
     conv_dataset_cls = partial(
         SingleImageConvDataset,
         preprocessor=preprocessor,
@@ -50,7 +51,8 @@ def prepare_data(
         conv_template=conv_template,
         training_args=training_args,
         transforms=transforms,
-        use_icl=use_icl
+        use_icl=use_icl,
+        shot=shot,
     )
     ds = {
         'train': conv_dataset_cls(dataset_generator=datasets['train'], mode='train') if datasets['train'] is not None else None,
