@@ -123,7 +123,7 @@ class ImageNet1kDataset(MInstrDataset):
             ret_list.append(self._get_ret(index, mode = "neighbors"))
         
         random.shuffle(ret_list)
-        if random.random() < 0.5:
+        if random.random() < 1.0:
             ret_list.append(self._get_ret(index, mode = "cls_negative"))
         else:
             ret_list.append(self._get_ret(index, mode = "cls_positive"))
