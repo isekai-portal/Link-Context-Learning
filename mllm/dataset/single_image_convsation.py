@@ -107,7 +107,6 @@ class SingleImageConvDatasetMixin:
         ret_dict = {'image':[]}
         #idx_list = [item for item in range(index, index+5)]
         dict_list = self.get_raw_icl_item(index,self.shot)
-        print('len***: ',len(dict_list))
         if self.mode != 'train':
             for i in range(len(dict_list)):
                 item = dict_list[i]
