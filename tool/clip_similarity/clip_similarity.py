@@ -6,7 +6,7 @@ import json
 import jsonlines
 import csv
 from collections import defaultdict, OrderedDict
-from tqdm import trange
+from tqdm import trange, tqdm
 import re
 import cv2
 import numpy as np
@@ -24,9 +24,11 @@ import csv
 from petrel_client.client import Client
 # import debugpy;debugpy.connect(('10.142.4.32', 5610))
 
-anno_file_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/imagenet1k.jsonl'
-ceph_root = 'zz1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/'
-output_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/path_test/'
+anno_file_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/imagenet22k_train.jsonl'
+imagenet1k_ceph_path = 'zz1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/'
+imagenet22k_ceph_path = 'openmmlab1984:s3://openmmlab/datasets/classification/imagenet22k/train/'
+ceph_root = imagenet22k_ceph_path
+output_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/similarity_analysis/'
 
 if not osp.exists(output_path):
     os.mkdir(output_path)
@@ -50,28 +52,39 @@ cls_ids, cls_names, cls_imgs, text_embeddings, img_embeddings = [], [], [], [], 
 with jsonlines.open(anno_file_path) as reader:
     for metas in reader:
         cls_ids.append(metas[0])
-        cls_names.append(metas[1])
+        if isinstance(metas[1], list):
+            cls_names.append(metas[1][0])
+        else:
+            cls_names.append(metas[1])
         cls_imgs.append(metas[2])
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/16", device=device)
 model = model.eval()
 
+# # debug
+# cls_ids = cls_ids[:100]
+# cls_names = cls_names[:100]
+# cls_imgs = cls_imgs[:100]
+
 with torch.no_grad():
     text = clip.tokenize(cls_names).to(device)
     text_features = model.encode_text(text)
 
 # get image embeddings
-nimg = 1
+nimg = 50
 cls_tensors = []
 num_cats = len(cls_ids)
 
 tbar = trange(num_cats)
 for idx, (cls_id, cls_name, cls_img) in enumerate(zip(cls_ids, cls_names, cls_imgs)):
-    selected_imgs = sample(cls_img,nimg)
+    if len(cls_img)<nimg:
+        selected_imgs=cls_img
+    else:
+        selected_imgs = sample(cls_img,nimg)
     cls_tensor = torch.zeros([1, text_features.size(1)]).to(device)
 
-    for img_path in selected_imgs:
+    for img_path in tqdm(selected_imgs):
         ceph_path = osp.join(ceph_root, img_path)
         img = read_img_ceph(ceph_path)
         with torch.no_grad():
@@ -147,7 +160,7 @@ with torch.no_grad():
 
     with open(osp.join(output_path,'cls_sort.csv'), 'w', encoding='utf-8', newline='') as f_csv:
         csv_writer = csv.writer(f_csv)
-        csv_writer.writerow(['cls_name\sort_idx'] + [str(x) for x in range(1, 81)])
+        csv_writer.writerow(['cls_id\sort_idx'] + [str(x) for x in range(1, 81)])
 
         for ican_dic in cls_candidates.items():
             csv_writer.writerow([ican_dic[0]] + ican_dic[1])
