@@ -36,14 +36,16 @@ if not osp.exists(output_path):
 conf_path = '~/petreloss.conf'
 client = Client(conf_path)
 
-
 def read_img_ceph(img_path):
-    # img_path= os.path.join(img_path)
-    img_bytes = client.get(img_path)
-    assert img_bytes is not None, f"Please check image at {img_path}"
-    img_mem_view = memoryview(img_bytes)
-    img_array = np.frombuffer(img_mem_view, np.uint8)
-    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+    try:
+        img_bytes = client.get(img_path)
+        img_mem_view = memoryview(img_bytes)
+        img_array = np.frombuffer(img_mem_view, np.uint8)
+        # noinspection PyUnresolvedReferences
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+    except:
+        print("Broken file:{}".format(img_path))
+        return None
     return img
 
 cls_ids, cls_names, cls_imgs, text_embeddings, img_embeddings = [], [], [], [], []
@@ -84,9 +86,13 @@ for idx, (cls_id, cls_name, cls_img) in enumerate(zip(cls_ids, cls_names, cls_im
         selected_imgs = sample(cls_img,nimg)
     cls_tensor = torch.zeros([1, text_features.size(1)]).to(device)
 
+    broken_count = 0
     for img_path in tqdm(selected_imgs):
         ceph_path = osp.join(ceph_root, img_path)
         img = read_img_ceph(ceph_path)
+        if img is None:
+            broken_count +=1
+            continue
         with torch.no_grad():
             img_tensor = torch.zeros([1, text_features.size(1)]).to(device)
             img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
@@ -95,7 +101,7 @@ for idx, (cls_id, cls_name, cls_img) in enumerate(zip(cls_ids, cls_names, cls_im
             img_tensor += image_features
 
         cls_tensor += img_tensor
-    cls_tensor = cls_tensor / len(selected_imgs)
+    cls_tensor = cls_tensor / (len(selected_imgs) - broken_count)
     cls_tensors.append(cls_tensor)
     tbar.set_description('Class: {}/{}'.format(idx + 1, num_cats))
     tbar.update()
