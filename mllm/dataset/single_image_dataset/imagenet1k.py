@@ -117,7 +117,7 @@ class ImageNet1kDataset(MInstrDataset):
     # def __get_icl_item__(self, index, shot):
     #     ret_list = []
     #     normal_question = 'What is the class of the image <image>?'
-    #     bond_question = 'What is the "bond" class of the image <image>?'
+    #     bond_question = 'What is the "binding" class of the image <image>?'
     #     real_question = 'What is the "real" class of the image <image>?'
 
     #     for _ in range(shot):
@@ -144,7 +144,7 @@ class ImageNet1kDataset(MInstrDataset):
     def __get_icl_item__(self, index, shot):
         ret_list = []
         normal_question = 'What is the class of the image <image>?'
-        bond_question = 'What is the "bond" class of the image <image>?'
+        bond_question = 'What is the "binding" class of the image <image>?'
         real_question = 'What is the "real" class of the image <image>?'
 
         for _ in range(shot):

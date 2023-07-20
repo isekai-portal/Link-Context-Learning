@@ -4,6 +4,7 @@ import random
 import json
 import glob
 import warnings
+import shutil
 from typing import Optional
 
 import torch
@@ -11,7 +12,7 @@ import transformers
 import numpy as np
 
 from .base_engine import TrainerForMMLLM
-from mllm.dataset.utils.io import load_model_general, save_model_general
+from mllm.dataset.utils.io import delete_ceph, load_model_general, save_model_general, exists_ceph
 
 from transformers.trainer_pt_utils import reissue_pt_warnings
 from transformers.deepspeed import deepspeed_init
@@ -22,12 +23,12 @@ from transformers.trainer import (WEIGHTS_NAME, WEIGHTS_INDEX_NAME, TRAINER_STAT
     unwrap_model, is_torch_tpu_available, is_sagemaker_mp_enabled, PreTrainedModel, logger)
 
 
-# copy from transformers.modeling_utils, modified all "torch.load" to "save_model_general"
-def load_sharded_checkpoint(model, folder, strict=True):
+# copy from transformers.modeling_utils, modified all "torch.load" to "load_model_general"
+def load_sharded_checkpoint(model, local_dir, ceph_dir, strict=True):
     # Load the index
-    index_file = os.path.join(folder, WEIGHTS_INDEX_NAME)
+    index_file = os.path.join(local_dir, WEIGHTS_INDEX_NAME)
     if not os.path.isfile(index_file):
-        raise ValueError(f"Can't find a checkpoint index ({WEIGHTS_INDEX_NAME}) in {folder}.")
+        raise ValueError(f"Can't find a checkpoint index ({WEIGHTS_INDEX_NAME}) in {local_dir}.")
 
     with open(index_file, "r", encoding="utf-8") as f:
         index = json.load(f)
@@ -50,7 +51,8 @@ def load_sharded_checkpoint(model, folder, strict=True):
         raise RuntimeError(error_message)
 
     for shard_file in shard_files:
-        state_dict = load_model_general(os.path.join(folder, shard_file), map_location="cpu")
+        logger.info(f"Loading shard file in {os.path.join(ceph_dir, shard_file)}")
+        state_dict = load_model_general(os.path.join(ceph_dir, shard_file), map_location="cpu")
         model.load_state_dict(state_dict, strict=False)
 
         # Make sure memory is fred before we load the next state dict.
@@ -62,6 +64,37 @@ def load_sharded_checkpoint(model, folder, strict=True):
 
 
 class LLaVATrainer(TrainerForMMLLM):
+
+    def _rotate_checkpoints(self, use_mtime=False, output_dir=None) -> None:
+        if self.args.save_total_limit is None or self.args.save_total_limit <= 0:
+            return
+
+        # Check if we should delete older checkpoint(s)
+        checkpoints_sorted = self._sorted_checkpoints(use_mtime=use_mtime, output_dir=output_dir)
+        if len(checkpoints_sorted) <= self.args.save_total_limit:
+            return
+
+        # If save_total_limit=1 with load_best_model_at_end=True, we could end up deleting the last checkpoint, which
+        # we don't do to allow resuming.
+        save_total_limit = self.args.save_total_limit
+        if (
+            self.state.best_model_checkpoint is not None
+            and self.args.save_total_limit == 1
+            and checkpoints_sorted[-1] != self.state.best_model_checkpoint
+        ):
+            save_total_limit = 2
+
+        number_of_checkpoints_to_delete = max(0, len(checkpoints_sorted) - save_total_limit)
+        checkpoints_to_be_deleted = checkpoints_sorted[:number_of_checkpoints_to_delete]
+        for checkpoint in checkpoints_to_be_deleted:
+            logger.info(f"Deleting older checkpoint [{checkpoint}] due to args.save_total_limit")
+            shutil.rmtree(checkpoint, ignore_errors=True)
+            
+            # delete ceph model
+            if self.args.ceph_dir:
+                checkpoint_idx = checkpoint.split('/')[-1]
+                ceph_checkpoint = os.path.join(self.args.ceph_dir, checkpoint_idx) + '/'
+                delete_ceph(ceph_checkpoint)
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         if getattr(self.args, 'tune_mm_mlp_adapter', False):
@@ -95,10 +128,10 @@ class LLaVATrainer(TrainerForMMLLM):
         os.makedirs(output_dir, exist_ok=True)
 
         if self.args.ceph_dir:
-            output_path = self.args.ceph_dir
+            save_dir = os.path.join(self.args.ceph_dir, output_dir.split('/')[-1]) + '/'
         else:
-            output_path = output_dir
-        logger.info(f"Saving model checkpoint to {output_path}")
+            save_dir = output_dir
+        logger.info(f"Saving checkpoint to {save_dir}")
 
         # Save a trained model and configuration using `save_pretrained()`.
         # They can then be reloaded using `from_pretrained()`
@@ -106,13 +139,24 @@ class LLaVATrainer(TrainerForMMLLM):
             if isinstance(unwrap_model(self.model), PreTrainedModel):
                 if state_dict is None:
                     state_dict = self.model.state_dict()
-                unwrap_model(self.model).save_pretrained(output_path, state_dict=state_dict, save_function=save_model_general)
+                unwrap_model(self.model).save_pretrained(save_dir, state_dict=state_dict, save_function=save_model_general)
             else:
                 if state_dict is None:
                     state_dict = self.model.state_dict()
-                save_model_general(state_dict, os.path.join(output_path, transformers.trainer.WEIGHTS_NAME))
+                save_model_general(state_dict, os.path.join(save_dir, transformers.trainer.WEIGHTS_NAME))
         else:
-            self.model.save_pretrained(output_path, state_dict=state_dict, save_function=save_model_general)
+            self.model.save_pretrained(save_dir, state_dict=state_dict, save_function=save_model_general)
+
+        # move (config.json, generation_config.json, pytorch_model.bin.index.json) to output_dir
+        if save_dir != output_dir:
+            if os.path.exists(save_dir):
+                files = os.listdir(save_dir)
+                for file in files:
+                    source = os.path.join(save_dir, file)
+                    target = os.path.join(output_dir, file)
+                    shutil.move(source, target)
+                shutil.rmtree(save_dir.split("//")[0])
+            
         if self.tokenizer is not None:
             self.tokenizer.save_pretrained(output_dir)
 
@@ -130,10 +174,11 @@ class LLaVATrainer(TrainerForMMLLM):
         output_dir = os.path.join(run_dir, checkpoint_folder)
 
         if self.args.ceph_dir:
-            output_path = self.args.ceph_dir
+            save_dir = os.path.join(self.args.ceph_dir, checkpoint_folder)
         else:
-            output_path = output_dir
+            save_dir = output_dir
 
+        # the "output_dir" param in self.save_model() will be reload in self._save(), so don't worry
         self.save_model(output_dir, _internal_call=True)
         if self.deepspeed:
             # under zero3 model file itself doesn't get saved since it's bogus! Unless deepspeed
@@ -168,7 +213,8 @@ class LLaVATrainer(TrainerForMMLLM):
                     torch.save(self.scaler.state_dict(), os.path.join(output_dir, SCALER_NAME))
         elif self.args.should_save and not self.deepspeed:
             # deepspeed.save_checkpoint above saves model/optim/sched
-            save_model_general(self.optimizer.state_dict(), os.path.join(output_path, OPTIMIZER_NAME))
+            # taiyan: only save optimizer.pt into ceph, for consistency. 
+            save_model_general(self.optimizer.state_dict(), os.path.join(save_dir, OPTIMIZER_NAME))
             with warnings.catch_warnings(record=True) as caught_warnings:
                 torch.save(self.lr_scheduler.state_dict(), os.path.join(output_dir, SCHEDULER_NAME))
             reissue_pt_warnings(caught_warnings)
@@ -227,20 +273,6 @@ class LLaVATrainer(TrainerForMMLLM):
         if self.args.should_save:
             self._rotate_checkpoints(use_mtime=True, output_dir=run_dir)
 
-    # # copy from transformers.trainer, modified all "torch.load" to "save_model_general"
-    # def _tune_save_checkpoint(self):
-    #     from ray import tune
-
-    #     if not self.use_tune_checkpoints:
-    #         return
-    #     with tune.checkpoint_dir(step=self.state.global_step) as checkpoint_dir:
-    #         output_dir = os.path.join(checkpoint_dir, f"{PREFIX_CHECKPOINT_DIR}-{self.state.global_step}")
-    #         self.save_model(output_dir, _internal_call=True)
-    #         if self.args.should_save:
-    #             self.state.save_to_json(os.path.join(output_dir, TRAINER_STATE_NAME))
-    #             torch.save(self.optimizer.state_dict(), os.path.join(output_dir, OPTIMIZER_NAME))
-    #             torch.save(self.lr_scheduler.state_dict(), os.path.join(output_dir, SCHEDULER_NAME))
-
     # copy from transformers.trainer, modified all "torch.load" to "save_model_general"
     def _load_from_checkpoint(self, resume_from_checkpoint, model=None):
         if model is None:
@@ -263,14 +295,22 @@ class LLaVATrainer(TrainerForMMLLM):
                     "yield to errors or unwanted behaviors."
                 )
 
-        if os.path.isfile(os.path.join(resume_from_checkpoint, WEIGHTS_NAME)):
+        if self.args.ceph_dir:
+            checkpoint_idx = resume_from_checkpoint.split('/')[-1]
+            model_dir = os.path.join(self.args.ceph_dir, checkpoint_idx) + '/'
+        else:
+            model_dir = resume_from_checkpoint
+        logger.info(f"Actually, I'm loading model from {model_dir}.")
+
+        weight_dir = os.path.join(model_dir, WEIGHTS_NAME)
+        if os.path.isfile(weight_dir) or exists_ceph(weight_dir):
             # If the model is on the GPU, it still works!
             if is_sagemaker_mp_enabled():
                 if os.path.isfile(os.path.join(resume_from_checkpoint, "user_content.pt")):
                     # If the 'user_content.pt' file exists, load with the new smp api.
                     # Checkpoint must have been saved with the new smp api.
                     smp.resume_from_checkpoint(
-                        path=resume_from_checkpoint, tag=WEIGHTS_NAME, partial=False, load_optimizer=False
+                        path=model_dir, tag=WEIGHTS_NAME, partial=False, load_optimizer=False
                     )
                 else:
                     # If the 'user_content.pt' file does NOT exist, load with the old smp api.
@@ -279,7 +319,7 @@ class LLaVATrainer(TrainerForMMLLM):
                         logger.warning(
                             "Enabling FP16 and loading from smp < 1.10 checkpoint together is not suppported."
                         )
-                    state_dict = load_model_general(os.path.join(resume_from_checkpoint, WEIGHTS_NAME), map_location="cpu")
+                    state_dict = load_model_general(os.path.join(model_dir, WEIGHTS_NAME), map_location="cpu")
                     # Required for smp to not auto-translate state_dict from hf to smp (is already smp).
                     state_dict["_smp_is_partial"] = False
                     load_result = model.load_state_dict(state_dict, strict=True)
@@ -287,7 +327,7 @@ class LLaVATrainer(TrainerForMMLLM):
                     del state_dict
             else:
                 # We load the model state dict on the CPU to avoid an OOM error.
-                state_dict = load_model_general(os.path.join(resume_from_checkpoint, WEIGHTS_NAME), map_location="cpu")
+                state_dict = load_model_general(os.path.join(model_dir, WEIGHTS_NAME), map_location="cpu")
                 # workaround for FSDP bug https://github.com/pytorch/pytorch/issues/82963
                 # which takes *args instead of **kwargs
                 load_result = model.load_state_dict(state_dict, False)
@@ -296,69 +336,9 @@ class LLaVATrainer(TrainerForMMLLM):
                 self._issue_warnings_after_load(load_result)
         else:
             # We load the sharded checkpoint
-            load_result = load_sharded_checkpoint(model, resume_from_checkpoint, strict=is_sagemaker_mp_enabled())
+            load_result = load_sharded_checkpoint(model, local_dir = resume_from_checkpoint, ceph_dir = model_dir, strict=is_sagemaker_mp_enabled())
             if not is_sagemaker_mp_enabled():
                 self._issue_warnings_after_load(load_result)
-
-    def _load_best_model(self):
-        logger.info(f"Loading best model from {self.state.best_model_checkpoint} (score: {self.state.best_metric}).")
-        best_model_path = os.path.join(self.state.best_model_checkpoint, WEIGHTS_NAME)
-        model = self.model_wrapped if is_sagemaker_mp_enabled() else self.model
-        if os.path.exists(best_model_path):
-            if self.deepspeed:
-                if self.model_wrapped is not None:
-                    # this removes the pre-hooks from the previous engine
-                    self.model_wrapped.destroy()
-                    self.model_wrapped = None
-
-                # temp hack until Deepspeed fixes the problem with resume from an existing engine that did some stepping
-                deepspeed_engine, optimizer, lr_scheduler = deepspeed_init(
-                    self,
-                    num_training_steps=self.args.max_steps,
-                    resume_from_checkpoint=self.state.best_model_checkpoint,
-                )
-                self.model = deepspeed_engine.module
-                self.model_wrapped = deepspeed_engine
-                self.deepspeed = deepspeed_engine
-                self.optimizer = optimizer
-                self.lr_scheduler = lr_scheduler
-            else:
-                if is_sagemaker_mp_enabled():
-                    if os.path.isfile(os.path.join(self.state.best_model_checkpoint, "user_content.pt")):
-                        # If the 'user_content.pt' file exists, load with the new smp api.
-                        # Checkpoint must have been saved with the new smp api.
-                        smp.resume_from_checkpoint(
-                            path=self.state.best_model_checkpoint,
-                            tag=WEIGHTS_NAME,
-                            partial=False,
-                            load_optimizer=False,
-                        )
-                    else:
-                        # If the 'user_content.pt' file does NOT exist, load with the old smp api.
-                        # Checkpoint must have been saved with the old smp api.
-                        state_dict = load_model_general(best_model_path, map_location="cpu")
-                        state_dict["_smp_is_partial"] = False
-                        load_result = model.load_state_dict(state_dict, strict=True)
-                else:
-                    # We load the model state dict on the CPU to avoid an OOM error.
-                    state_dict = load_model_general(best_model_path, map_location="cpu")
-                    # If the model is on the GPU, it still works!
-                    # workaround for FSDP bug https://github.com/pytorch/pytorch/issues/82963
-                    # which takes *args instead of **kwargs
-                    load_result = model.load_state_dict(state_dict, False)
-                if not is_sagemaker_mp_enabled():
-                    self._issue_warnings_after_load(load_result)
-        elif os.path.exists(os.path.join(self.state.best_model_checkpoint, WEIGHTS_INDEX_NAME)):
-            load_result = load_sharded_checkpoint(
-                model, self.state.best_model_checkpoint, strict=is_sagemaker_mp_enabled()
-            )
-            if not is_sagemaker_mp_enabled():
-                self._issue_warnings_after_load(load_result)
-        else:
-            logger.warning(
-                f"Could not locate the best model at {best_model_path}, if you are running a distributed training "
-                "on multiple nodes, you should activate `--save_on_each_node`."
-            )
 
     def _load_optimizer_and_scheduler(self, checkpoint):
         """If optimizer and scheduler states exist, load them."""
@@ -369,16 +349,21 @@ class LLaVATrainer(TrainerForMMLLM):
             # deepspeed loads optimizer/lr_scheduler together with the model in deepspeed_init
             return
 
+        if self.args.ceph_dir:
+            opt_dir = self.args.ceph_dir
+        else:
+            opt_dir = checkpoint
+
         checkpoint_file_exists = (
             glob.glob(os.path.join(checkpoint, OPTIMIZER_NAME) + "_*")
             if is_sagemaker_mp_enabled()
-            else os.path.isfile(os.path.join(checkpoint, OPTIMIZER_NAME))
+            else (os.path.isfile(os.path.join(opt_dir, OPTIMIZER_NAME)) or exists_ceph(os.path.join(opt_dir, OPTIMIZER_NAME)))
         )
         if checkpoint_file_exists and os.path.isfile(os.path.join(checkpoint, SCHEDULER_NAME)):
             # Load in optimizer and scheduler states
             if is_torch_tpu_available():
                 # On TPU we have to take some extra precautions to properly load the states on the right device.
-                optimizer_state = load_model_general(os.path.join(checkpoint, OPTIMIZER_NAME), map_location="cpu")
+                optimizer_state = load_model_general(os.path.join(opt_dir, OPTIMIZER_NAME), map_location="cpu")
                 with warnings.catch_warnings(record=True) as caught_warnings:
                     lr_scheduler_state = load_model_general(os.path.join(checkpoint, SCHEDULER_NAME), map_location="cpu")
                 reissue_pt_warnings(caught_warnings)
@@ -393,17 +378,17 @@ class LLaVATrainer(TrainerForMMLLM):
                     if os.path.isfile(os.path.join(checkpoint, "user_content.pt")):
                         # Optimizer checkpoint was saved with smp >= 1.10
                         def opt_load_hook(mod, opt):
-                            opt.load_state_dict(smp.load(os.path.join(checkpoint, OPTIMIZER_NAME), partial=True))
+                            opt.load_state_dict(smp.load(os.path.join(opt_dir, OPTIMIZER_NAME), partial=True))
 
                     else:
                         # Optimizer checkpoint was saved with smp < 1.10
                         def opt_load_hook(mod, opt):
                             if IS_SAGEMAKER_MP_POST_1_10:
                                 opt.load_state_dict(
-                                    smp.load(os.path.join(checkpoint, OPTIMIZER_NAME), partial=True, back_compat=True)
+                                    smp.load(os.path.join(opt_dir, OPTIMIZER_NAME), partial=True, back_compat=True)
                                 )
                             else:
-                                opt.load_state_dict(smp.load(os.path.join(checkpoint, OPTIMIZER_NAME), partial=True))
+                                opt.load_state_dict(smp.load(os.path.join(opt_dir, OPTIMIZER_NAME), partial=True))
 
                     self.model_wrapped.register_post_step_hook(opt_load_hook)
                 else:
@@ -412,7 +397,7 @@ class LLaVATrainer(TrainerForMMLLM):
                     # likely to get OOM on CPU (since we load num_gpu times the optimizer state
                     map_location = self.args.device if self.args.world_size > 1 else "cpu"
                     self.optimizer.load_state_dict(
-                        torch.load(os.path.join(checkpoint, OPTIMIZER_NAME), map_location=map_location)
+                        load_model_general(os.path.join(opt_dir, OPTIMIZER_NAME), map_location=map_location)
                     )
                 with warnings.catch_warnings(record=True) as caught_warnings:
                     self.lr_scheduler.load_state_dict(load_model_general(os.path.join(checkpoint, SCHEDULER_NAME)))

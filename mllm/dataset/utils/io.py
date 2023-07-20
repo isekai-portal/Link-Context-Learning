@@ -75,6 +75,25 @@ def listdir_ceph(path):
     init_ceph_client_if_needed()
     return client.list(path)
 
+def push_local_to_ceph(local_path, ceph_path):
+    assert ceph_path.endswith('/')
+    init_ceph_client_if_needed()
+    def _get_put(file):
+        data = open(os.path.join(local_path, file), 'rb')
+        client.put(os.path.join(ceph_path, file), data)
+        return
+    if os.path.isdir(local_path):
+        files = os.listdir(local_path)
+        for file in files:
+            _get_put(file)
+            
+    elif os.path.exists(local_path):
+        local_path, file = local_path.split("/")
+        _get_put(file)
+    else:
+        logger.warning("Nothing save to ceph.")
+        return
+
 def delete_ceph(path):
     init_ceph_client_if_needed()
     if path.endswith('/'):
