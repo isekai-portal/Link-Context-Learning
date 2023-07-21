@@ -37,5 +37,7 @@ result
 .vscode
 *s3:*
 sketch*
-scripts/
+# scripts/
 *taiyan*
+run_debug.sh
+run_ty.sh

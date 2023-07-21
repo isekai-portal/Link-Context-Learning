@@ -13,4 +13,6 @@ from .vqaex import VQAEXDataset
 from .pure_vqa import PureVQADataset
 from .pope import POPEVQADataset
 from .v3det import V3DetDataset
+from .imagenet import ImageNetDataset
 from .imagenet1k import ImageNet1kDataset
+from .imagenet1k_2way import ImageNet1k2WayDataset

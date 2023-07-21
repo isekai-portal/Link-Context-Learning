@@ -288,6 +288,21 @@ register_conv_template(
     )
 )
 
+# ICL v2.0 template
+register_conv_template(
+    Conversation(
+        name="icl_nway_few_shot",
+        system="A chat between a curious user and an artificial intelligence assistant. "
+               "The answer is not strictly right, the assitant should find the relationship in the conversation and gives answers according to the examples.",
+        roles=("USER", "ASSISTANT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
 # Koala default template
 register_conv_template(
     Conversation(

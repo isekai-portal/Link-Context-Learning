@@ -7,7 +7,8 @@ _base_ = [
     'DEFAULT_TRAIN_VQAv2_VARIANT.py',
     'DEFAULT_TRAIN_VQAEX_VARIANT.py',
     'DEFAULT_TRAIN_V3DET_VARIANT.py',
-    'DEFAULT_TRAIN_IMAGENET1K_VARIANT.py'
+    'DEFAULT_TRAIN_IMAGENET1K_VARIANT.py',
+    'DEFAULT_TRAIN_IMAGENET1K2WAY_VARIANT.py'
 ]
 
 DEFAULT_TRAIN_DATASET = dict(
@@ -70,6 +71,12 @@ DEFAULT_TRAIN_DATASET = dict(
         image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
         template_file=r"{{fileDirname}}/template/ICL.json",
     ),
+    imagenet1k2way=dict(
+        type='ImageNet1k2WayDataset',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/imagenet1k_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+    ),
     **_base_.DEFAULT_TRAIN_GQA_VARIANT,
     **_base_.DEFAULT_TRAIN_CLEVR_VARIANT,
     **_base_.DEFAULT_TRAIN_POINT_VARIANT,
@@ -79,4 +86,5 @@ DEFAULT_TRAIN_DATASET = dict(
     **_base_.DEFAULT_TRAIN_VQAEX_VARIANT,
     **_base_.DEFAULT_TRAIN_V3DET_VARIANT,
     **_base_.DEFAULT_TRAIN_IMAGENET1K_VARIANT,
+    **_base_.DEFAULT_TRAIN_IMAGENET1K2WAY_VARIANT,
 )
