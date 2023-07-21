@@ -47,7 +47,7 @@ sbatch -p mm_v100_32g \
     accelerate launch --num_processes 4 --main_process_port 23781 mllm/pipeline/finetune.py \
         config/icl_eval_vqa.py \
         --tf32=False --bf16=False --fp16=True \
-        --cfg-options model_args.model_name_or_path=/mnt/lustre/share_data/feijingjing1/tmp/for_weichen/v2/checkpoint-2000 \
+        --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/checkpoint-2800 \
         --per_device_eval_batch_size 1 \
         --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/v2/checkpoint-2000_new3 \
         --cfg-options data_args.use_icl=True \
