@@ -17,11 +17,11 @@ sample_num = 36
 dataset_cfg_lst = [{
     'dataset': 'imagenet1k',
     'json_path':
-    '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/imagenet1k.jsonl',
+    '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900.jsonl',
     'cls_sort_path':
-    '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/similarity_analysis/cls_sort.csv'
+    '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/similarity_analysis_train900/cls_sort.csv'
 }]
-out_dir = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/imagenet1k_pairs.jsonl'
+out_dir = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl'
 
 
 for dataset_info in dataset_cfg_lst:
