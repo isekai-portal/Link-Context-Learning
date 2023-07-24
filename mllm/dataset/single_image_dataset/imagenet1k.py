@@ -113,6 +113,31 @@ class ImageNet1kDataset(MInstrDataset):
         else:
             return self._get_ret(index,mode="neighbors")
 
+    # v3
+    def __get_icl_item__(self, index, shot):
+        ret_list = []
+        normal_question = 'What is the class of the image <image>?'
+        real_question = 'What is the "real" class of the image <image>?'
+
+        for _ in range(shot):
+            ret_list.append(self._get_ret(index, mode = "cls_negative", question=normal_question))
+
+        for _ in range(shot):
+            ret_list.append(self._get_ret(index, mode = "neighbors", question=normal_question))
+        
+        random.shuffle(ret_list)
+        policy = random.choice(["cls_positive", "cls_negative", "neighbors"])
+        if policy == "cls_positive":
+            question = real_question
+        elif policy == "cls_negative":
+            question = normal_question
+        elif policy == "neighbors":
+            question = normal_question
+        ret_list.append(self._get_ret(index, mode = policy, question=question))
+        self.cls_neg_label = None
+        return ret_list
+
+
     # # v4
     # def __get_icl_item__(self, index, shot):
     #     ret_list = []
@@ -140,27 +165,27 @@ class ImageNet1kDataset(MInstrDataset):
     #     return ret_list
 
 
-    # v5
-    def __get_icl_item__(self, index, shot):
-        ret_list = []
-        normal_question = 'What is the class of the image <image>?'
-        bond_question = 'What is the "binding" class of the image <image>?'
-        real_question = 'What is the "real" class of the image <image>?'
+    # # v5
+    # def __get_icl_item__(self, index, shot):
+    #     ret_list = []
+    #     normal_question = 'What is the class of the image <image>?'
+    #     bond_question = 'What is the "binding" class of the image <image>?'
+    #     real_question = 'What is the "real" class of the image <image>?'
 
-        for _ in range(shot):
-            ret_list.append(self._get_ret(index, mode = "cls_negative", question=bond_question))
+    #     for _ in range(shot):
+    #         ret_list.append(self._get_ret(index, mode = "cls_negative", question=bond_question))
 
-        for _ in range(shot):
-            ret_list.append(self._get_ret(index, mode = "neighbors", question=real_question))
+    #     for _ in range(shot):
+    #         ret_list.append(self._get_ret(index, mode = "neighbors", question=real_question))
         
-        random.shuffle(ret_list)
-        policy = random.choice(["cls_positive", "cls_negative", "neighbors"])
-        if policy == "cls_positive":
-            question = real_question
-        elif policy == "cls_negative":
-            question = normal_question
-        elif policy == "neighbors":
-            question = normal_question
-        ret_list.append(self._get_ret(index, mode = policy, question=question))
-        self.cls_neg_label = None
-        return ret_list
+    #     random.shuffle(ret_list)
+    #     policy = random.choice(["cls_positive", "cls_negative", "neighbors"])
+    #     if policy == "cls_positive":
+    #         question = real_question
+    #     elif policy == "cls_negative":
+    #         question = normal_question
+    #     elif policy == "neighbors":
+    #         question = normal_question
+    #     ret_list.append(self._get_ret(index, mode = policy, question=question))
+    #     self.cls_neg_label = None
+    #     return ret_list

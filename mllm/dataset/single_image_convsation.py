@@ -7,6 +7,8 @@ from PIL import Image
 from torch.utils.data import Dataset
 from transformers import TrainingArguments
 
+from mllm.dataset.process_function.llava_process_function import IGNORE_INDEX
+
 from .root import IMAGE_PLACEHOLDER, BOXES_PLACEHOLDER
 from ..conversation import Conversation, get_conv_template
 from ..utils import post_process_generate_ids
@@ -142,35 +144,26 @@ class SingleImageConvDatasetMixin:
 
                 ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
                 
-                # for k in update_keys:
-                #     if k not in ret_dict.keys():
-                #         ret_dict[k] = sub_dict[k]
-
-                #     else:
-                #         ret_valid = ret_dict[k][:-1]
-                #         sub_valid = sub_dict[k]
-                #         if k != 'attention_mask':
-                #             if k == 'input_ids':
-                #                 ret_valid = ret_dict[k][:-1]
-
-                #         if k == 'labels' and i == len(dict_list)-1:
-                #             ret_valid = torch.zeros_like(ret_valid) - 100
-                #             ret_valid[:] = -100
-
-                #         ret_dict[k] = torch.cat([ret_valid,sub_valid],dim=0)
-
+                # concatenate multi-context
                 if i == 0:
-                    concated_input_ids = sub_dict["input_ids"]
-                    concated_attn_mask = sub_dict["attention_mask"]
-                    concated_labels = sub_dict["labels"]
+                    for k in update_keys:
+                        value = sub_dict[k][:-1]
+                        ret_dict[k] = value
+                    # # mask the first context label
+                    #     if k == "labels":
+                    #         ret_dict[k][:] = IGNORE_INDEX
                 else:
-                    concated_input_ids = torch.cat([concated_input_ids, sub_dict["input_ids"]],dim=0)
-                    concated_attn_mask = torch.cat([concated_attn_mask, sub_dict["attention_mask"]],dim=0)
-                    concated_labels = torch.cat([concated_labels, sub_dict["labels"]],dim=0)
-            
-            ret_dict["input_ids"] = concated_input_ids
-            ret_dict["attention_mask"] = concated_attn_mask
-            ret_dict["labels"] = concated_labels
+                    for k in update_keys:
+                        # remove the sep2 symbolic for each context (except the last round)
+                        if i != len(dict_list) -1:
+                            value = sub_dict[k][:-1]
+                        else:
+                            value = sub_dict[k]
+                            # mask all labels except the last one
+                            if k == "labels":
+                                ret_dict[k][:] = IGNORE_INDEX
+                            
+                        ret_dict[k] = torch.cat([ret_dict[k], value], dim = 0)
 
             ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
 
