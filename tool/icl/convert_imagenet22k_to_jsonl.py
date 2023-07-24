@@ -6,7 +6,7 @@ wordnet_ids_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/annotation
 wordnet_lemmas_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/annotations/storage.googleapis.com_bit_models_imagenet21k_wordnet_lemmas.txt'
 train22k_txt = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/train22k.txt'
 output_train_dir = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/imagenet22k_train.jsonl'
-output_test_dir = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/imagenet22k_test.jsonl'
+output_test_dir = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/imagenet22k_test.jsonl' 
 
 total_clsnum = 21842
 train_clsnum = 20000
