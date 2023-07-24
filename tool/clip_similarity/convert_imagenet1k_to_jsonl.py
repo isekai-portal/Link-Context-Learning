@@ -1,6 +1,6 @@
-from cmath import inf
 import json
 import os.path
+import random
 import jsonlines
 
 # Cluster 1424
@@ -28,7 +28,12 @@ val_blacklist_path = 'ILSVRC2015_clsloc_validation_blacklist.txt'
 # testset_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/ImageSets/test.txt'
 
 output_dir = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/imagenet1k.jsonl'
+output_train_dir = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900.jsonl'
+output_test_dir = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100.jsonl'
 
+
+train_num = 900
+test_num = 100
 
 def convert_imagenet1k_to_jsonl():
     folder2name = {}
@@ -82,9 +87,15 @@ def convert_imagenet1k_to_jsonl():
     for label, meta in zip(val_labels, val_metas):
         objs[label][2].append(meta)
 
-    with jsonlines.open(output_dir, 'w') as writer:
+    test_set = random.sample(objs.keys(), test_num)
+
+    with jsonlines.open(output_train_dir, 'w') as train_writer, \
+        jsonlines.open(output_test_dir, 'w') as test_writer:
         for cls_id, cls_meta in objs.items():
-            writer.write(cls_meta)
+            if cls_id in test_set:
+                test_writer.write(cls_meta)
+            else:
+                train_writer.write(cls_meta)
 
 
 if __name__ == '__main__':

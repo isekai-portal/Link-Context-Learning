@@ -24,11 +24,15 @@ import csv
 from petrel_client.client import Client
 # import debugpy;debugpy.connect(('10.142.4.32', 5610))
 
-anno_file_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/imagenet22k_train.jsonl'
-imagenet1k_ceph_path = 'zz1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/'
-imagenet22k_ceph_path = 'openmmlab1984:s3://openmmlab/datasets/classification/imagenet22k/train/'
-ceph_root = imagenet22k_ceph_path
-output_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/similarity_analysis/'
+Dataset = "1k"
+if Dataset == "1k":
+    ceph_root = 'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/'
+    anno_file_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900.jsonl'
+    output_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet1k/similarity_analysis_train900'
+elif Dataset == "22k":
+    ceph_root = 'openmmlab1984:s3://openmmlab/datasets/classification/imagenet22k/train/'
+    anno_file_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/imagenet22k_train.jsonl'
+    output_path = '/mnt/lustre/share_data/taiyan/dataset/imagenet22k/icl/similarity_analysis/'
 
 if not osp.exists(output_path):
     os.mkdir(output_path)
@@ -74,7 +78,7 @@ with torch.no_grad():
     text_features = model.encode_text(text)
 
 # get image embeddings
-nimg = 50
+nimg = 100
 cls_tensors = []
 num_cats = len(cls_ids)
 
