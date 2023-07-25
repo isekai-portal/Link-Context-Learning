@@ -7,185 +7,172 @@ import os.path as osp
 import jsonlines
 import random
 from typing import Dict, Any, Sequence
-from numpy import real
-
-import torch
-from torchvision.ops import box_iou
-
-from ..utils import (
-    MInstrDataset,
-    BaseComputeMetrics,
-)
-
-from ..root import (
-    DATASETS,
-    QUESTION_PLACEHOLDER,
-    IMAGE_PLACEHOLDER,
-    EXPR_PLACEHOLDER,
-)
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    handlers=[logging.StreamHandler(sys.stdout), ],
-)
+from .icl_train import ICLTrainDataset, logger
+from .icl_eval import ICLEvalDataset
+from ..root import DATASETS
 
 
 @DATASETS.register_module()
-class ImageNet1kDataset(MInstrDataset):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER, EXPR_PLACEHOLDER))
-        self.data = self._get_annos(self.filename)
-        self.cls_neg_label = None
+class ImageNet1kDatasetTrain(ICLTrainDataset):
+    def __init__(self, policy: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.policy = policy
 
-    def _get_annos(self, filename):
-        cls_metas = []
-        with jsonlines.open(filename) as reader:
-            for metas in reader:
-                cls_metas.append(metas)
-        return cls_metas
-
-    def get_raw_item(self, index):
-        return self.data[index]
-
-    def get_template(self):
-        return 
-
-    def _get_ret(self, index, mode="cls_positive", question=""):
-        assert mode in ['cls_positive','cls_negative', 'neighbors']
-        assert question != ""
-
-        item = self.get_raw_item(index)
-        samples = item['samples']
-        neighbors = item['neighbors']
-        
-        if mode == "cls_positive":
-            # current class image and label
-            # label = 'shikra'+'_'+item['class_name'].lower()
-            label = item['class_name'].lower()
-            sample = random.choice(samples)
-        elif mode == "cls_negative":
-            # current class image, random neighbor label
-            if self.cls_neg_label:
-                label = self.cls_neg_label
-            else:
-                metas = random.choice(neighbors)
-                # label = 'shikra'
-                label = metas[1].lower()
-                self.cls_neg_label = label
-            sample = random.choice(samples)
-        elif mode == "neighbors":
-            # random neighbor image and label
-            metas = random.choice(neighbors)
-            label = metas[1].lower()
-            sample = metas[2]
-        else:
-            raise NotImplementedError
-
-        image = self.get_image(sample)
-
-        # Placeholder for template
-        # question = item['text']
-        # final_question = self.get_template().replace(QUESTION_PLACEHOLDER, question)
-
-        ret = {
-            'image': image,
-            'conversations': [
-                {
-                    'from': 'human',
-                    'value': question,
-                },
-                {
-                    'from': 'gpt',
-                    'value': f"The answer is {label}.",
-                },
-            ]
-        }
-        return ret
-
-    def __getitem__(self, index):
-        if random.random() < 0.5:
-            ret = self._get_ret(index,mode="cls_positive")
-            self.cls_neg_label = None
-            return ret 
-        else:
-            return self._get_ret(index,mode="neighbors")
-
-    # v3
+    # get policy function according to name 
     def __get_icl_item__(self, index, shot):
+        func = getattr(self, self.policy)
+        return func(index, shot)
+
+    def policy_v1(self):
+        raise NotImplementedError
+
+    def policy_v2(self):
+        raise NotImplementedError
+
+    def policy_v3(self, index, shot):
         ret_list = []
         normal_question = 'What is the class of the image <image>?'
         real_question = 'What is the "real" class of the image <image>?'
 
         for _ in range(shot):
-            ret_list.append(self._get_ret(index, mode = "cls_negative", question=normal_question))
+            image, label = self.get_samples(index, mode = "cls_negative")
+            ret = self.get_ret(image, question=normal_question, answer=label)
+            ret_list.append(ret)
 
         for _ in range(shot):
-            ret_list.append(self._get_ret(index, mode = "neighbors", question=normal_question))
-        
+            image, label = self.get_samples(index, mode = "neighbors")
+            ret = self.get_ret(image, question=normal_question, answer=label)
+            ret_list.append(ret)
+
         random.shuffle(ret_list)
-        policy = random.choice(["cls_positive", "cls_negative", "neighbors"])
-        if policy == "cls_positive":
+        # inference sample
+        mode = random.choice(["cls_positive", "cls_negative", "neighbors"])
+        if mode == "cls_positive":
             question = real_question
-        elif policy == "cls_negative":
+        elif mode == "cls_negative":
             question = normal_question
-        elif policy == "neighbors":
+        elif mode == "neighbors":
             question = normal_question
-        ret_list.append(self._get_ret(index, mode = policy, question=question))
+        
+        image, label = self.get_samples(index, mode = mode)
+        ret = self.get_ret(image, question=question, answer=label)
+        ret_list.append(ret)
         self.cls_neg_label = None
         return ret_list
 
+    def policy_v4(self, index, shot):
+        ret_list = []
+        bind_question = 'What is the "binding" class of the image <image>?'
+        real_question = 'What is the "real" class of the image <image>?'
 
-    # # v4
-    # def __get_icl_item__(self, index, shot):
-    #     ret_list = []
-    #     normal_question = 'What is the class of the image <image>?'
-    #     bond_question = 'What is the "binding" class of the image <image>?'
-    #     real_question = 'What is the "real" class of the image <image>?'
-
-    #     for _ in range(shot):
-    #         ret_list.append(self._get_ret(index, mode = "cls_negative", question=bond_question))
-
-    #     for _ in range(shot):
-    #         question = random.choice([bond_question, real_question])
-    #         ret_list.append(self._get_ret(index, mode = "neighbors", question=question))
+        for _ in range(shot):
+            image, label = self.get_samples(index, mode = "cls_negative")
+            ret = self.get_ret(image, question=bind_question, answer=label)
+            ret_list.append(ret)
+            
+        for _ in range(shot):
+            question = random.choice([bind_question, real_question])
+            image, label = self.get_samples(index, mode = "neighbors")
+            ret = self.get_ret(image, question=question, answer=label)
+            ret_list.append(ret)
         
-    #     random.shuffle(ret_list)
-    #     policy = random.choice(["cls_positive", "cls_negative", "neighbors"])
-    #     if policy == "cls_positive":
-    #         question = real_question
-    #     elif policy == "cls_negative":
-    #         question = bond_question
-    #     elif policy == "neighbors":
-    #         question = random.choice([bond_question, real_question])
-    #     ret_list.append(self._get_ret(index, mode = policy, question=question))
-    #     self.cls_neg_label = None
-    #     return ret_list
+        random.shuffle(ret_list)
+        # inference sample
+        mode = random.choice(["cls_positive", "cls_negative", "neighbors"])
+        if mode == "cls_positive":
+            question = real_question
+        elif mode == "cls_negative":
+            question = bind_question
+        elif mode == "neighbors":
+            question = random.choice([bind_question, real_question])
 
+        image, label = self.get_samples(index, mode = mode)
+        ret = self.get_ret(image, question=question, answer=label)
+        ret_list.append(ret)
+        self.cls_neg_label = None
+        return ret_list
 
-    # # v5
-    # def __get_icl_item__(self, index, shot):
-    #     ret_list = []
-    #     normal_question = 'What is the class of the image <image>?'
-    #     bond_question = 'What is the "binding" class of the image <image>?'
-    #     real_question = 'What is the "real" class of the image <image>?'
+    def policy_v5(self, index, shot):
+        ret_list = []
+        normal_question = 'What is the class of the image <image>?'
+        bind_question = 'What is the "binding" class of the image <image>?'
+        real_question = 'What is the "real" class of the image <image>?'
 
-    #     for _ in range(shot):
-    #         ret_list.append(self._get_ret(index, mode = "cls_negative", question=bond_question))
+        for _ in range(shot):
+            image, label = self.get_samples(index, mode = "cls_negative")
+            ret = self.get_ret(image, question=bind_question, answer=label)
+            ret_list.append(ret)
 
-    #     for _ in range(shot):
-    #         ret_list.append(self._get_ret(index, mode = "neighbors", question=real_question))
+        for _ in range(shot):
+            image, label = self.get_samples(index, mode = "neighbors")
+            ret = self.get_ret(image, question=real_question, answer=label)
+            ret_list.append(ret)
         
-    #     random.shuffle(ret_list)
-    #     policy = random.choice(["cls_positive", "cls_negative", "neighbors"])
-    #     if policy == "cls_positive":
-    #         question = real_question
-    #     elif policy == "cls_negative":
-    #         question = normal_question
-    #     elif policy == "neighbors":
-    #         question = normal_question
-    #     ret_list.append(self._get_ret(index, mode = policy, question=question))
-    #     self.cls_neg_label = None
-    #     return ret_list
+        random.shuffle(ret_list)
+        mode = random.choice(["cls_positive", "cls_negative", "neighbors"])
+        if mode == "cls_positive":
+            question = real_question
+        elif mode == "cls_negative":
+            question = normal_question
+        elif mode == "neighbors":
+            question = normal_question
+
+        image, label = self.get_samples(index, mode = mode)
+        ret = self.get_ret(image, question=question, answer=label)
+        ret_list.append(ret)
+        self.cls_neg_label = None
+        return ret_list
+
+    # 2way baseline
+    def policy_2way(self, index, shot):
+        cls_label = self.get_raw_item(index)['class_name'].lower()
+        question = f"Is there any {cls_label} in this image <image>?"
+
+        ret_list = []
+        # positive sample
+        for i in range(shot):
+            image, label = self.get_samples(index, mode = "cls_positive")
+            ret_list.append(self.get_ret(image, question, answer="Yes"))
+        
+        # negative sample
+        for i in range(shot):
+             image, label = self.get_samples(index, mode = "neighbors")
+             ret_list.append(self.get_ret(image, question, answer="No"))
+
+        random.shuffle(ret_list)
+        policy = ['cls_positive', 'neighbors']
+        mode = random.choice(policy)
+        if mode == 'cls_positive':
+            ret_list.append(self.get_ret(image, question, answer="Yes"))
+        else:
+            ret_list.append(self.get_ret(image, question, answer="No"))
+        
+        return ret_list
+
+
+
+@DATASETS.register_module()
+class ImageNet1kDatasetEval(ICLEvalDataset):
+    def __init__(self, policy: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert policy is not None
+        self.policy = policy
+
+    def get_question(self):
+        fun = getattr(self, self.policy)
+        return fun()
+
+    def policy_v1(self):
+        raise NotImplementedError
+
+    def policy_v2(self):
+        raise NotImplementedError
+    
+    def policy_v3(self):
+        return 'What is the class of the image <image>?'
+
+    def policy_v4(self):
+        return 'What is the "binding" class of the image <image>?'
+    
+    def policy_v5(self):
+        return 'What is the class of the image <image>?'

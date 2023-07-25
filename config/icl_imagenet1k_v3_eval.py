@@ -1,4 +1,4 @@
-_base_ = ['_base_/dataset/DEFAULT_TEST_DATASET.py', '_base_/model/llava_v1_7b.py', '_base_/train/eval.py']
+_base_ = ['_base_/dataset/DEFAULT_TEST_IMAGENET.py', '_base_/model/llava_v1_7b.py', '_base_/train/eval.py']
 
 training_args = dict(
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_eval_exp_unify_mllm/{{fileBasenameNoExtension}}',
@@ -19,13 +19,17 @@ model_args = dict(
     model_name_or_path=None,
 )
 
+dataset=dict(
+    **_base_.IMAGENET1K_TEST,
+    sample_per_class=50,
+    policy="policy_v3",
+)
+
 data_args = dict(
     train=None,
     validation=None,
     test=None,
-    #multitest={k: {'cfg': v, 'compute_metric': None} for k, v in _base_.DEFAULT_TEST_VQAv2_VARIANT.items()},
-    #multitest={k: {'cfg': v, 'compute_metric': None} for k, v in _base_.DEFAULT_TEST_VQAv2_VARIANT.items() if 'VQAv2_val' == k},
-    multitest={k: {'cfg': v, 'compute_metric': dict(type='ICLComputeMetrics')} for k, v in _base_.DEFAULT_IMAGENET_TEST_VARIANT.items()},
+    multitest={"ImageNet1k_100Class": {'cfg': dataset, 'compute_metric': dict(type='ICLComputeMetrics')}},
     compute_metric=None,
 
     # padding collator kwargs

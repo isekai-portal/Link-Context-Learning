@@ -1,38 +1,20 @@
-import imp
 import re
 import sys
 import logging
-import warnings
-import os
-import os.path as osp
 import jsonlines
 import random
 from typing import Dict, Any, Sequence
-from numpy import real
 
-import torch
-from .imagenet import ImageNetDataset
+from .icl_train import ICLTrainDataset, logger
 
 from .. import BaseComputeMetrics
 from ..root import (
     DATASETS,
-    METRICS,
-    QUESTION_PLACEHOLDER,
-    IMAGE_PLACEHOLDER,
+    METRICS
 )
-
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    handlers=[logging.StreamHandler(sys.stdout), ],
-)
-
 
 @DATASETS.register_module()
-class ICLEvalDataset(ImageNetDataset):
+class ICLEvalDataset(ICLTrainDataset):
     def __init__(self, sample_per_class = 0, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.sample_per_class = sample_per_class
@@ -54,7 +36,7 @@ class ICLEvalDataset(ImageNetDataset):
                 data_map.append([cls_idx, sample_idx])
         return data_map        
 
-    def get_samples(self, index, shot):
+    def get_eval_samples(self, index, shot):
         cls_idx, sample_idx = self.data_map[index]
         item = self.get_raw_item(cls_idx)
         class_id = item["class_id"]
@@ -67,28 +49,14 @@ class ICLEvalDataset(ImageNetDataset):
         for i in range(shot):
             context_imgs.append(self.get_image(context_samples[i]))
         return class_name, context_imgs, test_img
-         
 
-    def get_ret(self, image, question, answer):
-        ret = {
-            'image': image,
-            'conversations': [
-                {
-                    'from': 'human',
-                    'value': question,
-                },
-                {
-                    'from': 'gpt',
-                    'value': f"The answer is {answer}.",
-                },
-            ]
-        }
-        return ret
+    def get_question(self):
+        raise NotImplementedError
 
     def __get_icl_item__(self, index, shot):
         ret_list = []
-        question = 'What is the class of the image <image>?'
-        class_name, context_imgs, test_img = self.get_samples(index, shot)
+        question = self.get_question()
+        class_name, context_imgs, test_img = self.get_eval_samples(index, shot)
         # context sample
         for i in range(shot):
             ret_list.append(self.get_ret(context_imgs[i], question=question, answer=class_name))

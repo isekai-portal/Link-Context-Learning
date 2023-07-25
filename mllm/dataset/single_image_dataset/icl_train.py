@@ -6,16 +6,8 @@ import os
 import os.path as osp
 import jsonlines
 import random
-from typing import Dict, Any, Sequence
-from numpy import real
 
-import torch
-from torchvision.ops import box_iou
-
-from ..utils import (
-    MInstrDataset,
-    BaseComputeMetrics,
-)
+from ..utils import MInstrDataset
 
 from ..root import (
     DATASETS,
@@ -34,7 +26,7 @@ logging.basicConfig(
 
 
 @DATASETS.register_module()
-class ImageNetDataset(MInstrDataset):
+class ICLTrainDataset(MInstrDataset):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, placeholders=(IMAGE_PLACEHOLDER, EXPR_PLACEHOLDER))
         self.data = self._get_annos(self.filename)
@@ -52,6 +44,26 @@ class ImageNetDataset(MInstrDataset):
 
     def get_template(self):
         raise NotImplementedError 
+
+    def get_ret(self, image, question, answer):
+        # Placeholder for template
+        # question = item['text']
+        # final_question = self.get_template().replace(QUESTION_PLACEHOLDER, question)
+        
+        ret = {
+            'image': image,
+            'conversations': [
+                {
+                    'from': 'human',
+                    'value': question,
+                },
+                {
+                    'from': 'gpt',
+                    'value': f"The answer is {answer}.",
+                },
+            ]
+        }
+        return ret
 
     def get_samples(self, index, mode="cls_positive"):
         assert mode in ['cls_positive','cls_negative', 'neighbors']
