@@ -166,9 +166,10 @@ class LlavaLlamaModel(LlamaModel):
                 image_features = []
                 for image in images_list:
                     # [SxCxWxH]
-                    image_forward_out = vision_tower(image, output_hidden_states=True)
-                    select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
-                    select_hidden_state = image_forward_out.hidden_states[select_hidden_state_layer]
+                    with torch.no_grad():
+                        image_forward_out = vision_tower(image, output_hidden_states=True)
+                        select_hidden_state_layer = getattr(self.config, "mm_vision_select_layer", -1)
+                        select_hidden_state = image_forward_out.hidden_states[select_hidden_state_layer]
 
                     if self.qformer_config is not None:
                         image_feature = select_hidden_state#[:, 1:]

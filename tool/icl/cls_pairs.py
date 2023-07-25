@@ -89,15 +89,15 @@ def gen_test_pairs():
             jsonlines.open(out_dir, 'w') as writer:
             for metas in reader:
                 cls_id = metas[0]
-                cls_name = metas[1]
+                cls_name = metas[1].replace("_"," ")
                 cls_imgs = metas[2]
-                in_context_samples = random.sample(cls_imgs, context_num)
-                test_samples = list(set(cls_imgs).difference(in_context_samples))
+                context_samples = random.sample(cls_imgs, context_num)
+                test_samples = list(set(cls_imgs).difference(context_samples))
 
                 cls_data = {
                     'class_id': cls_id,
                     'class_name': cls_name,
-                    'in_context_samples': in_context_samples,
+                    'context_samples': context_samples,
                     'test_samples': test_samples
                 }
                 writer.write(cls_data)

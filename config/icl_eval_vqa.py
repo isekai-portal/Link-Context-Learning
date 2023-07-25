@@ -25,7 +25,7 @@ data_args = dict(
     test=None,
     #multitest={k: {'cfg': v, 'compute_metric': None} for k, v in _base_.DEFAULT_TEST_VQAv2_VARIANT.items()},
     #multitest={k: {'cfg': v, 'compute_metric': None} for k, v in _base_.DEFAULT_TEST_VQAv2_VARIANT.items() if 'VQAv2_val' == k},
-    multitest={k: {'cfg': v, 'compute_metric': None} for k, v in _base_.DEFAULT_IMAGENET1K2WAY_TEST_VARIANT.items()},
+    multitest={k: {'cfg': v, 'compute_metric': dict(type='ICLComputeMetrics')} for k, v in _base_.DEFAULT_IMAGENET_TEST_VARIANT.items()},
     compute_metric=None,
 
     # padding collator kwargs
