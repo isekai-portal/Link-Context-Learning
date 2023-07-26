@@ -36,11 +36,11 @@ class ICLEvalDataset(ICLTrainDataset):
                 data_map.append([cls_idx, sample_idx])
         return data_map        
 
-    def get_eval_samples(self, index, shot):
+    def get_samples(self, index, shot):
         cls_idx, sample_idx = self.data_map[index]
         item = self.get_raw_item(cls_idx)
         class_id = item["class_id"]
-        class_name = item["class_name"]
+        class_name = item["class_name"].lower()
         context_samples = item["context_samples"]
         test_samples = item['test_samples']
 
@@ -50,20 +50,6 @@ class ICLEvalDataset(ICLTrainDataset):
             context_imgs.append(self.get_image(context_samples[i]))
         return class_name, context_imgs, test_img
 
-    def get_question(self):
-        raise NotImplementedError
-
-    def __get_icl_item__(self, index, shot):
-        ret_list = []
-        question = self.get_question()
-        class_name, context_imgs, test_img = self.get_eval_samples(index, shot)
-        # context sample
-        for i in range(shot):
-            ret_list.append(self.get_ret(context_imgs[i], question=question, answer=class_name))
-        
-        # eval sample
-        ret_list.append(self.get_ret(test_img, question=question, answer=class_name))
-        return ret_list
 
 ANS_EXTRACT_PAT = re.compile(r'(?:The answer is (.+?)\.)')
 

@@ -158,21 +158,37 @@ class ImageNet1kDatasetEval(ICLEvalDataset):
         assert policy is not None
         self.policy = policy
 
-    def get_question(self):
-        fun = getattr(self, self.policy)
-        return fun()
+    def __get_icl_item__(self, index, shot):
+        ret_list = []
+        question = getattr(self, self.policy)(index, shot)
+        class_name, context_imgs, test_img = self.get_samples(index, shot)
+        # context sample
+        for i in range(shot):
+            ret_list.append(self.get_ret(context_imgs[i], question=question, answer=class_name))
+        
+        # eval sample
+        ret_list.append(self.get_ret(test_img, question=question, answer=class_name))
+        return ret_list
 
-    def policy_v1(self):
+    def policy_v1(self, *args):
         raise NotImplementedError
 
-    def policy_v2(self):
+    def policy_v2(self, *args):
         raise NotImplementedError
     
-    def policy_v3(self):
+    def policy_v3(self, *args):
         return 'What is the class of the image <image>?'
 
-    def policy_v4(self):
+    def policy_v4(self, *args):
         return 'What is the "binding" class of the image <image>?'
     
-    def policy_v5(self):
+    def policy_v5(self, *args):
         return 'What is the class of the image <image>?'
+
+    # 2way baseline
+    def policy_2way(self, index, *args):
+        cls_idx, sample_idx = self.data_map[index]
+        item = self.get_raw_item(cls_idx)
+        cls_label = item['class_name'].lower()
+        question = f"Is there any {cls_label} in this image <image>?"
+        return question
