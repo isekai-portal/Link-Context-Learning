@@ -1,4 +1,4 @@
-_base_ = ['_base_/dataset/DEFAULT_TEST_IMAGENET.py', '_base_/model/llava_v1_7b.py', '_base_/train/eval.py']
+_base_ = ['_base_/dataset/DEFAULT_TEST_ISEKAI.py', '_base_/model/llava_v1_7b.py', '_base_/train/eval.py']
 
 training_args = dict(
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_eval_exp_unify_mllm/{{fileBasenameNoExtension}}',
@@ -19,17 +19,25 @@ model_args = dict(
     model_name_or_path=None,
 )
 
-dataset=dict(
-    **_base_.IMAGENET1K_TEST,
-    sample_per_class=50,
+dataset1=dict(
+    **_base_.ISEKAI,
+    sample_per_class=0,
     policy="policy_v6",
+)
+dataset2=dict(
+    **_base_.ISEKAI,
+    sample_per_class=0,
+    policy="mini_v6",
 )
 
 data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={"ImageNet1k_100Class": {'cfg': dataset, 'compute_metric': dict(type='ICLComputeMetrics')}},
+    multitest={
+        "isekai_horse_man_true": {'cfg': dataset1, 'compute_metric': dict(type='ICLComputeMetrics')},
+        "isekai_equimanoid_fake": {'cfg': dataset2, 'compute_metric': dict(type='ICLComputeMetrics')}
+    },
     compute_metric=None,
 
     # padding collator kwargs

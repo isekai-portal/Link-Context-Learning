@@ -22,7 +22,7 @@ model_args = dict(
 dataset=dict(
     **_base_.IMAGENET1K_TEST,
     sample_per_class=50,
-    policy="policy_v6",
+    policy="policy_v8",
 )
 
 data_args = dict(

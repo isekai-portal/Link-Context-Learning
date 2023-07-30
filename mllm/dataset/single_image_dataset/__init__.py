@@ -16,3 +16,4 @@ from .v3det import V3DetDataset
 from .icl_train import ICLTrainDataset
 from .icl_eval import ICLEvalDataset, ICLComputeMetrics
 from .imagenet1k import ImageNet1kDatasetTrain
+from .mini_imagenet import MiniImageNetDatasetEval

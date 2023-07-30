@@ -61,7 +61,7 @@ class LLavaConvProcessV1(BaseConvProcessFunc):
 @FUNCTIONS.register_module()
 class LlavaTextProcessV1(BaseTextProcessFunc):
 
-    def __call__(self, conv: Conversation, preprocessor: Dict[str, Any], mode: str, **tokenize_kwargs) -> Dict[str, Any]:
+    def __call__(self, conv: Conversation, preprocessor: Dict[str, Any], mode: str, use_icl=False, **tokenize_kwargs) -> Dict[str, Any]:
         tokenizer = preprocessor['text']
         assert isinstance(tokenizer, LlamaTokenizer), "only work for LlamaTokenizer"
 
@@ -73,7 +73,7 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
             if mode in ['train']:
                 ret = self.tk_conv_colon_two_train(conv, tokenizer, **_kwargs)
             else:
-                ret = self.tk_conv_colon_two_eval(conv, tokenizer, **_kwargs)
+                ret = self.tk_conv_colon_two_eval(conv, tokenizer, icl = use_icl, **_kwargs)
         else:
             raise ValueError(f"unrecognized conv_style: {conv.sep_style}.\n the conv is {conv}")
 
@@ -140,11 +140,12 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
         )
 
     # noinspection PyMethodMayBeStatic
-    def tk_conv_colon_two_eval(self, conv, tokenizer, **kwargs):
+    def tk_conv_colon_two_eval(self, conv, tokenizer, icl=False, **kwargs):
         assert len(conv.messages) >= 2
         # target = conv.messages[-1][-1]
         target = conv.get_prompt()
-        conv.messages[-1][-1] = ""
+        if not icl:
+            conv.messages[-1][-1] = ""
         conversation = conv.get_prompt()
         input_ids = tokenizer([conversation, ], **kwargs).input_ids[0]
 

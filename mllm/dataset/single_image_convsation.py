@@ -45,7 +45,7 @@ class SingleImageConvDatasetMixin:
         self.use_icl = use_icl
         self.shot = shot
 
-    def __get_icl_item__(self, item, do_mask=None, debug_mode=False, train_mode='train', mode='common') -> Dict[str, Any]:
+    def __get_icl_item__(self, item, do_mask=None, debug_mode=False, train_mode='train', mode='common', eval_icl=False) -> Dict[str, Any]:
         # get_icl_item
         #item = self.get_raw_item(index)
         image: Image.Image = item.get('image', None)
@@ -78,7 +78,7 @@ class SingleImageConvDatasetMixin:
         raw_conv, image = self.process_conv_multimage(raw_conv, image)
         raw_conv, _ = self.process_target(raw_conv, target, multimage_mode=multimage_mode)
         conv = self.build_conv(raw_conv,mode)
-        text_dict = self.process_text(conv, do_mask)
+        text_dict = self.process_text(conv, do_mask, eval_icl)
         image_dict = self.process_image(image)
 
         # return
@@ -114,7 +114,12 @@ class SingleImageConvDatasetMixin:
                 item = dict_list[i]
 
                 conv_mode = 'icl'
-                sub_dict = self.__get_icl_item__(item,mode=conv_mode)
+                if 'mode' in item.keys():
+                    conv_mode = item['mode']
+                if i != len(dict_list) - 1:
+                    sub_dict = self.__get_icl_item__(item,mode=conv_mode, eval_icl=True)
+                else:
+                    sub_dict = self.__get_icl_item__(item,mode=conv_mode)
 
                 ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
                 
@@ -349,14 +354,14 @@ class SingleImageConvDatasetMixin:
         """
         return self.process_func['target'](raw_conv, target, self.preprocessor, multimage_mode=multimage_mode)
 
-    def process_text(self, conv: Conversation , mode=None) -> Dict[str, Any]:
+    def process_text(self, conv: Conversation , mode=None, icl=False) -> Dict[str, Any]:
         """
         convert Conversation object to torch.Tensor, e.g. input_ids, labels, attention_mask, etc.
             self.tokenize_kwargs control something like padding/truncation behavior.
         """
         if mode is None:
             mode = self.mode
-        return self.process_func['text'](conv, self.preprocessor, mode, **self.tokenize_kwargs)
+        return self.process_func['text'](conv, self.preprocessor, mode, icl, **self.tokenize_kwargs)
 
     def process_image(self, image: Image.Image) -> Dict[str, Any]:
         """

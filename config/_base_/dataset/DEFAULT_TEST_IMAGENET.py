@@ -4,3 +4,17 @@ IMAGENET1K_TEST = dict(
     image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
     template_file=r"{{fileDirname}}/template/ICL.json",
 )
+
+MINI_IMAGENET_5W1S = dict(
+    type='MiniImageNetDatasetEval',
+    filename=r'/mnt/lustre/share_data/taiyan/dataset/mini-imagenet/lcl_val1000Episode_5_way_1_shot.json',
+    image_folder=r'ty-sdc:s3://ICL/dataset/mini-imagenet/val/',
+    template_file=r"{{fileDirname}}/template/ICL.json",
+)
+
+MINI_IMAGENET_5W5S = dict(
+    type='MiniImageNetDatasetEval',
+    filename=r'/mnt/lustre/share_data/taiyan/dataset/mini-imagenet/lcl_val1000Episode_5_way_5_shot.json',
+    image_folder=r'ty-sdc:s3://ICL/dataset/mini-imagenet/val/',
+    template_file=r"{{fileDirname}}/template/ICL.json",
+)

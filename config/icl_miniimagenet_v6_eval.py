@@ -20,8 +20,8 @@ model_args = dict(
 )
 
 dataset=dict(
-    **_base_.IMAGENET1K_TEST,
-    sample_per_class=50,
+    **_base_.MINI_IMAGENET_5W5S,
+    sample_per_class=0,
     policy="policy_v6",
 )
 
@@ -29,7 +29,7 @@ data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={"ImageNet1k_100Class": {'cfg': dataset, 'compute_metric': dict(type='ICLComputeMetrics')}},
+    multitest={"mini-imagenet-5w5s": {'cfg': dataset, 'compute_metric': dict(type='ICLComputeMetrics')}},
     compute_metric=None,
 
     # padding collator kwargs

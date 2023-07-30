@@ -128,7 +128,10 @@ class LLaVATrainer(TrainerForMMLLM):
         os.makedirs(output_dir, exist_ok=True)
 
         if self.args.ceph_dir:
-            save_dir = os.path.join(self.args.ceph_dir, output_dir.split('/')[-1]) + '/'
+            if(output_dir.split('/')[-1] == self.args.ceph_dir.split('/')[-2]):
+                save_dir = self.args.ceph_dir
+            else:
+                save_dir = os.path.join(self.args.ceph_dir, output_dir.split('/')[-1]) + '/'
         else:
             save_dir = output_dir
         logger.info(f"Saving checkpoint to {save_dir}")
