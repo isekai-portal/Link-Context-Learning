@@ -15,5 +15,5 @@ from .pope import POPEVQADataset
 from .v3det import V3DetDataset
 from .icl_train import ICLTrainDataset
 from .icl_eval import ICLEvalDataset, ICLComputeMetrics
-from .imagenet1k import ImageNet1kDatasetTrain
+from .imagenet1k import ImageNet1kDatasetTrain, ImageNet1kDatasetEval, ImageNet1k2WayEval, ImageNet1kOpenNegClassEval
 from .mini_imagenet import MiniImageNetDatasetEval
