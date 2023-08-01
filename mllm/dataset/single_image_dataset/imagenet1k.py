@@ -33,33 +33,6 @@ class ImageNet1kDatasetTrain(ICLTrainDataset):
         assert func is not None
         return func(index, shot)
 
-    # 2way baseline
-    def policy_2way(self, index, shot):
-        cls_label = self.get_raw_item(index)['class_name'].lower()
-        question = f"Is there any {cls_label} in this image <image>?"
-
-        ret_list = []
-        # positive sample
-        for i in range(shot):
-            image, label = self.get_samples(index, mode = "cls_positive")
-            ret_list.append(self.get_ret(image, question, answer="Yes"))
-        
-        # negative sample
-        for i in range(shot):
-             image, label = self.get_samples(index, mode = "neighbors")
-             ret_list.append(self.get_ret(image, question, answer="No"))
-
-        random.shuffle(ret_list)
-        policy = ['cls_positive', 'neighbors']
-        mode = random.choice(policy)
-        if mode == 'cls_positive':
-            ret_list.append(self.get_ret(image, question, answer="Yes"))
-        else:
-            ret_list.append(self.get_ret(image, question, answer="No"))
-        
-        return ret_list
-
-
     def policy_v1(self):
         raise NotImplementedError
 
@@ -470,12 +443,6 @@ class ImageNet1kDatasetEval(ICLEvalDataset):
         ret_list.append(self.get_ret(test_img, question=question, answer=answer))
         return ret_list
 
-    # 2way baseline
-    def policy_2way(self, class_name, **kargs):
-        question = f"Is there any {class_name} in this image <image>?"
-        answer = "Yes"
-        return question, answer
-
     def policy_v1(self, class_name, **kargs):
         raise NotImplementedError
 
@@ -509,16 +476,85 @@ class ImageNet1kDatasetEval(ICLEvalDataset):
         return self.policy_v6(class_name)
 
 
+@DATASETS.register_module()
+class ImageNet1k1WayEval(ICLEvalDataset):
+ 
+    def _rearrange(self):
+        wrap_map = []
+        data_map = super()._rearrange() #[cls_idx, sample_idx]
+        cls_num = len(self.data)
+        for i in range(cls_num):
+            for data in data_map:
+                wrap_map.append([i, data])
+        return wrap_map
+
+    def get_samples(self, index, shot):
+        ctx_idx, sample_map = self.data_map[index]
+
+        # context samples
+        ctx_item = self.get_raw_item(ctx_idx)
+        ctx_name = ctx_item["class_name"].lower()
+        ctx_samples = ctx_item["context_samples"]
+        ctx_imgs = []
+        for i in range(shot):
+            ctx_imgs.append(self.get_image(ctx_samples[i]))
+
+        # inference sample
+        cls_idx, sample_idx = sample_map
+        cls_item = self.get_raw_item(cls_idx)
+        cls_id = cls_item["class_id"]
+        cls_name = cls_item["class_name"].lower()
+        cls_samples = cls_item['test_samples']
+        infer_img = self.get_image(cls_samples[sample_idx])
+
+        sample_meta = dict(
+            ctx_name = ctx_name,
+            infer_name = cls_name,
+            ctx_imgs = ctx_imgs,
+            infer_img = infer_img
+            )
+        return sample_meta
+
+    def __get_icl_item__(self, index, shot):
+        func = getattr(self, self.policy)
+        assert func is not None
+        
+        sample_meta = self.get_samples(index, shot)
+        QnA = func(sample_meta["ctx_name"], sample_meta["infer_name"])
+        
+        ret_list = []
+        # context sample
+        for img in sample_meta["ctx_imgs"]:
+            ret_list.append(self.get_ret(img, question=QnA["ctx_question"], answer=QnA["ctx_answer"]))
+
+        # inference
+        ret_list.append(self.get_ret(sample_meta["infer_img"], question=QnA["infer_question"], answer=QnA["infer_answer"])) 
+        return ret_list
+
+    def policy_v9(self, ctx_name, infer_name):
+        ctx_question = '[INSTRUCTION] What is in the image <image> ?'
+        infer_question = '[INFERENCE] What is in the image <image> ?'
+
+        answer = f'there is {LABEL_PLACEHOLDER} in the image'
+        ctx_answer = answer.replace(LABEL_PLACEHOLDER, ctx_name)
+        infer_answer = answer.replace(LABEL_PLACEHOLDER, infer_name)
+
+        return dict(
+            ctx_question = ctx_question, 
+            ctx_answer = ctx_answer,
+            infer_question = infer_question,
+            infer_answer = infer_answer
+        )
+
 # context: n-positive samples(class A) + n-negative samples(class B)
 # inference: class A or B sample 
 @DATASETS.register_module()
-class ImageNet1k2WayEval(ImageNet1kDatasetEval):
+class ImageNet1k2WayYNEval(ICLEvalDataset):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert len(self.data)%2 == 0
         self.reverse_flag = len(self.data_map)
         self.data_map.extend(self.data_map)
-        print(len(self.data_map))
 
     def rotate_index(self, index):
         # all sample inference twice
@@ -597,11 +633,6 @@ class ImageNet1k2WayEval(ImageNet1kDatasetEval):
         ret_list.append(self.get_ret(sample_meta["infer_img"], question=QnA["infer_question"], answer=QnA["infer_answer"])) 
         return ret_list
 
-    def policy_2way(self, cls_name):
-
-        
-        return ret_list
-
     def policy_v6(self, cls_name):
         pos_question = 'What is the charateristic about the image <image> ?'
         neg_question = pos_question
@@ -649,11 +680,10 @@ class ImageNet1k2WayEval(ImageNet1kDatasetEval):
 # context: n-positive samples(class A) + n-negative samples(class B)
 # inference: class A or B sample 
 @DATASETS.register_module()
-class ImageNet1k2WayNameEval(ImageNet1kDatasetEval):
+class ImageNet1k2WayEval(ICLEvalDataset):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert len(self.data)%2 == 0
-        print(len(self.data_map))
 
     def get_samples(self, index, shot):
         cls_idx, sample_idx = self.data_map[index]
@@ -698,10 +728,7 @@ class ImageNet1k2WayNameEval(ImageNet1kDatasetEval):
         
         ret_list = []
 
-        # context sample
-        # Note: The traversal process is conducted on a per-class basis.
-        # not reverse: pos A image(text: there is A) + neg B image(text: there is no A) + infer A image(label: there is A)
-        # reverse: pos A image(text: there is no B) + neg B image(text: there is B) + infer A image(label: there is no B)
+        # context sample: pos A image(text: there is A) + neg B image(text: there is B) + infer A image(label: there is A)
         for img in sample_meta["pos_imgs"]:
             ret_list.append(self.get_ret(img, question=QnA["pos_question"], answer=QnA["pos_answer"]))
         
@@ -732,11 +759,11 @@ class ImageNet1k2WayNameEval(ImageNet1kDatasetEval):
             infer_answer = infer_answer
         )
     
-    
-# context: n-positive samples(class A) + n-negative samples(open set class)
+
+# context: n-positive samples(class A)
 # inference: class A or B sample 
 @DATASETS.register_module()
-class ImageNet1kOpenNegClassEval(ImageNet1kDatasetEval):
+class ImageNet1kNWayEval(ICLEvalDataset):
 
     def _rearrange(self):
         # Map dataloader index to self.data, according to class_idx and sample_idx

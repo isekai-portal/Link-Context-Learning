@@ -5,15 +5,15 @@ IMAGENET1K_TEST = dict(
     template_file=r"{{fileDirname}}/template/ICL.json",
 )
 
-IMAGENET1K2WAY_TEST = dict(
-    type='ImageNet1k2WayEval',
+IMAGENET1K2WAY_YN_TEST = dict(
+    type='ImageNet1k2WayYNEval',
     filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100_pairs.jsonl',
     image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
     template_file=r"{{fileDirname}}/template/ICL.json",
 )
 
-IMAGENET1K2WAYNAME_TEST = dict(
-    type='ImageNet1k2WayNameEval',
+IMAGENET1K2WAY_TEST = dict(
+    type='ImageNet1k2WayEval',
     filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100_pairs.jsonl',
     image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
     template_file=r"{{fileDirname}}/template/ICL.json",

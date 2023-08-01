@@ -15,8 +15,9 @@ from ..root import (
 
 @DATASETS.register_module()
 class ICLEvalDataset(ICLTrainDataset):
-    def __init__(self, sample_per_class = 0, *args, **kwargs):
+    def __init__(self, policy, sample_per_class = 0, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.policy = policy
         self.sample_per_class = sample_per_class
         self.data_map = self._rearrange()
 
