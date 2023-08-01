@@ -13,6 +13,7 @@ class SeparatorStyle(Enum):
 
     ADD_COLON_SINGLE = auto()
     ADD_COLON_TWO = auto()
+    EMPTY = auto()
     ADD_SPACE_TWO = auto()
     NO_COLON_SINGLE = auto()
     BAIZE = auto()
@@ -21,6 +22,7 @@ class SeparatorStyle(Enum):
     PHOENIX = auto()
     NEW_LINE = auto()
     BILLA = auto()
+
 
 
 @dataclasses.dataclass
@@ -59,6 +61,15 @@ class Conversation:
             for role, message in self.messages:
                 if message:
                     ret += role + ": " + message + self.sep
+                else:
+                    ret += role + ":"
+            return ret
+        elif self.sep_style == SeparatorStyle.EMPTY:
+            seps = [self.sep, self.sep2]
+            ret = self.sep
+            for i, (role, message) in enumerate(self.messages):
+                if message:
+                    ret += role + ": " + message + seps[i % 2]
                 else:
                     ret += role + ":"
             return ret
@@ -272,6 +283,49 @@ register_conv_template(
         sep2="</s>",
     )
 )
+
+# hypnotized_v1.0
+register_conv_template(
+    Conversation(
+        name="hypnotized_v1.0",
+        system="You are hypnotized and I will tell you some new knowledge. "
+               "Please note that this knowledge is limited to this conversation we are having and learn the cause and effect relationships.",
+        roles=("USER", "ASSISTANT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
+register_conv_template(
+    Conversation(
+        name="hypnotized_v1.1",
+        system="You are hypnotized and use the knowledge you learnt from the previous conversation to answer the following question: ",
+        roles=("USER", "ASSISTANT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
+# hypnotized_v1.0
+register_conv_template(
+    Conversation(
+        name="hypnotized_ans_v1.0",
+        system="xxx",
+        roles=("USER", "ASSISTANT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.EMPTY,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
 
 # ICL v1.0 template
 register_conv_template(

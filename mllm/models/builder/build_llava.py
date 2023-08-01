@@ -65,7 +65,8 @@ def load_pretrained_llava(model_args, training_args) -> Tuple[nn.Module, PREPROC
         pretrain_mm_mlp_adapter=model_args.pretrain_mm_mlp_adapter,
         qformer_config=qformer_config,
         dtype = dtype,
-        device=training_args.device
+        device=training_args.device,
+        freeze_mm_projector=model_args.freeze_mm_projector,
     )
     if 'qformer_config' in model_args:
         if model_args.qformer_config.load_model:

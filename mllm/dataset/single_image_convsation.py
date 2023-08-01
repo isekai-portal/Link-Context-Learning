@@ -36,7 +36,7 @@ class SingleImageConvDatasetMixin:
 
         self.preprocessor = preprocessor
         self.process_func = process_func
-        self.conv_template_ori = conv_template
+        self.conv_template = conv_template
         self.conv_template_icl = conv_template_icl
         self.mode = mode
         self.tokenize_kwargs = tokenize_kwargs if tokenize_kwargs is not None else {}
@@ -74,7 +74,7 @@ class SingleImageConvDatasetMixin:
                 target['width'], target['height'] = image.width, image.height
 
         # preprocess
-        raw_conv = self.process_conv(raw_conv,train_mode)
+        raw_conv = self.process_conv(raw_conv,mode)
         raw_conv, image = self.process_conv_multimage(raw_conv, image)
         raw_conv, _ = self.process_target(raw_conv, target, multimage_mode=multimage_mode)
         conv = self.build_conv(raw_conv,mode)
@@ -145,6 +145,9 @@ class SingleImageConvDatasetMixin:
                 item = dict_list[i]
 
                 conv_mode = 'icl'
+                if 'mode' in item.keys():
+                    conv_mode = item['mode']
+
                 sub_dict = self.__get_icl_item__(item,mode=conv_mode)
 
                 ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
@@ -323,9 +326,11 @@ class SingleImageConvDatasetMixin:
 
     def build_conv(self, source: List[Dict[str, Any]], mode='common') -> Conversation:
         if mode == 'common':
-            conv = self.conv_template_ori()
-        else:
+            conv = self.conv_template()
+        elif mode == 'icl':
             conv = self.conv_template_icl()
+        else:
+            conv = self.conv_template[mode]()
 
         role_map = {"human": conv.roles[0], "gpt": conv.roles[1]}
         assert len(source) > 0
@@ -335,16 +340,21 @@ class SingleImageConvDatasetMixin:
             conv.append_message(role, sentence['value'])
         return conv
 
+
     def process_conv(self, raw_conv: List[Dict[str, Any]],mode='common') -> List[Dict[str, Any]]:
         """
         some utils preprocess for raw_conv.
             e.g. replace <image> placeholder to sequence <im_start> <im_patch>*256 <im_end>
         """
         if mode == 'common':
-            conv = self.conv_template_ori
+            conv = self.conv_template
+        elif mode == 'icl':
+            conv = self.conv_template_icl()
         else:
-            conv = self.conv_template_icl
+            conv = self.conv_template[mode]()
+
         return self.process_func['conv'](raw_conv, self.preprocessor, conv)
+
 
     def process_target(self, raw_conv: List[Dict[str, Any]], target: Dict[str, Any], multimage_mode=False) -> Tuple[
         List[Dict[str, Any]], Dict[str, Any]]:

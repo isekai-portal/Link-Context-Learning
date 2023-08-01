@@ -2,6 +2,7 @@ from .llava_process_function import (
     LLavaConvProcessV1,
     LlavaImageProcessorV1,
     LlavaTextProcessV1,
+    LlavaTextProcessV2,
 )
 
 from .otter_process_function import (

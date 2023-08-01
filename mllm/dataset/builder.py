@@ -31,8 +31,12 @@ def prepare_data(
     # conv dataset wrap
     conv_args = model_args.conv_args
     tokenize_kwargs = conv_args.get('tokenize_kwargs', {})
-    conv_template = conv_args.get('conv_template', 'vicuna_v1.1')
-    conv_template = partial(get_conv_template, name=conv_template)
+    conv_template_ = conv_args.get('conv_template', 'vicuna_v1.1')
+    if isinstance(conv_template_, list):
+        conv_template = {item: partial(get_conv_template, name=item) for item in conv_template_}
+    else:
+        conv_template = partial(get_conv_template, name=conv_template_)
+
     transforms = conv_args.get('transforms', None)
     if transforms is not None:
         transforms = TRANSFORMS.build(transforms)
