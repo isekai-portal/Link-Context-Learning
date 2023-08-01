@@ -534,6 +534,11 @@ class ImageNet1k2WayEval(ImageNet1kDatasetEval):
         ret_list.append(self.get_ret(sample_meta["infer_img"], question=QnA["infer_question"], answer=QnA["infer_answer"])) 
         return ret_list
 
+    def policy_2way(self, cls_name):
+
+        
+        return ret_list
+
     def policy_v6(self, cls_name):
         pos_question = 'What is the charateristic about the image <image> ?'
         neg_question = pos_question
@@ -565,7 +570,17 @@ class ImageNet1k2WayEval(ImageNet1kDatasetEval):
 class ImageNet1kOpenNegClassEval(ImageNet1kDatasetEval):
 
     def _rearrange(self):
-        raise NotImplementedError
+        # Map dataloader index to self.data, according to class_idx and sample_idx
+        data_map = []
+        for cls_idx, item in enumerate(self.data):
+            test_samples = item['test_samples']
+            for sample_idx, sample in enumerate(test_samples):
+                # sample_per_class = 0: all samples evaluation
+                if sample_idx == self.sample_per_class and \
+                    self.sample_per_class > 0:
+                    break
+                data_map.append([cls_idx, sample_idx])
+        return data_map        
 
     def get_samples(self, index, shot):
         raise NotImplementedError
