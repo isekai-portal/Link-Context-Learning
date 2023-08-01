@@ -12,6 +12,8 @@ import random
 import string
 from inspect import isfunction
 from typing import Dict, Any, Sequence
+
+import numpy as np
 from .icl_train import ICLTrainDataset, logger
 from .icl_eval import ICLEvalDataset, ICLComputeMetrics
 from ..root import (
@@ -762,4 +764,97 @@ class ImageNet1k2WayEval(ICLEvalDataset):
 
 @DATASETS.register_module()
 class ImageNet1kNWayEval(ICLEvalDataset):
-    assert NotImplementedError
+    print("PlaceHolder")
+
+
+@DATASETS.register_module()
+class Test100ZeroShot(ICLEvalDataset):
+    def __init__(self, *args, **kwargs):
+        super().__init__(policy=None, *args, **kwargs)
+        self.question = self.get_question()
+    
+    def get_question(self):
+        q_prefix = f'Here are 100 class names: '
+        q_body = ''
+        'class1, class2, ..., class100.' 
+        q_suffix = f'Please answer which class this image <image> belongs to?'
+
+        for idx in range(len(self.data)):
+            item = self.data[idx]
+            cls_name = item["class_name"].lower()
+            q_body += cls_name
+            if idx == len(self.data) - 1:
+                q_body += '. '
+            else:
+                q_body += ', '
+        
+        return q_prefix + q_body + q_suffix 
+
+    def get_answer(self, cls_name):
+        return cls_name
+
+    def __get_icl_item__(self, index, shot):
+        assert shot == 0
+        cls_name, _, infer_img = self.get_samples(index, shot)
+
+        ret_list = []
+        # inference
+        ret_list.append(self.get_ret(infer_img, question=self.question, answer=cls_name)) 
+        return ret_list
+
+
+@METRICS.register_module()
+class Test100ZeroShotMetrics(ICLComputeMetrics):
+
+    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
+        cls_names = 'whippet, scottish deerhound, airedale, papillon, cardigan, bighorn, fox squirrel, hartebeest, mongoose, vizsla, komondor, afghan hound, proboscis monkey, white wolf, boston bull, border collie, keeshond, gordon setter, american staffordshire terrier, marmoset, samoyed, madagascar cat, timber wolf, platypus, accordion, starfish, airship, canoe, liner, pirate, motor scooter, steam locomotive, convertible, racer, bassinet, bookcase, medicine chest, park bench, barber chair, studio couch, desk, fig, pineapple, organ, maraca, electric guitar, oboe, valley, sandbar, hammer, brambling, vulture, sulphur-crested cockatoo, toucan, american coot, tench, sturgeon, gar, loggerhead, banded gecko, alligator lizard, green lizard, african crocodile, sea snake, analog clock, printer, pinwheel, barn spider, ground beetle, sea anemone, brain coral, nematode, chiton, dutch oven, rotisserie, mosque, grocery store, barbershop, fountain, bell pepper, head cabbage, spaghetti squash, shower curtain, handkerchief, ashcan, photocopier, crossword puzzle, feather boa, hay, military uniform, dome, barrel, fire screen, pole, overskirt, parachute, sleeping bag, breastplate, stretcher, matchstick'
+        cls_names = cls_names.split(', ')
+
+        name2id = {}
+        for id, name in enumerate(cls_names):
+            name2id[name] = id
+            
+        correct_num = np.zeros(len(cls_names))
+        targets_num = np.zeros(len(cls_names))
+        unknown = 0
+        failed = 0
+        target_failed = 0
+        for pred, target in zip(preds, targets):
+            extract_pred = self.extract_ans(pred)
+            extract_target = self.extract_ans(target)
+
+            if extract_target is None:
+                target_failed += 1
+                logger.warning(f"failed to extract ans from target. maybe the response string is truncated: {target}.")
+                continue            
+            if extract_pred is None:
+                failed += 1
+            if extract_target not in cls_names:
+                raise ValueError(f"extract_target error: {extract_target}")
+            if extract_pred not in cls_names:
+                unknown += 1
+                continue               
+            
+            idx = name2id[extract_target]
+            targets_num[idx] += 1
+            if extract_pred == extract_target:
+                correct_num[idx] += 1
+
+        acc = correct_num/targets_num
+        acc_str = ''
+        for data in acc:
+            acc_str += str(data) + ', '
+        foot10 = np.argsort(acc)[:10] # 升序
+        foot10_name = ''
+
+        for idx in foot10:
+            foot10_name += cls_names[idx]
+            foot10_name += ', '
+
+        return {
+            'accuracy': acc_str,
+            'target_failed': target_failed,
+            'failed': failed,
+            'unknown': unknown,
+            'foot10': foot10_name
+        }

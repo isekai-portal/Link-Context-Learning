@@ -26,6 +26,13 @@ IMAGENET1KOPENNEGCLASS_TEST = dict(
     template_file=r"{{fileDirname}}/template/ICL.json",
 )
 
+IMAGENET1KTEST100_0SHOT = dict(
+    type='Test100ZeroShot',
+    filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100_pairs.jsonl',
+    image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+    template_file=r"{{fileDirname}}/template/ICL.json",
+)
+
 MINI_IMAGENET_5W1S = dict(
     type='MiniImageNetDatasetEval',
     filename=r'/mnt/lustre/share_data/taiyan/dataset/mini-imagenet/lcl_val1000Episode_5_way_1_shot.json',

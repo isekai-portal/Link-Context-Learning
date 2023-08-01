@@ -78,4 +78,4 @@ class MiniImageNetDatasetEval(ImageNet1kDatasetEval):
     
 @DATASETS.register_module()
 class MiniImageNet5WayEval(ICLEvalDataset):
-    raise NotImplementedError
+    print("PlaceHolder")
