@@ -10,7 +10,7 @@ model_args = dict(
     pretrain_mm_mlp_adapter=None,
     # model config
     mm_vision_select_layer=-2,
-    model_max_length=6144,
+    model_max_length=30000,
     
     # finetune config
     freeze_backbone=False,

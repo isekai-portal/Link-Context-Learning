@@ -402,7 +402,7 @@ class ImageNet1kDatasetTrain(ICLTrainDataset):
                     pass
                 else:
                     random_string = ''.join(random.choices(\
-                        string.ascii_uppercase, k=random.randint(4,10))).lower()
+                        string.ascii_uppercase, k=random.randint(1,10))).lower()
                 answer = answer.replace(LABEL_PLACEHOLDER, random_string)
             elif mode == "neighbors":
                 answer = answer.replace(LABEL_PLACEHOLDER, label)
@@ -620,13 +620,119 @@ class ImageNet1k2WayEval(ImageNet1kDatasetEval):
             neg_answer = neg_answer, 
             infer_answer = infer_answer
         )
-        
+
+    def policy_v9(self, cls_name):
+        pos_question = '[INSTRUCTION] What is in the image <image> ?'
+        neg_question = pos_question
+        infer_question = '[INFERENCE] What is in the image <image> ?'
+
+        answer = f'there is {LABEL_PLACEHOLDER} in the image'
+        pos_answer = answer.replace(LABEL_PLACEHOLDER, cls_name)
+        neg_answer = answer.replace(LABEL_PLACEHOLDER, 'no'+ cls_name)
+        infer_answer = pos_answer
+
+        return dict(
+            pos_question = pos_question, 
+            neg_question = neg_question,
+            infer_question = infer_question,
+            pos_answer = pos_answer,
+            neg_answer = neg_answer, 
+            infer_answer = infer_answer
+        )
+    
     def policy_v7(self, cls_name):
         return self.policy_v6(cls_name)
 
     def policy_v8(self, cls_name):
         return self.policy_v6(cls_name)
 
+# context: n-positive samples(class A) + n-negative samples(class B)
+# inference: class A or B sample 
+@DATASETS.register_module()
+class ImageNet1k2WayNameEval(ImageNet1kDatasetEval):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert len(self.data)%2 == 0
+        print(len(self.data_map))
+
+    def get_samples(self, index, shot):
+        cls_idx, sample_idx = self.data_map[index]
+        item = self.get_raw_item(cls_idx)
+        class_id = item["class_id"]
+        pos_cls_name = item["class_name"].lower()
+        test_samples = item['test_samples']
+
+        # construct positive and negtive pairs
+        if cls_idx % 2 == 0:
+            neg_cls_idx = cls_idx + 1
+        else:
+            neg_cls_idx = cls_idx - 1
+        neg_item = self.get_raw_item(neg_cls_idx)
+        pos_samples = item["context_samples"]
+        neg_samples = neg_item["context_samples"]
+        neg_cls_name = neg_item["class_name"].lower()
+        
+        pos_imgs, neg_imgs = [], []
+        for i in range(shot):
+            pos_imgs.append(self.get_image(pos_samples[i]))
+            neg_imgs.append(self.get_image(neg_samples[i]))            
+        # inference sample (positive class)
+        infer_img = self.get_image(test_samples[sample_idx])
+
+        sample_meta = dict(
+            pos_cls_name = pos_cls_name,
+            neg_cls_name = neg_cls_name,
+            pos_imgs = pos_imgs,
+            neg_imgs = neg_imgs,
+            infer_img = infer_img
+            )
+        return sample_meta
+
+    def __get_icl_item__(self, index, shot):
+        func = getattr(self, self.policy)
+        assert func is not None
+        
+        sample_meta = self.get_samples(index, shot)
+
+        QnA = func(sample_meta["pos_cls_name"],sample_meta["neg_cls_name"])
+        
+        ret_list = []
+
+        # context sample
+        # Note: The traversal process is conducted on a per-class basis.
+        # not reverse: pos A image(text: there is A) + neg B image(text: there is no A) + infer A image(label: there is A)
+        # reverse: pos A image(text: there is no B) + neg B image(text: there is B) + infer A image(label: there is no B)
+        for img in sample_meta["pos_imgs"]:
+            ret_list.append(self.get_ret(img, question=QnA["pos_question"], answer=QnA["pos_answer"]))
+        
+        for img in sample_meta["neg_imgs"]:
+            ret_list.append(self.get_ret(img, question=QnA["neg_question"], answer=QnA["neg_answer"]))
+        random.shuffle(ret_list)
+
+        # inference
+        ret_list.append(self.get_ret(sample_meta["infer_img"], question=QnA["infer_question"], answer=QnA["infer_answer"])) 
+        return ret_list
+
+    def policy_v9(self, cls_name_pos, cls_name_neg):
+        pos_question = '[INSTRUCTION] What is in the image <image> ?'
+        neg_question = pos_question
+        infer_question = '[INFERENCE] What is in the image <image> ?'
+
+        answer = f'there is {LABEL_PLACEHOLDER} in the image'
+        pos_answer = answer.replace(LABEL_PLACEHOLDER, cls_name_pos)
+        neg_answer = answer.replace(LABEL_PLACEHOLDER, cls_name_neg)
+        infer_answer = pos_answer
+
+        return dict(
+            pos_question = pos_question, 
+            neg_question = neg_question,
+            infer_question = infer_question,
+            pos_answer = pos_answer,
+            neg_answer = neg_answer, 
+            infer_answer = infer_answer
+        )
+    
+    
 # context: n-positive samples(class A) + n-negative samples(open set class)
 # inference: class A or B sample 
 @DATASETS.register_module()
