@@ -86,9 +86,9 @@ class LlavaLlamaModel(LlamaModel):
 
 
     def initialize_vision_modules(self, vision_tower, mm_vision_select_layer,
-                                  qformer_config, pretrain_mm_mlp_adapter,dtype,device):
+                                  qformer_config, pretrain_mm_mlp_adapter,dtype,device,freeze_mm_projector=False):
         self.config.mm_vision_tower = vision_tower
-
+        self.freeze_mm_projector = freeze_mm_projector
         image_processor = CLIPImageProcessor.from_pretrained(vision_tower)
 
         if not hasattr(self, 'vision_tower'):
@@ -269,11 +269,17 @@ class LlavaLlamaModel(LlamaModel):
                     dummy_image_features = self.mm_projector(dummy_image_features)
 
                 else:
-                    image_features = select_hidden_state[:, 1:]
-                    image_features = self.mm_projector(image_features)
-                    dummy_image_features = torch.zeros(256, 1024, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
-                    dummy_image_features = self.mm_projector(dummy_image_features)
-
+                    if self.freeze_mm_projector:
+                        with torch.no_grad():
+                            image_features = select_hidden_state[:, 1:]
+                            image_features = self.mm_projector(image_features)
+                            dummy_image_features = torch.zeros(256, 1024, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+                            dummy_image_features = self.mm_projector(dummy_image_features)
+                    else:
+                        image_features = select_hidden_state[:, 1:]
+                        image_features = self.mm_projector(image_features)
+                        dummy_image_features = torch.zeros(256, 1024, device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+                        dummy_image_features = self.mm_projector(dummy_image_features)
 
                 new_input_embeds = []
                 cur_image_idx = 0

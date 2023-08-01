@@ -5,93 +5,34 @@ export CUDA_HOME=/mnt/cache/share/cuda-11.7
 export PATH=/mnt/cache/share/cuda-11.7/bin::$PATH
 export LD_LIBRARY_PATH=/mnt/cache/share/cuda-11.7/lib64:$LD_LIBRARY_PATH
 
-# rm -rf /mnt/lustre/fanweichen2/Research/MLLM/dummy_exp/*
-# rm -rf *.out
-# sbatch --nodes 1 \
-#        --phx-priority P0 \
-#        --partition=mm_v100_32g \
-#        --job-name=unify_mm_v100 \
-#        --comment "wbsR-SC230999.001.02" \
-#        launcher_intelmpi.sh mllm/pipeline/finetune.py config/llava_pretrain5.py \
-#        --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
-#        --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
-#        --cfg-options model_args.qformer_config.num_query_token=256 \
-#        --cfg-options model_args.image_token_len=256 \
-#        --cfg-options model_args.qformer_config.only_qformer=False
+name=train_imagenet1k_policy9
 
-#rm -rf *.out
-# sbatch --nodes 4 \
-#        --phx-priority P0 \
-#        --partition=mm_v100_32g \
-#        --job-name=ICL_mm_v100 \
-#        --comment "wbsR-SC230999.001.02" \
-#        launcher_intelmpi.sh mllm/pipeline/finetune.py config/Icl_pretrain.py \
-#        --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
-#        --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
-#        --cfg-options model_args.qformer_config.num_query_token=32 \
-#        --cfg-options model_args.image_token_len=32 \
-#        --cfg-options model_args.qformer_config.only_qformer=True \
-#        --cfg-options data_args.use_icl=False \
-#        --learning_rate 1e-4
+config=config/icl_imagenet1k_v9_train.py
+pretrained=/mnt/lustre/share_data/xiechi/misc/to_weichen/llava_pretrain_final19/checkpoint-44000/
+output_dir=/mnt/cache/fanweichen2/Code/unify_mllm/result/$name
+ceph_dir=ty-sdc:s3://ICL/checkpoint/fanweichen2/$name
 
+bs=1
+shot=4
+epochs=50
+save_steps=70000
+use_icl=True
 
-# ####using qformer with ICL
-# sbatch --nodes 1 \
-#        --phx-priority P0 \
-#        --partition=mm_v100_32g \
-#        --job-name=icl_debug_v100 \
-#        --preempt \
-#        --comment "wbsR-SC230999.001.02" \
-#        launcher_intelmpi.sh mllm/pipeline/finetune.py config/icl_qformer_debug.py \
-#        --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
-#        --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
-#        --cfg-options model_args.qformer_config.num_query_token=32 \
-#        --cfg-options model_args.image_token_len=32 \
-#        --cfg-options model_args.qformer_config.only_qformer=True \
-#        --cfg-options data_args.use_icl=True \
-#        --cfg-options data_args.shot=2
-
-# ####using qformer without ICL
-# sbatch --nodes 1 \
-#        --phx-priority P0 \
-#        --partition=mm_v100_32g \
-#        --job-name=icl_debug_v100 \
-#        --preempt \
-#        --comment "wbsR-SC230999.001.02" \
-#        launcher_intelmpi.sh mllm/pipeline/finetune.py config/icl_qformer_debug.py \
-#        --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
-#        --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
-#        --cfg-options model_args.qformer_config.num_query_token=32 \
-#        --cfg-options model_args.image_token_len=32 \
-#        --cfg-options model_args.qformer_config.only_qformer=True \
-#        --cfg-options data_args.use_icl=False 
-
-
-# # ####using shikra with ICL
-sbatch --nodes 1 \
-       --phx-priority P0 \
-       --partition=mm_v100_32g \
-       --job-name=icl_debug_v100 \
-       --preempt \
-       --comment "wbsR-SC230999.001.02" \
-       launcher_intelmpi.sh mllm/pipeline/finetune.py config/icl_debug.py \
-       --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
-       --cfg-options data_args.use_icl=True \
-       --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
-       --cfg-options data_args.shot=1 \
-       --cfg-options training_args.save_strategy='no'
-
-# /mnt/lustre/share_data/chenkeqin/dummy_exp_unify_mllm/llava_pretrain_final19/checkpoint-44000
-
-
-# ####using shikra without ICL
-# sbatch --nodes 1 \
-#        --phx-priority P0 \
-#        --partition=mm_v100_32g \
-#        --job-name=icl_debug_v100 \
-#        --preempt \
-#        --comment "wbsR-SC230999.001.02" \
-#        launcher_intelmpi.sh mllm/pipeline/finetune.py config/icl_debug.py \
-#        --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
-#        --cfg-options model_args.model_name_or_path='/mnt/lustre/share_data/chenkeqin/ckpt/llava_pretrain_final19/checkpoint-40000' \
-#        --cfg-options data_args.use_icl=False
+sbatch -p mm_v100_32g  --quotatype=auto \
+    --comment "wbsR-SC230999.001.02" \
+    --job-name=$name \
+    --phx-priority P0 \
+    --preempt \
+    --nodes 4 \
+    -x SH-IDC1-10-142-4-22 \
+    launcher_intelmpi.sh mllm/pipeline/finetune.py $config\
+    --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
+    --cfg-options data_args.use_icl=$use_icl \
+    --cfg-options model_args.model_name_or_path=$pretrained \
+    --cfg-options data_args.shot=$shot \
+    --cfg-options training_args.per_device_train_batch_size=$bs \
+    --cfg-options training_args.save_steps=$save_steps \
+    --cfg-options training_args.num_train_epochs=$epochs \
+    --cfg-options training_args.output_dir=$output_dir \
+    --cfg-options training_args.ceph_dir=$ceph_dir \
+    --cfg-options model_args.freeze_mm_projector=True \

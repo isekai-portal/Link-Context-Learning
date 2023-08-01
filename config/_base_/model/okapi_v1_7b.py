@@ -31,12 +31,12 @@ model_args = dict(
     process_func_args=dict(
         conv=dict(type='LLavaConvProcessV1'),
         target=dict(type='BoxFormatProcess'),
-        text=dict(type='LlavaTextProcessV1'),
+        text=dict(type='LlavaTextProcessV2'),
         image=dict(type='LlavaImageProcessorV1'),
     ),
 
     conv_args=dict(
-        conv_template='vicuna_v1.1',
+        conv_template=['hypnotized_v1.0','hypnotized_v1.1','hypnotized_ans_v1.0'],
         transforms=dict(type='Expand2square'),
         tokenize_kwargs=dict(truncation_size=2048),
     ),

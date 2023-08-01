@@ -383,7 +383,69 @@ class ImageNet1kDatasetTrain(ICLTrainDataset):
         random_string = None
         self.cls_neg_label = None
         return ret_list
+    
+    #v9
+    def policy_v9(self, index, shot):
+        random_string = None
+        def _convert_qa(question, label, mode):
+            nonlocal random_string
+            assert mode in ['cls_negative', 'neighbors']
+            
+            answer = f'there is {LABEL_PLACEHOLDER} in the image'
 
+            if mode == "cls_negative":
+                # current class image, random string or current label
+                if random_string:
+                    #label = random_string
+                    pass
+                else:
+                    random_string = ''.join(random.choices(\
+                        string.ascii_uppercase, k=random.randint(4,10))).lower()
+                answer = answer.replace(LABEL_PLACEHOLDER, random_string)
+            elif mode == "neighbors":
+                answer = answer.replace(LABEL_PLACEHOLDER, label)
+            else:
+                raise NotImplementedError
+
+            return question, answer
+
+        ret_list = []
+        mix_question = '[INSTRUCTION] What is in the image <image> ?'
+        infer_question = '[INFERENCE] What is in the image <image> ?'
+
+        #shot = random.randint(1, shot)
+        for _ in range(shot):
+            image, label = self.get_samples_same_cls(index, mode = 'cls_negative')
+            # convert correct label to random string(or not)
+            question, answer = _convert_qa(mix_question, label, mode = 'cls_negative')
+            ret = self.get_ret(image, question = question, answer = answer)
+            ret_list.append(ret)
+
+        for _ in range(shot):
+            image, label = self.get_samples_same_cls(index, mode = 'neighbors')
+            question, answer = _convert_qa(mix_question, label, mode = 'neighbors')#use random string
+            ret = self.get_ret(image, question = question, answer = answer)
+            ret_list.append(ret)
+        
+        random.shuffle(ret_list)
+        mode = random.choice(["cls_negative","neighbors"])
+        if mode == "cls_negative":
+            question = infer_question
+            # need correct label and optional convert to random string
+            image, label = self.get_samples_same_cls(index, mode = "cls_negative")
+            question, answer = _convert_qa(question, label, mode = "cls_negative")
+        elif mode == "neighbors":
+            question = infer_question
+            image, label = self.get_samples_same_cls(index, mode = mode)
+            question, answer = _convert_qa(question, label, mode = mode)#use random string
+
+        ret = self.get_ret(image, question = question, answer = answer)
+        ret_list.append(ret)
+        random_string = None
+        self.cls_neg_label = None
+        self.cls_idx = None
+        self.cls_name = None
+        return ret_list
 
 
 @DATASETS.register_module()

@@ -57,7 +57,101 @@ class LLavaConvProcessV1(BaseConvProcessFunc):
 
         return raw_conv
 
+@FUNCTIONS.register_module()
+class LlavaTextProcessV2(BaseTextProcessFunc):
 
+    def __call__(self, conv: Conversation, preprocessor: Dict[str, Any], mode: str, use_icl=False, **tokenize_kwargs) -> Dict[str, Any]:
+        tokenizer = preprocessor['text']
+        assert isinstance(tokenizer, LlamaTokenizer), "only work for LlamaTokenizer"
+
+        _truncation_size = tokenize_kwargs.pop('truncation_size', None)
+        _kwargs = {'return_tensors': 'pt'}
+        _kwargs.update(tokenize_kwargs)
+
+        if mode in ['train']:
+            ret = self.tk_conv_colon_two_train(conv, tokenizer, **_kwargs)
+        else:
+            ret = self.tk_conv_colon_two_eval(conv, tokenizer, icl=use_icl, **_kwargs)
+
+        if _truncation_size is None:
+            return ret
+        if len(ret['input_ids']) <= _truncation_size:
+            return ret
+
+        origin_len = len(ret['input_ids'])
+        ids_to_remove_num = origin_len - _truncation_size
+        # truncation. should carefully not truncate <img_token>
+        ids_should_not_remove = list(map(
+            tokenizer.convert_tokens_to_ids,
+            (DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN)
+        ))
+        back_no_image = all(ids not in ids_should_not_remove for ids in ret['input_ids'][_truncation_size:])
+        if back_no_image:
+            tgt_ids = list(range(_truncation_size))
+        else:
+            ids_to_remove = set()
+            for idx in range(origin_len - 1, -1, -1):
+                if ret['input_ids'][idx] not in ids_should_not_remove:
+                    ids_to_remove.add(idx)
+                    if len(ids_to_remove) >= ids_to_remove_num:
+                        break
+            tgt_ids = [_ for _ in range(origin_len) if _ not in ids_to_remove]
+        logger.warning(f"truncate sample size from {origin_len} to {len(tgt_ids)}.")
+        assert len(tgt_ids) == _truncation_size, f"{len(tgt_ids)}, {_truncation_size}, {ret['input_ids'].tolist()}"
+        truncated_ret = {k: v[tgt_ids] for k, v in ret.items()}
+        return truncated_ret
+
+    # noinspection PyMethodMayBeStatic
+    def tk_conv_colon_two_train(self, conv, tokenizer, **kwargs):
+        conversation = conv.get_prompt()
+        input_ids = tokenizer([conversation, ], **kwargs).input_ids[0]
+        target = copy.deepcopy(input_ids)
+        #assert conv.sep_style == SeparatorStyle.ADD_COLON_TWO
+        # Mask targets
+        sep = conv.sep + conv.roles[1] + ": "
+        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+        rounds = conversation.split(conv.sep2)
+        cur_len = 1
+        target[:cur_len] = IGNORE_INDEX
+        for i, rou in enumerate(rounds):
+            if rou == "":
+                break
+            parts = rou.split(sep)
+            if len(parts) != 2:
+                break
+            parts[0] += sep
+            round_len = len(tokenizer(rou).input_ids)
+            instruction_len = len(tokenizer(parts[0]).input_ids) - 2  # <s> <space>
+            target[cur_len: cur_len + instruction_len] = IGNORE_INDEX
+            cur_len += round_len
+        target[cur_len:] = IGNORE_INDEX
+        if cur_len < tokenizer.model_max_length:
+            if cur_len != total_len:
+                target[:] = IGNORE_INDEX
+                warnings.warn(f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}. (ignored):\n{conversation}")
+        return dict(
+            input_ids=input_ids,
+            attention_mask=input_ids.ne(tokenizer.pad_token_id),
+            labels=target,
+        )
+
+    def tk_conv_colon_two_eval(self, conv, tokenizer, icl=False, **kwargs):
+        assert len(conv.messages) >= 2
+        # target = conv.messages[-1][-1]
+        target = conv.get_prompt()
+        if not icl:
+            conv.messages[-1][-1] = ""
+        conversation = conv.get_prompt()
+        input_ids = tokenizer([conversation, ], **kwargs).input_ids[0]
+
+        target = tokenizer([target, ], add_special_tokens=False, **kwargs).input_ids[0]
+        target[target == tokenizer.pad_token_id] = IGNORE_INDEX
+        return dict(
+            input_ids=input_ids,
+            attention_mask=input_ids.ne(tokenizer.pad_token_id),
+            labels=target,
+        )
+    
 @FUNCTIONS.register_module()
 class LlavaTextProcessV1(BaseTextProcessFunc):
 
@@ -73,7 +167,7 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
             if mode in ['train']:
                 ret = self.tk_conv_colon_two_train(conv, tokenizer, **_kwargs)
             else:
-                ret = self.tk_conv_colon_two_eval(conv, tokenizer, icl = use_icl, **_kwargs)
+                ret = self.tk_conv_colon_two_eval(conv, tokenizer, icl=use_icl, **_kwargs)
         else:
             raise ValueError(f"unrecognized conv_style: {conv.sep_style}.\n the conv is {conv}")
 
@@ -139,7 +233,6 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
             labels=target,
         )
 
-    # noinspection PyMethodMayBeStatic
     def tk_conv_colon_two_eval(self, conv, tokenizer, icl=False, **kwargs):
         assert len(conv.messages) >= 2
         # target = conv.messages[-1][-1]
@@ -156,7 +249,6 @@ class LlavaTextProcessV1(BaseTextProcessFunc):
             attention_mask=input_ids.ne(tokenizer.pad_token_id),
             labels=target,
         )
-
 
 @FUNCTIONS.register_module()
 class LlavaImageProcessorV1(BaseImageProcessFunc):
