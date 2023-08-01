@@ -760,23 +760,6 @@ class ImageNet1k2WayEval(ICLEvalDataset):
         )
     
 
-# context: n-positive samples(class A)
-# inference: class A or B sample 
 @DATASETS.register_module()
 class ImageNet1kNWayEval(ICLEvalDataset):
-
-    def _rearrange(self):
-        # Map dataloader index to self.data, according to class_idx and sample_idx
-        data_map = []
-        for cls_idx, item in enumerate(self.data):
-            test_samples = item['test_samples']
-            for sample_idx, sample in enumerate(test_samples):
-                # sample_per_class = 0: all samples evaluation
-                if sample_idx == self.sample_per_class and \
-                    self.sample_per_class > 0:
-                    break
-                data_map.append([cls_idx, sample_idx])
-        return data_map        
-
-    def get_samples(self, index, shot):
-        raise NotImplementedError
+    assert NotImplementedError

@@ -76,3 +76,6 @@ class MiniImageNetDatasetEval(ImageNet1kDatasetEval):
     def mini_v7(self, class_name, class_fake_name, **kargs):
         return super().policy_v7(class_fake_name, **kargs)
     
+@DATASETS.register_module()
+class MiniImageNet5WayEval(ICLEvalDataset):
+    raise NotImplementedError
