@@ -1,4 +1,5 @@
 from audioop import reverse
+from audioop import reverse
 import imp
 from pydoc import classname
 import sys
