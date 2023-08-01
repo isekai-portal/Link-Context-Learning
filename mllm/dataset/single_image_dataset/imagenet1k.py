@@ -402,7 +402,7 @@ class ImageNet1kDatasetTrain(ICLTrainDataset):
                     pass
                 else:
                     random_string = ''.join(random.choices(\
-                        string.ascii_uppercase, k=random.randint(4,10))).lower()
+                        string.ascii_uppercase, k=random.randint(1,10))).lower()
                 answer = answer.replace(LABEL_PLACEHOLDER, random_string)
             elif mode == "neighbors":
                 answer = answer.replace(LABEL_PLACEHOLDER, label)

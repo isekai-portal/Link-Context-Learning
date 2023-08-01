@@ -62,7 +62,7 @@ class ICLTrainDataset(MInstrDataset):
                     },
                     {
                         'from': 'gpt',
-                        'value': f"The answer is {answer}.",
+                        'value': f"{answer}.",
                     },
                 ]
             }
@@ -76,7 +76,7 @@ class ICLTrainDataset(MInstrDataset):
                     },
                     {
                         'from': 'gpt',
-                        'value': f"The answer is {answer}.",
+                        'value': f"{answer}.",
                     },
                 ],
                 'mode': conv_mode
@@ -139,10 +139,13 @@ class ICLTrainDataset(MInstrDataset):
                 sample = random.choice(samples)
                 label = self.cls_name.lower()
             else:
-                if random.randint(0,1):
-                    metas = random.choice(neighbors[:5])
-                else:
-                    metas = random.choice(neighbors)
+                weight = list(range(len(neighbors),0,-1))
+                metas = random.choices(neighbors,weights=weight,k=1)
+                # if random.randint(0,1):
+                #     weight = list(range(len(neighbors),0,-1))
+                #     metas = random.choices(neighbors,weights=weight,k=1)
+                # else:
+                #     metas = random.choice(neighbors)
                 self.cls_idx = metas[0]
                 self.cls_name = metas[1]
 

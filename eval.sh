@@ -39,18 +39,34 @@ export LD_LIBRARY_PATH=/mnt/cache/share/cuda-11.7/lib64:$LD_LIBRARY_PATH
 sbatch -p mm_v100_32g \
     -n 1 \
     -N 1 \
-    --gres=gpu:4 \
+    --gres=gpu:8 \
     --phx-priority P0 \
     --preempt \
     -c 64 \
     --job-name=eval_mmv100 \
     -x SH-IDC1-10-142-4-22 \
     --comment "wbsR-SC230999.001.02" \
-    accelerate launch --num_processes 4 --main_process_port 23781 mllm/pipeline/finetune.py \
+    accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
         config/icl_imagenet1k_v9_eval.py \
         --tf32=False --bf16=False --fp16=True \
         --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/train_imagenet1k_policy9 \
         --per_device_eval_batch_size 1 \
-        --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/output/train_imagenet1k_policy9/1k2way-32shot-real \
+        --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/output/train_imagenet1k_policy9/1k2way-10shot-real \
         --cfg-options data_args.use_icl=True \
-        --cfg-options data_args.shot=32 \
+        --cfg-options data_args.shot=10 \
+
+
+# sbatch -p mm_v100_32g  --quotatype=auto \
+#     --comment "wbsR-SC230999.001.02" \
+#     --job-name=$name \
+#     --phx-priority P0 \
+#     --preempt \
+#     --nodes 4 \
+#     -x SH-IDC1-10-142-4-22 \
+#     launcher_intelmpi.sh mllm/pipeline/finetune.py config/icl_imagenet1k_v9_eval.py \
+#         --tf32=False --bf16=False --fp16=True \
+#         --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/train_imagenet1k_policy9 \
+#         --per_device_eval_batch_size 1 \
+#         --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/output/train_imagenet1k_policy9/1k2way-10shot-real \
+#         --cfg-options data_args.use_icl=True \
+#         --cfg-options data_args.shot=10 \
