@@ -806,7 +806,21 @@ class Test100ZeroShot(ICLEvalDataset):
 class Test100ZeroShotMetrics(ICLComputeMetrics):
 
     def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
-        cls_names = 'whippet, scottish deerhound, airedale, papillon, cardigan, bighorn, fox squirrel, hartebeest, mongoose, vizsla, komondor, afghan hound, proboscis monkey, white wolf, boston bull, border collie, keeshond, gordon setter, american staffordshire terrier, marmoset, samoyed, madagascar cat, timber wolf, platypus, accordion, starfish, airship, canoe, liner, pirate, motor scooter, steam locomotive, convertible, racer, bassinet, bookcase, medicine chest, park bench, barber chair, studio couch, desk, fig, pineapple, organ, maraca, electric guitar, oboe, valley, sandbar, hammer, brambling, vulture, sulphur-crested cockatoo, toucan, american coot, tench, sturgeon, gar, loggerhead, banded gecko, alligator lizard, green lizard, african crocodile, sea snake, analog clock, printer, pinwheel, barn spider, ground beetle, sea anemone, brain coral, nematode, chiton, dutch oven, rotisserie, mosque, grocery store, barbershop, fountain, bell pepper, head cabbage, spaghetti squash, shower curtain, handkerchief, ashcan, photocopier, crossword puzzle, feather boa, hay, military uniform, dome, barrel, fire screen, pole, overskirt, parachute, sleeping bag, breastplate, stretcher, matchstick'
+        cls_names = 'whippet, scottish deerhound, airedale, papillon, cardigan, \
+            bighorn, fox squirrel, hartebeest, mongoose, vizsla, komondor, \
+            afghan hound, proboscis monkey, white wolf, boston bull, border collie, \
+            keeshond, gordon setter, american staffordshire terrier, marmoset, samoyed, \
+            madagascar cat, timber wolf, platypus, accordion, starfish, airship, canoe, \
+            liner, pirate, motor scooter, steam locomotive, convertible, racer, bassinet, \
+            bookcase, medicine chest, park bench, barber chair, studio couch, desk, fig, \
+            pineapple, organ, maraca, electric guitar, oboe, valley, sandbar, hammer, brambling, \
+            vulture, sulphur-crested cockatoo, toucan, american coot, tench, sturgeon, gar, \
+            loggerhead, banded gecko, alligator lizard, green lizard, african crocodile, \
+            sea snake, analog clock, printer, pinwheel, barn spider, ground beetle, sea anemone, \
+            brain coral, nematode, chiton, dutch oven, rotisserie, mosque, grocery store, barbershop, \
+            fountain, bell pepper, head cabbage, spaghetti squash, shower curtain, handkerchief, \
+            ashcan, photocopier, crossword puzzle, feather boa, hay, military uniform, dome, barrel, \
+            fire screen, pole, overskirt, parachute, sleeping bag, breastplate, stretcher, matchstick'
         cls_names = cls_names.split(', ')
 
         name2id = {}
