@@ -775,8 +775,7 @@ class Test100ZeroShot(ICLEvalDataset):
     
     def get_question(self):
         q_prefix = f'Here are 100 class names: '
-        q_body = ''
-        'class1, class2, ..., class100.' 
+        q_body = '' # 'class1, class2, ..., class100.' 
         q_suffix = f'Please answer which class this image <image> belongs to?'
 
         for idx in range(len(self.data)):
