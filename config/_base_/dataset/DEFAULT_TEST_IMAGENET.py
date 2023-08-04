@@ -5,6 +5,13 @@ IMAGENET1K_TEST = dict(
     template_file=r"{{fileDirname}}/template/ICL.json",
 )
 
+IMAGENET1K1WAY_TEST = dict(
+    type='ImageNet1k1WayEval',
+    filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test10_pairs.jsonl',
+    image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+    template_file=r"{{fileDirname}}/template/ICL.json",
+)
+
 IMAGENET1K2WAY_YN_TEST = dict(
     type='ImageNet1k2WayYNEval',
     filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100_pairs.jsonl',
@@ -19,15 +26,22 @@ IMAGENET1K2WAY_TEST = dict(
     template_file=r"{{fileDirname}}/template/ICL.json",
 )
 
-IMAGENET1KOPENNEGCLASS_TEST = dict(
-    type='ImageNet1kOpenNegClassEval',
+IMAGENET1KNWAY_TEST = dict(
+    type='ImageNet1kNWayEval',
     filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100_pairs.jsonl',
     image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
     template_file=r"{{fileDirname}}/template/ICL.json",
 )
 
-IMAGENET1KTEST100_0SHOT = dict(
-    type='Test100ZeroShot',
+IMAGENET1KTEST100NAME_0SHOT = dict(
+    type='Test100ZeroShotName',
+    filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100_pairs.jsonl',
+    image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+    template_file=r"{{fileDirname}}/template/ICL.json",
+)
+
+IMAGENET1KTEST100SELECT_0SHOT = dict(
+    type='Test100ZeroShotSelect',
     filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100_pairs.jsonl',
     image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
     template_file=r"{{fileDirname}}/template/ICL.json",

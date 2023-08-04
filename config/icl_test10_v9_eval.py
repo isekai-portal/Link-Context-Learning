@@ -20,15 +20,16 @@ model_args = dict(
 )
 
 dataset=dict(
-    **_base_.IMAGENET1KTEST100_0SHOT,
-    sample_per_class=0,
+    **_base_.IMAGENET1K1WAY_TEST,
+    sample_per_class=10,
+    policy="policy_v9",
 )
 
 data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={"TEST100_0Shot": {'cfg': dataset, 'compute_metric': dict(type='Test100ZeroShotMetrics')}},
+    multitest={"TEST10-v9": {'cfg': dataset, 'compute_metric': dict(type='ICLComputeMetrics')}},
     compute_metric=None,
 
     # padding collator kwargs
