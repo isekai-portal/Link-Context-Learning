@@ -17,11 +17,16 @@ training_args = dict(
 
 model_args = dict(
     model_name_or_path=None,
+    conv_args=dict(
+        conv_template=['icl_v2.0'],
+        transforms=dict(type='Expand2square'),
+        tokenize_kwargs=dict(truncation_size=2048),
+    ),
 )
 
 dataset=dict(
     **_base_.IMAGENET1KTEST100SELECT_0SHOT,
-    sample_per_class=0,
+    sample_per_class=10,
 )
 
 data_args = dict(

@@ -832,7 +832,7 @@ class Test100ZeroShotSelect(ICLEvalDataset):
 
         ret_list = []
         # inference
-        ret_list.append(self.get_ret(infer_img, question=self.question, answer=self.name2id[cls_name])) 
+        ret_list.append(self.get_ret(infer_img, question=self.question, answer=self.name2id[cls_name], conv_mode='icl_v2.0')) 
         return ret_list
 
 
