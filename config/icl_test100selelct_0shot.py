@@ -26,7 +26,7 @@ model_args = dict(
 
 dataset=dict(
     **_base_.IMAGENET1KTEST100SELECT_0SHOT,
-    sample_per_class=10,
+    sample_per_class=50,
 )
 
 data_args = dict(
