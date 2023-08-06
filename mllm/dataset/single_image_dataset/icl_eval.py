@@ -56,7 +56,7 @@ class ICLEvalDataset(ICLTrainDataset):
 class ICLComputeMetrics(BaseComputeMetrics):
     def extract_ans(self, string: str):
         try:
-            found = string.split("ASSISTANT:")[-1].split("</s>")[0].replace("The answer is", "").replace(".", "").strip()
+            found = string.split("ASSISTANT:")[-1].split("</s>")[0].replace("The answer is", "").replace('there is', '').replace('in the image', '').replace(".", "").strip().lower()
             return found
         except (IndexError, AttributeError):
             return None

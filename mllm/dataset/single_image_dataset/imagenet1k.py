@@ -761,7 +761,48 @@ class ImageNet1k2WayEval(ICLEvalDataset):
             neg_answer = neg_answer, 
             infer_answer = infer_answer
         )
-    
+
+
+@METRICS.register_module()
+class ImageNet2WayMetrics(ICLComputeMetrics):
+    def extract_ans(self, string: str):
+        try:
+            found = string.split("ASSISTANT:")[-1].split("<PAD>")[0].replace("The answer is", "")
+            found = found.split('there is')[-1].replace('in the image', '').replace(".", "").strip().lower()
+            return found
+        except (IndexError, AttributeError):
+            return None
+
+    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
+        # pd = data['pred'].split(' "target"')[0].lower()
+        # gt = data['target'].split('ASSISTANT:')[-1].split('</s>')[0].lower()
+        # gt_label = gt.split(' there is ')[1].split(' ')[0]
+        # if gt_label in pd:
+        #     correct+=1 
+
+        correct = 0
+        failed = 0
+        target_failed = 0
+        for pred, target in zip(preds, targets):
+            # extract_pred = self.extract_ans(pred)
+            extract_pred = pred
+            extract_target = self.extract_ans(target)
+            if extract_target is None:
+                target_failed += 1
+                logger.warning(f"failed to extract ans from target. maybe the response string is truncated: {target}.")
+                continue
+            if extract_pred is None:
+                failed += 1
+
+            if extract_target in extract_pred:
+                correct += 1
+        return {
+            'accuracy': 1.0 * correct / len(targets),
+            'target_failed': target_failed,
+            'failed': failed,
+        }
+
+
 
 @DATASETS.register_module()
 class ImageNet1kNWayEval(ICLEvalDataset):
