@@ -16,7 +16,7 @@ training_args = dict(
 )
 
 model_args = dict(
-    model_name_or_path="/mnt/lustre/taiyan/ckpt/huggingface//otter-9b-hf",
+    model_name_or_path="/mnt/lustre/taiyan/ckpt/huggingface/otter-9b-hf",
     tokenizer_name_or_path="/mnt/lustre/taiyan/ckpt/huggingface/llama-7b-hf",
     process_func_args=dict(
         conv=dict(type='OtterConvProcess'),

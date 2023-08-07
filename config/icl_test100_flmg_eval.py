@@ -1,4 +1,4 @@
-_base_ = ['_base_/dataset/DEFAULT_TEST_IMAGENET.py', '_base_/model/otter_9b.py', '_base_/train/eval.py']
+_base_ = ['_base_/dataset/DEFAULT_TEST_IMAGENET.py', '_base_/model/openflamingo_9b.py', '_base_/train/eval.py']
 
 training_args = dict(
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_eval_exp_unify_mllm/{{fileBasenameNoExtension}}',
@@ -8,10 +8,10 @@ training_args = dict(
     do_predict=False,
     do_multi_predict=True,
 
-    fp16=True,
-    fp16_full_eval=True,
-    bf16=False,
-    bf16_full_eval=False,
+    fp16=False,
+    fp16_full_eval=False,
+    bf16=True,
+    bf16_full_eval=True,
     per_device_eval_batch_size=8,
 )
 

@@ -910,6 +910,8 @@ class OtterForConditionalGeneration(OtterPreTrainedModel):
         """
         lang_x = input_ids
         vision_x = images
+        model_dtype = next(self.lang_encoder.parameters()).dtype
+        vision_x = vision_x.to(dtype=model_dtype)
 
         if hasattr(self, "_hf_hook"):
             # add a hook to make sure that the output of lang_encoder is mapped to the same device as the lang_x
