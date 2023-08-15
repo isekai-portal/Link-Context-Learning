@@ -28,7 +28,7 @@
  -----------------
 
 ![](https://img.shields.io/badge/ISEKAI-v0.1-darkcyan)
-![](https://img.shields.io/github/stars/WeichenFan/Link-Context-Learning)
+![](https://img.shields.io/github/stars/ISEKAI-world/Link-Context-Learning)
 ![](https://black.readthedocs.io/en/stable/_static/license.svg)
 ![](https://img.shields.io/badge/code%20style-black-000000.svg)
 
