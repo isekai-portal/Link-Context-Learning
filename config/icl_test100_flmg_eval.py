@@ -17,12 +17,17 @@ training_args = dict(
 
 model_args = dict(
     model_name_or_path="/mnt/lustre/taiyan/ckpt/huggingface/openflamingo-9b-hf",
-    tokenizer_name_or_path="/mnt/lustre/taiyan/ckpt/huggingface/llama-7b-hf",
+    tokenizer_name_or_path="/mnt/lustre/taiyan/ckpt/huggingface/llama-7b",
     process_func_args=dict(
         conv=dict(type='OtterConvProcess'),
         target=dict(type='BoxFormatProcess'),
         text=dict(type='OtterTextProcessV1'),
         image=dict(type='OtterImageProcessV1'),
+    ),
+    conv_args=dict(
+        conv_template=['openflamingo'],
+        transforms=dict(type='Expand2square'),
+        tokenize_kwargs=dict(),
     ),
 )
 

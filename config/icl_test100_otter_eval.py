@@ -24,6 +24,11 @@ model_args = dict(
         text=dict(type='OtterTextProcessV1'),
         image=dict(type='OtterImageProcessV1'),
     ),
+    conv_args=dict(
+        conv_template=['otter'],
+        transforms=dict(type='Expand2square'),
+        tokenize_kwargs=dict(),
+    ),
 )
 
 dataset=dict(
