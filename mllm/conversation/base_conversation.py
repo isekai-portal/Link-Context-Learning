@@ -370,6 +370,22 @@ register_conv_template(
     )
 )
 
+# ICL v1.0 zero_shot
+register_conv_template(
+    Conversation(
+        name="icl_v2.0",
+        system="A chat between a curious user and an artificial intelligence assistant. "
+               "The following dialogue requires the assistant to select answers based on user-provided names. The user will provide several names and assign a number to each name. The assistant needs to choose the corresponding name's number based on the conversation context and respond using the assigned number.",
+        roles=("USER", "ASSISTANT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
+
 # Koala default template
 register_conv_template(
     Conversation(
@@ -583,6 +599,20 @@ register_conv_template(
         name='otter',
         system='',
         roles=('User:', 'GPT:<answer>'),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_SPACE_TWO,
+        sep=' ',
+        sep2='<|endofchunk|>',
+    )
+)
+
+# custom otter template
+register_conv_template(
+    Conversation(
+        name='openflamingo',
+        system='',
+        roles=('User:', 'GPT:'),
         messages=(),
         offset=0,
         sep_style=SeparatorStyle.ADD_SPACE_TWO,

@@ -1,5 +1,6 @@
 from audioop import reverse
 from audioop import reverse
+from curses.ascii import isdigit
 import imp
 from pydoc import classname
 import sys
@@ -1830,7 +1831,7 @@ class ImageNet1k2WayEval(ICLEvalDataset):
             neg_answer = neg_answer, 
             infer_answer = infer_answer
         )
-    
+
     def policy_v9_update(self, cls_name_pos, cls_name_neg):
         pos_question = '[INSTRUCTION] Tell me something about this image <image>.'
         neg_question = pos_question
@@ -2136,19 +2137,60 @@ class ImageNet1k2WayCleanEval(ICLEvalDataset):
             infer_answer = infer_answer
         )
     
+@METRICS.register_module()
+class ImageNet2WayMetrics(ICLComputeMetrics):
+    def extract_ans(self, string: str):
+        try:
+            found = string.split("ASSISTANT:")[-1].split("<PAD>")[0].replace("The answer is", "")
+            found = found.split('there is')[-1].replace('in the image', '').replace(".", "").strip().lower()
+            return found
+        except (IndexError, AttributeError):
+            return None
+
+    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
+        # pd = data['pred'].split(' "target"')[0].lower()
+        # gt = data['target'].split('ASSISTANT:')[-1].split('</s>')[0].lower()
+        # gt_label = gt.split(' there is ')[1].split(' ')[0]
+        # if gt_label in pd:
+        #     correct+=1 
+
+        correct = 0
+        failed = 0
+        target_failed = 0
+        for pred, target in zip(preds, targets):
+            # extract_pred = self.extract_ans(pred)
+            extract_pred = pred
+            extract_target = self.extract_ans(target)
+            if extract_target is None:
+                target_failed += 1
+                logger.warning(f"failed to extract ans from target. maybe the response string is truncated: {target}.")
+                continue
+            if extract_pred is None:
+                failed += 1
+
+            if extract_target in extract_pred:
+                correct += 1
+        return {
+            'accuracy': 1.0 * correct / len(targets),
+            'target_failed': target_failed,
+            'failed': failed,
+        }
+
+
+
 @DATASETS.register_module()
 class ImageNet1kNWayEval(ICLEvalDataset):
     print("PlaceHolder")
 
 
 @DATASETS.register_module()
-class Test100ZeroShot(ICLEvalDataset):
+class Test100ZeroShotName(ICLEvalDataset):
     def __init__(self, *args, **kwargs):
         super().__init__(policy=None, *args, **kwargs)
         self.question = self.get_question()
     
     def get_question(self):
-        q_prefix = f'Here are 100 class names: '
+        q_prefix = f'Here are 100 class: '
         q_body = '' # 'class1, class2, ..., class100.' 
         q_suffix = f'Please answer which class this image <image> belongs to?'
 
@@ -2176,10 +2218,46 @@ class Test100ZeroShot(ICLEvalDataset):
         return ret_list
 
 
-@METRICS.register_module()
-class Test100ZeroShotMetrics(ICLComputeMetrics):
+@DATASETS.register_module()
+class Test100ZeroShotSelect(ICLEvalDataset):
+    def __init__(self, *args, **kwargs):
+        super().__init__(policy=None, *args, **kwargs)
+        self.name2id = self.get_name2id()
+        self.question = self.get_question()
 
-    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
+    def get_name2id(self):
+        name2id = dict()
+        for idx, item in enumerate(self.data):
+            name = item["class_name"].lower()
+            name2id[name] = idx
+        return name2id
+    
+    def get_question(self):
+        q_prefix = f'Here are 100 class: '
+        q_body = '' # '1. class1. 2. class2. ... 100. class100.' 
+        q_suffix = f'Please answer which class this image <image> belongs to?'
+
+        for name, idx in self.name2id.items():
+            q_body += str(idx) + '. ' + name + '. '
+        return q_prefix + q_body + q_suffix 
+
+    def __get_icl_item__(self, index, shot):
+        assert shot == 0
+        cls_name, _, infer_img = self.get_samples(index, shot)
+
+        ret_list = []
+        # inference
+        ret_list.append(self.get_ret(infer_img, question=self.question, answer=self.name2id[cls_name], conv_mode='icl_v2.0')) 
+        return ret_list
+
+
+@METRICS.register_module()
+class Test100ZeroShotNameMetrics(ICLComputeMetrics):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cls_names = self.get_classes()
+
+    def get_classes(self):
         cls_names = 'whippet, scottish deerhound, airedale, papillon, cardigan, \
             bighorn, fox squirrel, hartebeest, mongoose, vizsla, komondor, \
             afghan hound, proboscis monkey, white wolf, boston bull, border collie, \
@@ -2196,13 +2274,16 @@ class Test100ZeroShotMetrics(ICLComputeMetrics):
             ashcan, photocopier, crossword puzzle, feather boa, hay, military uniform, dome, barrel, \
             fire screen, pole, overskirt, parachute, sleeping bag, breastplate, stretcher, matchstick'
         cls_names = cls_names.split(', ')
+        return cls_names
+
+    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
 
         name2id = {}
-        for id, name in enumerate(cls_names):
+        for id, name in enumerate(self.cls_names):
             name2id[name] = id
             
-        correct_num = np.zeros(len(cls_names))
-        targets_num = np.zeros(len(cls_names))
+        correct_num = np.zeros(len(self.cls_names))
+        targets_num = np.zeros(len(self.cls_names))
         unknown = 0
         failed = 0
         target_failed = 0
@@ -2216,9 +2297,9 @@ class Test100ZeroShotMetrics(ICLComputeMetrics):
                 continue            
             if extract_pred is None:
                 failed += 1
-            if extract_target not in cls_names:
+            if extract_target not in self.cls_names:
                 raise ValueError(f"extract_target error: {extract_target}")
-            if extract_pred not in cls_names:
+            if extract_pred not in self.cls_names:
                 unknown += 1
                 continue               
             
@@ -2235,7 +2316,91 @@ class Test100ZeroShotMetrics(ICLComputeMetrics):
         foot10_name = ''
 
         for idx in foot10:
-            foot10_name += cls_names[idx]
+            foot10_name += self.cls_names[idx]
+            foot10_name += ', '
+
+        return {
+            'accuracy': acc,
+            'target_failed': target_failed,
+            'failed': failed,
+            'unknown': unknown,
+            'foot10': foot10_name
+        }
+
+@METRICS.register_module()
+class Test100ZeroShotSelectMetrics(ICLComputeMetrics):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cls_names = self.get_classes()
+
+    def get_classes(self):
+        cls_names = 'whippet, scottish deerhound, airedale, papillon, cardigan, \
+            bighorn, fox squirrel, hartebeest, mongoose, vizsla, komondor, \
+            afghan hound, proboscis monkey, white wolf, boston bull, border collie, \
+            keeshond, gordon setter, american staffordshire terrier, marmoset, samoyed, \
+            madagascar cat, timber wolf, platypus, accordion, starfish, airship, canoe, \
+            liner, pirate, motor scooter, steam locomotive, convertible, racer, bassinet, \
+            bookcase, medicine chest, park bench, barber chair, studio couch, desk, fig, \
+            pineapple, organ, maraca, electric guitar, oboe, valley, sandbar, hammer, brambling, \
+            vulture, sulphur-crested cockatoo, toucan, american coot, tench, sturgeon, gar, \
+            loggerhead, banded gecko, alligator lizard, green lizard, african crocodile, \
+            sea snake, analog clock, printer, pinwheel, barn spider, ground beetle, sea anemone, \
+            brain coral, nematode, chiton, dutch oven, rotisserie, mosque, grocery store, barbershop, \
+            fountain, bell pepper, head cabbage, spaghetti squash, shower curtain, handkerchief, \
+            ashcan, photocopier, crossword puzzle, feather boa, hay, military uniform, dome, barrel, \
+            fire screen, pole, overskirt, parachute, sleeping bag, breastplate, stretcher, matchstick'
+        cls_names = cls_names.split(', ')
+        return cls_names
+
+    def extract_ans(self, string: str):
+        try:
+            found = string.split("ASSISTANT:")[-1].split("</s>")[0].replace("The answer is", "").replace("there is", "").replace(".", "").strip()
+            return found
+        except (IndexError, AttributeError):
+            return None
+
+    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
+
+        name2id = {}
+        for id, name in enumerate(self.cls_names):
+            name2id[name] = id
+            
+        correct_num = np.zeros(len(self.cls_names))
+        targets_num = np.zeros(len(self.cls_names))
+        unknown = 0
+        failed = 0
+        target_failed = 0
+        for pred, target in zip(preds, targets):
+            extract_pred = self.extract_ans(pred)
+            extract_target = self.extract_ans(target)
+
+            if extract_target is None:
+                target_failed += 1
+                logger.warning(f"failed to extract ans from target. maybe the response string is truncated: {target}.")
+                continue            
+            if extract_pred is None:
+                failed += 1
+            cls_ids = [str(i) for i in range(len(self.cls_names))]
+            if extract_target not in cls_ids:
+                raise ValueError(f"extract_target error: {extract_target}")
+            if extract_pred not in cls_ids:
+                unknown += 1
+                continue
+            
+            idx = int(extract_target)
+            targets_num[idx] += 1
+            if extract_pred == extract_target:
+                correct_num[idx] += 1
+
+        acc = correct_num/targets_num
+        acc_str = ''
+        for data in acc:
+            acc_str += str(data) + ', '
+        foot10 = np.argsort(acc)[:10] # 升序
+        foot10_name = ''
+
+        for idx in foot10:
+            foot10_name += self.cls_names[idx]
             foot10_name += ', '
 
         return {

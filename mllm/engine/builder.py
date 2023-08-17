@@ -5,11 +5,13 @@ from transformers.trainer import DataCollator
 
 from .llava import LLaVATrainer
 from .otter import OtterTrainer
+from .flamingo import FlamingoTrainer
 from .base_engine import TrainerForMMLLM, Seq2Seq2DataCollatorWithImage
 
 TYPE2TRAINER = {
     'llava': LLaVATrainer,
     'otter': OtterTrainer,
+    'flamingo': FlamingoTrainer,
 }
 
 

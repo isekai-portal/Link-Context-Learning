@@ -7,11 +7,36 @@ import torch.nn as nn
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.auto import AutoModelForCausalLM, AutoTokenizer, AutoModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
-from transformers import CLIPVisionModel, LlamaForCausalLM, LlamaTokenizer
 from einops import rearrange, repeat
 from accelerate.hooks import add_hook_to_module, AlignDevicesHook
 
 from .configuration_flamingo import FlamingoConfig
+
+import sys
+
+# The package importlib_metadata is in a different place, depending on the python version.
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
+
+XFORMERS_AVAIL = False
+try:
+    import xformers.ops as xops
+    from xformers_model import CLIPVisionModel, LlamaForCausalLM
+    from transformers import LlamaTokenizer
+
+    _xformers_version = importlib_metadata.version("xformers")
+    print(f"Successfully imported xformers version {_xformers_version}")
+except ImportError:
+    from transformers import CLIPVisionModel, LlamaForCausalLM, LlamaTokenizer
+
+    XFORMERS_AVAIL = False
+    print(
+        "No xformers found. You are recommended to install xformers via `pip install xformers` or `conda install -c xformers xformers`"
+    )
+
+# from transformers import CLIPVisionModel, LlamaForCausalLM, LlamaTokenizer
 
 __KNOWN_DECODER_LAYERS_ATTR_NAMES = {
     "opt": "model.decoder.layers",
@@ -597,8 +622,8 @@ class FlamingoModel(FlamingoPreTrainedModel):
 
     def forward(
         self,
-        vision_x: torch.Tensor,
-        lang_x: torch.Tensor,
+        images: torch.Tensor,
+        input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
         use_cached_vision_x: bool = False,
@@ -607,6 +632,8 @@ class FlamingoModel(FlamingoPreTrainedModel):
         use_cache: bool = False,
         **kwargs,
     ) -> CausalLMOutputWithPast:
+        vision_x = images
+        lang_x = input_ids
         """
         Forward pass of Flamingo.
 
@@ -692,6 +719,7 @@ class FlamingoForConditionalGeneration(FlamingoPreTrainedModel):
     def __init__(
         self,
         config: FlamingoConfig,
+        tokenizer_name_or_path=None,
     ):
         super().__init__(config)
         # TODO: hardcode right because autoXXX is too slow
@@ -699,9 +727,19 @@ class FlamingoForConditionalGeneration(FlamingoPreTrainedModel):
         # lang_encoder = AutoModelForCausalLM.from_config(config.text_config)
         # text_tokenizer = AutoTokenizer.from_pretrained(config.text_config._name_or_path)
 
+        if tokenizer_name_or_path is None:
+            tokenizer_name_or_path = config.text_config._name_or_path
+            print(f"build flamingo tokenizer from config: {config.text_config._name_or_path}")
+        else:
+            print(f"build flamingo tokenizer use tokenizer_name_or_path: {tokenizer_name_or_path}. not from config.")
+
         text_tokenizer = LlamaTokenizer.from_pretrained(
-            config.text_config._name_or_path
+            tokenizer_name_or_path
         )
+
+        # text_tokenizer = LlamaTokenizer.from_pretrained(
+        #     config.text_config._name_or_path
+        # )
         lang_encoder = LlamaForCausalLM(config=config.text_config)
         vision_encoder = CLIPVisionModel(config=config.vision_config)
 
@@ -862,23 +900,10 @@ class FlamingoForConditionalGeneration(FlamingoPreTrainedModel):
     @torch.no_grad()
     def generate(
         self,
-        vision_x: torch.Tensor,
-        lang_x: torch.Tensor,
+        images: torch.Tensor,
+        input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-        num_beams: int = 1,
-        max_new_tokens: Optional[int] = None,
-        temperature: float = 1.0,
-        top_k: int = 0,
-        top_p: float = 1.0,
-        no_repeat_ngram_size: int = 0,
-        prefix_allowed_tokens_fn: Optional[
-            Callable[[int, torch.Tensor], list[int]]
-        ] = None,
-        length_penalty: float = 1.0,
-        num_return_sequences: int = 1,
-        do_sample: bool = False,
-        early_stopping: bool = False,
-        **kwargs,
+        **generate_kwargs,
     ):
         """
         Generate text conditioned on vision and language inputs.
@@ -892,19 +917,14 @@ class FlamingoForConditionalGeneration(FlamingoPreTrainedModel):
                 shape (B, T_txt)
             max_length (int, optional): Maximum length of the output. Defaults to None.
             attention_mask (torch.Tensor, optional): Attention mask. Defaults to None.
-            num_beams (int, optional): Number of beams. Defaults to 1.
-            max_new_tokens (int, optional): Maximum new tokens. Defaults to None.
-            temperature (float, optional): Temperature. Defaults to 1.0.
-            top_k (int, optional): Top k. Defaults to 0.
-            top_p (float, optional): Top p. Defaults to 1.0.
-            no_repeat_ngram_size (int, optional): No repeat ngram size. Defaults to 0.
-            length_penalty (float, optional): Length penalty. Defaults to 1.0.
-            num_return_sequences (int, optional): Number of return sequences. Defaults to 1.
-            do_sample (bool, optional): Do sample. Defaults to False.
-            early_stopping (bool, optional): Early stopping. Defaults to False.
         Returns:
             torch.Tensor: lang_x with generated tokens appended to it
         """
+        lang_x = input_ids
+        vision_x = images
+        model_dtype = next(self.lang_encoder.parameters()).dtype
+        vision_x = vision_x.to(dtype=model_dtype)
+
         if hasattr(self, "_hf_hook"):
             # add a hook to make sure that the output of lang_encoder is mapped to the same device as the lang_x
             hook = AlignDevicesHook(
@@ -913,6 +933,7 @@ class FlamingoForConditionalGeneration(FlamingoPreTrainedModel):
                 place_submodules=False,
             )
             add_hook_to_module(self.lang_encoder, hook)
+        num_beams = generate_kwargs.get("num_beams", 1)
         if num_beams > 1:
             vision_x = vision_x.repeat_interleave(num_beams, dim=0)
         self._encode_vision_x(vision_x=vision_x)
@@ -920,19 +941,89 @@ class FlamingoForConditionalGeneration(FlamingoPreTrainedModel):
             lang_x,
             attention_mask=attention_mask,
             eos_token_id=self.eoc_token_id,
-            num_beams=num_beams,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            top_k=top_k,
-            top_p=top_p,
-            prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
-            no_repeat_ngram_size=no_repeat_ngram_size,
-            length_penalty=length_penalty,
-            num_return_sequences=num_return_sequences,
-            do_sample=do_sample,
-            early_stopping=early_stopping,
-            **kwargs,
+            **generate_kwargs,
         )
 
         self.lang_encoder.clear_conditioned_layers()
         return output
+
+    def can_generate(self) -> bool:
+        return True
+
+    # @torch.no_grad()
+    # def generate(
+    #     self,
+    #     vision_x: torch.Tensor,
+    #     lang_x: torch.Tensor,
+    #     attention_mask: Optional[torch.Tensor] = None,
+    #     num_beams: int = 1,
+    #     max_new_tokens: Optional[int] = None,
+    #     temperature: float = 1.0,
+    #     top_k: int = 0,
+    #     top_p: float = 1.0,
+    #     no_repeat_ngram_size: int = 0,
+    #     prefix_allowed_tokens_fn: Optional[
+    #         Callable[[int, torch.Tensor], list[int]]
+    #     ] = None,
+    #     length_penalty: float = 1.0,
+    #     num_return_sequences: int = 1,
+    #     do_sample: bool = False,
+    #     early_stopping: bool = False,
+    #     **kwargs,
+    # ):
+    #     """
+    #     Generate text conditioned on vision and language inputs.
+
+    #     Args:
+    #         vision_x (torch.Tensor): Vision input
+    #             shape (B, T_img, F, C, H, W)
+    #             images in the same chunk are collated along T_img, and frames are collated along F
+    #             currently only F=1 is supported (single-frame videos)
+    #         lang_x (torch.Tensor): Language input
+    #             shape (B, T_txt)
+    #         max_length (int, optional): Maximum length of the output. Defaults to None.
+    #         attention_mask (torch.Tensor, optional): Attention mask. Defaults to None.
+    #         num_beams (int, optional): Number of beams. Defaults to 1.
+    #         max_new_tokens (int, optional): Maximum new tokens. Defaults to None.
+    #         temperature (float, optional): Temperature. Defaults to 1.0.
+    #         top_k (int, optional): Top k. Defaults to 0.
+    #         top_p (float, optional): Top p. Defaults to 1.0.
+    #         no_repeat_ngram_size (int, optional): No repeat ngram size. Defaults to 0.
+    #         length_penalty (float, optional): Length penalty. Defaults to 1.0.
+    #         num_return_sequences (int, optional): Number of return sequences. Defaults to 1.
+    #         do_sample (bool, optional): Do sample. Defaults to False.
+    #         early_stopping (bool, optional): Early stopping. Defaults to False.
+    #     Returns:
+    #         torch.Tensor: lang_x with generated tokens appended to it
+    #     """
+    #     if hasattr(self, "_hf_hook"):
+    #         # add a hook to make sure that the output of lang_encoder is mapped to the same device as the lang_x
+    #         hook = AlignDevicesHook(
+    #             execution_device=lang_x.device,
+    #             io_same_device=True,
+    #             place_submodules=False,
+    #         )
+    #         add_hook_to_module(self.lang_encoder, hook)
+    #     if num_beams > 1:
+    #         vision_x = vision_x.repeat_interleave(num_beams, dim=0)
+    #     self._encode_vision_x(vision_x=vision_x)
+    #     output = self.lang_encoder.generate(
+    #         lang_x,
+    #         attention_mask=attention_mask,
+    #         eos_token_id=self.eoc_token_id,
+    #         num_beams=num_beams,
+    #         max_new_tokens=max_new_tokens,
+    #         temperature=temperature,
+    #         top_k=top_k,
+    #         top_p=top_p,
+    #         prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
+    #         no_repeat_ngram_size=no_repeat_ngram_size,
+    #         length_penalty=length_penalty,
+    #         num_return_sequences=num_return_sequences,
+    #         do_sample=do_sample,
+    #         early_stopping=early_stopping,
+    #         **kwargs,
+    #     )
+
+    #     self.lang_encoder.clear_conditioned_layers()
+    #     return output

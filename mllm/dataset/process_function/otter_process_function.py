@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import re
 from typing import Dict, Any, List
 
@@ -116,6 +117,12 @@ class OtterTextProcess(BaseTextProcessFunc):
 
 
 @FUNCTIONS.register_module()
+class OtterTextProcessV1(OtterTextProcess):
+    def __call__(self, conv: Conversation, preprocessor: Dict[str, Any], mode: str, use_icl=False, **tokenize_kwargs) -> Dict[str, Any]:
+        return super().__call__(conv, preprocessor, mode, **tokenize_kwargs)
+
+
+@FUNCTIONS.register_module()
 class OtterImageProcess(BaseImageProcessFunc):
     def __call__(self, image: Image.Image, preprocessor: Dict[str, Any]) -> Dict[str, Any]:
         image_processor = preprocessor['image']
@@ -129,6 +136,32 @@ class OtterImageProcess(BaseImageProcessFunc):
             image = image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
             # N T C H W
             image = image.unsqueeze(0).unsqueeze(0)
+        else:
+            if hasattr(image_processor, 'crop_size'):
+                crop_size = image_processor.crop_size
+                height, width = crop_size['height'], crop_size['width']
+            else:
+                raise ValueError("got empty image. and don't know how to pad")
+            image = torch.zeros(3, height, width)
+            # N T C H W
+            image = image.unsqueeze(0).unsqueeze(0)
+        return {'image': image}
+
+
+@FUNCTIONS.register_module()
+class OtterImageProcessV1(BaseImageProcessFunc):
+    def __call__(self, image: Image.Image, preprocessor: Dict[str, Any]) -> Dict[str, Any]:
+        image_processor = preprocessor['image']
+
+        if isinstance(image, (list, tuple)):
+            # N C H W
+            image = image_processor.preprocess(image, return_tensors='pt')['pixel_values']
+            # N T=1 C H W
+            image = image.unsqueeze(1)
+        elif isinstance(image, PIL.Image.Image):
+            image = image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+            # N T C H W
+            image = image.unsqueeze(0)
         else:
             if hasattr(image_processor, 'crop_size'):
                 crop_size = image_processor.crop_size
