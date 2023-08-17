@@ -45,7 +45,7 @@ This repository contains the **official implementation** and **dataset** of the 
   
 ## Todo
 
-1. [x] Release the ISEKAI-10 and ISEKAI-pair.
+1. [x] Release the [ISEKAI-10](https://huggingface.co/datasets/ISEKAI-Portal/ISEKAI-10) and [ISEKAI-pair](https://huggingface.co/datasets/ISEKAI-Portal/ISEKAI-pair).
 2. [ ] Release the dataset usage.
 3. [ ] Release the demo.
 4. [ ] Release the codes and checkpoints.
