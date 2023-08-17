@@ -30,7 +30,7 @@
 ![](https://img.shields.io/badge/ISEKAI-v0.1-darkcyan)
 ![](https://img.shields.io/github/stars/isekai-portal/Link-Context-Learning)
 ![](https://black.readthedocs.io/en/stable/_static/license.svg)
-![](https://img.shields.io/badge/code%20style-black-000000.svg)
+[![Dataset](https://img.shields.io/badge/Dataset-Download-blue)](https://huggingface.co/ISEKAI-Portal) 
 
 This repository contains the **official implementation** and **dataset** of the following paper:
 
@@ -39,5 +39,15 @@ This repository contains the **official implementation** and **dataset** of the 
 >
 > **Abstract:** *The ability to learn from context with novel concepts, and deliver appropriate responses are essential in human conversations. Despite current Multimodal Large Language Models (MLLMs) and Large Language Models (LLMs) being trained on mega-scale datasets, recognizing unseen images or understanding novel concepts in a training-free manner remains a challenge. In-Context Learning (ICL) explores training-free few-shot learning, where models are encouraged to "learn to learn" from limited tasks and generalize to unseen tasks. In this work, we propose link-context learning (LCL), which emphasizes "reasoning from cause and effect" to augment the learning capabilities of MLLMs. LCL goes beyond traditional ICL by explicitly strengthening the causal relationship between the support set and the query set. By providing demonstrations with causal links, LCL guides the model to discern not only the analogy but also the underlying causal associations between data points, which empowers MLLMs to recognize unseen images and understand novel concepts more effectively. To facilitate the evaluation of this novel approach, we introduce the ISEKAI dataset, comprising exclusively of unseen generated image-label pairs designed for link-context learning. Extensive experiments show that our LCL-MLLM exhibits strong link-context learning capabilities to novel concepts over vanilla MLLMs.*
 
-**Under construction...**
+## Updates
+- **17 Aug, 2023**: :boom::boom: We release the two subsets of ISEKAI (ISEKAI-10 and ISEKAI-pair) at [[HuggingFace 🤗]](https://huggingface.co/ISEKAI-Portal).
+
+  
+## Todo
+
+1. [x] Release the ISEKAI-10 and ISEKAI-pair.
+2. [ ] Release the dataset usage.
+3. [ ] Release the demo.
+4. [ ] Release the codes and checkpoints.
+5. [ ] Release the full ISEKAI dataset.
 
