@@ -30,6 +30,7 @@
 ![](https://img.shields.io/badge/ISEKAI-v0.1-darkcyan)
 ![](https://img.shields.io/github/stars/isekai-portal/Link-Context-Learning)
 ![](https://black.readthedocs.io/en/stable/_static/license.svg)
+[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fisekai-portal%2FLink-Context-Learning&count_bg=%23BDC4B7&title_bg=%2342C4A8&icon=octopusdeploy.svg&icon_color=%23E7E7E7&title=visitors&edge_flat=true)](https://hits.seeyoufarm.com)
 [![Dataset](https://img.shields.io/badge/Dataset-Download-blue)](https://huggingface.co/ISEKAI-Portal) 
 
 This repository contains the **official implementation** and **dataset** of the following paper:
