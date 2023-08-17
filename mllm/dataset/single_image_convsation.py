@@ -29,6 +29,8 @@ class SingleImageConvDatasetMixin:
             transforms: Optional[Callable] = None,
             use_icl = False,
             shot=1,
+            use_mix=False,
+            mix_icl_dataset=[0],
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -37,6 +39,7 @@ class SingleImageConvDatasetMixin:
         self.preprocessor = preprocessor
         self.process_func = process_func
         self.conv_template = conv_template
+        self.conv_template_origin = partial(get_conv_template, name='vicuna_v1.1')
         self.conv_template_icl = conv_template_icl
         self.mode = mode
         self.tokenize_kwargs = tokenize_kwargs if tokenize_kwargs is not None else {}
@@ -44,6 +47,8 @@ class SingleImageConvDatasetMixin:
         self.transforms = transforms
         self.use_icl = use_icl
         self.shot = shot
+        self.mix_icl_dataset = mix_icl_dataset
+        self.mix = use_mix
 
     def __get_icl_item__(self, item, do_mask=None, debug_mode=False, train_mode='train', mode='common', eval_icl=False) -> Dict[str, Any]:
         # get_icl_item
@@ -91,24 +96,30 @@ class SingleImageConvDatasetMixin:
         return ret_dict
 
     def __getitem__(self, index, debug_mode=False) -> Dict[str, Any]:
-        # getitem
-        # if self.training_args is not None:
-        #     using_icl = self.training_args.icl
-        # else:
         if self.use_icl:
-            res = self.__getitem_icl__(index,debug_mode)
+            if self.mix:
+                info,dataset_idx = self.get_raw_mix_item(index,self.shot,self.mix_icl_dataset)
+                if dataset_idx in self.mix_icl_dataset:
+                    res = self.__getitem_icl__(index,debug_mode,data=info)
+                else:
+                    res = self.__getitem_origin__(index,debug_mode,data=info)
+            else:
+                res = self.__getitem_icl__(index,debug_mode)
         else:
             res = self.__getitem_origin__(index,debug_mode)
         
         return res
 
-    def __getitem_icl__(self, index, debug_mode=False) -> Dict[str, Any]:
+    def __getitem_icl__(self, index=None, debug_mode=False, data=None) -> Dict[str, Any]:
         # getitem
         #dict_keys(['input_ids', 'attention_mask', 'labels', 'image'])
         update_keys = ['input_ids', 'attention_mask', 'labels']
         ret_dict = {'image':[]}
         #idx_list = [item for item in range(index, index+5)]
-        dict_list = self.get_raw_icl_item(index,self.shot)
+        if data is None:
+            dict_list = self.get_raw_icl_item(index,self.shot)
+        else:
+            dict_list = data
         if self.mode != 'train':
             for i in range(len(dict_list)):
                 item = dict_list[i]
@@ -197,7 +208,7 @@ class SingleImageConvDatasetMixin:
         return ret_dict
 
 
-    def __getitem_origin__(self, index, debug_mode=False) -> Dict[str, Any]:
+    def __getitem_origin__(self, index, debug_mode=False, data=None) -> Dict[str, Any]:
         # getitem
         item = self.get_raw_item(index)
         image: Image.Image = item.get('image', None)
@@ -326,7 +337,7 @@ class SingleImageConvDatasetMixin:
 
     def build_conv(self, source: List[Dict[str, Any]], mode='common') -> Conversation:
         if mode == 'common':
-            conv = self.conv_template()
+            conv = self.conv_template_origin()
         elif mode == 'icl':
             conv = self.conv_template_icl()
         else:
@@ -347,7 +358,7 @@ class SingleImageConvDatasetMixin:
             e.g. replace <image> placeholder to sequence <im_start> <im_patch>*256 <im_end>
         """
         if mode == 'common':
-            conv = self.conv_template
+            conv = self.conv_template_origin
         elif mode == 'icl':
             conv = self.conv_template_icl()
         else:
@@ -448,6 +459,11 @@ class SingleImageConvDataset(SingleImageConvDatasetMixin, Dataset):
     def get_raw_icl_item(self, index, shot) -> Dict[str, Any]:
         self.initialize_if_needed()
         return self.dataset.__get_icl_item__(index,shot)
+    
+    def get_raw_mix_item(self, index, shot, icl_list) -> Dict[str, Any]:
+        self.initialize_if_needed()
+        info, dataset_idx = self.dataset.__get_mix_item__(index,shot,icl_list)
+        return info, dataset_idx
     
     def __repr__(self) -> str:
         head = "Dataset " + self.__class__.__name__

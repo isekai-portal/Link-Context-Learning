@@ -299,6 +299,34 @@ register_conv_template(
     )
 )
 
+# causal_v1.0
+register_conv_template(
+    Conversation(
+        name="causal_v1.0",
+        system="You should find the causal relationship between the examples I am going to show you. And use that to answer to the [FINAL QUESTION].",
+        roles=("USER", "ASSISTANT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
+# final_v1.0
+register_conv_template(
+    Conversation(
+        name="final_v1.0",
+        system="[FINAL QUESTION]: ",
+        roles=("USER", "ASSISTANT"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
 register_conv_template(
     Conversation(
         name="hypnotized_v1.1",

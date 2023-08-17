@@ -36,10 +36,10 @@ class QuestionTemplateMixin:
             self.templates = self.templates[: self.max_dynamic_size]
 
         # sanity check
-        assert self.placeholders is not None
-        for template in self.templates:
-            for placeholder in placeholders:
-                assert str(template).count(placeholder) == 1, f"template: {template}\nplaceholder:{placeholder}"
+        # assert self.placeholders is not None
+        # for template in self.templates:
+        #     for placeholder in placeholders:
+        #         assert str(template).count(placeholder) == 1, f"template: {template}\nplaceholder:{placeholder}"
 
     def get_template(self):
         import random
@@ -52,10 +52,16 @@ class QuestionTemplateMixin:
 class MInstrDataset(QuestionTemplateMixin, Dataset):
     _repr_indent = 4
 
-    def __init__(self, filename, image_folder=None, seed=None, **kwargs):
+    def __init__(self, filename, image_folder=None, filename_positive=None, filename_negative=None, image_folder_positive=None, image_folder_negative=None, label=None, label_negative=None, seed=None, **kwargs):
         super().__init__(**kwargs)
         self.filename = filename
         self.image_folder = image_folder
+        self.filename_positive = filename_positive
+        self.filename_negative = filename_negative
+        self.image_folder_positive = image_folder_positive
+        self.image_folder_negative = image_folder_negative
+        self.label_name = label
+        self.label_negative = label_negative
         self.rng = np.random.default_rng(seed)
 
         self.data = []

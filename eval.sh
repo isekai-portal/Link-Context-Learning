@@ -36,24 +36,24 @@ export LD_LIBRARY_PATH=/mnt/cache/share/cuda-11.7/lib64:$LD_LIBRARY_PATH
 
 
 #SH-IDC1-10-142-4-22
-sbatch -p mm_v100_32g \
-    -n 1 \
-    -N 1 \
-    --gres=gpu:8 \
-    --phx-priority P0 \
-    --preempt \
-    -c 64 \
-    --job-name=eval_mmv100 \
-    -x SH-IDC1-10-142-4-22 \
-    --comment "wbsR-SC230999.001.02" \
-    accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
-        config/icl_imagenet1k_v9_eval.py \
-        --tf32=False --bf16=False --fp16=True \
-        --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/train_imagenet1k_policy9 \
-        --per_device_eval_batch_size 1 \
-        --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/output/train_imagenet1k_policy9/1k2way-10shot-real \
-        --cfg-options data_args.use_icl=True \
-        --cfg-options data_args.shot=10 \
+# sbatch -p mm_v100_32g \
+#     -n 1 \
+#     -N 1 \
+#     --gres=gpu:8 \
+#     --phx-priority P0 \
+#     --preempt \
+#     -c 64 \
+#     --job-name=eval_mmv100 \
+#     -x SH-IDC1-10-142-4-22 \
+#     --comment "wbsR-SC230999.001.02" \
+#     accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
+#         config/icl_imagenet1k_v9_eval.py \
+#         --tf32=False --bf16=False --fp16=True \
+#         --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/train_imagenet1k_policy9 \
+#         --per_device_eval_batch_size 1 \
+#         --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/output/train_imagenet1k_policy9/1k2way-10shot-real \
+#         --cfg-options data_args.use_icl=True \
+#         --cfg-options data_args.shot=10 \
 
 
 # sbatch -p mm_v100_32g  --quotatype=auto \
@@ -70,3 +70,85 @@ sbatch -p mm_v100_32g \
 #         --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/output/train_imagenet1k_policy9/1k2way-10shot-real \
 #         --cfg-options data_args.use_icl=True \
 #         --cfg-options data_args.shot=10 \
+
+#wrong
+# sbatch -p mm_v100_32g \
+#     -n 1 \
+#     -N 1 \
+#     --gres=gpu:8 \
+#     --phx-priority P0 \
+#     --preempt \
+#     -c 64 \
+#     --job-name=eval_mmv100 \
+#     -x SH-IDC1-10-142-4-22 \
+#     --comment "wbsR-SC230999.001.02" \
+#     accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
+#         config/icl_imagenet1k_v9_eval.py \
+#         --tf32=False --bf16=False --fp16=True \
+#         --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/train_imagenet1k_policy9_8shot \
+#         --per_device_eval_batch_size 1 \
+#         --output_dir /mnt/lustre/fanweichen2/tmp_save/output/train_imagenet1k_policy9_8shot/test100_ablation/8-shot/1-14/ \
+#         --cfg-options data_args.use_icl=True \
+#         --cfg-options data_args.shot=8 \
+
+# sbatch -p mm_v100_32g \
+#     -n 1 \
+#     -N 1 \
+#     --gres=gpu:8 \
+#     --phx-priority P0 \
+#     --preempt \
+#     -c 64 \
+#     --job-name=eval_mmv100 \
+#     -x SH-IDC1-10-142-4-22 \
+#     --comment "wbsR-SC230999.001.02" \
+#     accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
+#         config/icl_imagenet1k_v13_mix_eval.py \
+#         --tf32=False --bf16=False --fp16=True \
+#         --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/checkpoint-3200 \
+#         --per_device_eval_batch_size 1 \
+#         --output_dir /mnt/lustre/fanweichen2/tmp_save/output/train_lcl_mix_finetune/test100_eval/false_label/2-shot/2/ \
+#         --cfg-options data_args.use_icl=True \
+#         --cfg-options data_args.shot=2 \
+
+
+# sbatch -p mm_v100_32g \
+#     -n 1 \
+#     -N 1 \
+#     --gres=gpu:8 \
+#     --phx-priority P0 \
+#     --preempt \
+#     -c 64 \
+#     --job-name=eval_mmv100 \
+#     -x SH-IDC1-10-142-4-22 \
+#     --comment "wbsR-SC230999.001.02" \
+#     accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
+#         config/icl_imagenet1k_v13_mix_eval_ISEKAI.py \
+#         --tf32=False --bf16=False --fp16=True \
+#         --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/train_icl_imagenet1k_v13_train_8shot_weight-2 \
+#         --per_device_eval_batch_size 1 \
+#         --output_dir /mnt/cache/fanweichen2/Code/unify_mllm/result/output/train_icl_imagenet1k_v13_train_8shot_weight-2/isekai/8-shot/ \
+#         --cfg-options data_args.use_icl=True \
+#         --cfg-options data_args.shot=8 \
+
+
+for(( i=1;i<9;i++)) do
+    echo ${i}
+    sbatch -p mm_v100_32g \
+        -n 1 \
+        -N 1 \
+        --gres=gpu:8 \
+        --phx-priority P0 \
+        --preempt \
+        -c 64 \
+        --job-name=eval_mmv100 \
+        -x SH-IDC1-10-142-4-22 \
+        --comment "wbsR-SC230999.001.02" \
+        accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
+            config/icl_business_qa_eval.py \
+            --tf32=False --bf16=False --fp16=True \
+            --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/checkpoint-2800 \
+            --per_device_eval_batch_size 1 \
+            --output_dir /mnt/lustre/fanweichen2/tmp_save/output/mix/business_easy_fixed/"${i}"-shot/ \
+            --cfg-options data_args.use_icl=True \
+            --cfg-options data_args.shot=${i}
+done

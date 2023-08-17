@@ -7,6 +7,7 @@ _base_ = [
     'DEFAULT_TRAIN_VQAv2_VARIANT.py',
     'DEFAULT_TRAIN_VQAEX_VARIANT.py',
     'DEFAULT_TRAIN_V3DET_VARIANT.py',
+    'DEFAULT_TRAIN_IMAGENET.py',
 ]
 
 DEFAULT_TRAIN_DATASET = dict(
@@ -63,6 +64,69 @@ DEFAULT_TRAIN_DATASET = dict(
         image_folder=r'sdc:s3://mm_data/v3det/',
         template_file=r"{{fileDirname}}/template/ICL.json",
     ),
+    imagenet_v9=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_v9",
+    ),
+    imagenet_v10=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_v10",
+    ),
+    imagenet_v13=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_v13",
+    ),
+    imagenet_v14=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_v14",
+    ),
+    imagenet_v9_seq=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_v9_seq",
+    ),
+    imagenet_v13_seq=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_v13_seq",
+    ),
+    imagenet_v13_update=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_v13_update",
+    ),
+    imagenet_v11=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_v11",
+    ),
+    imagenet_jigsaw_v1=dict(
+        type='ImageNet1kDatasetTrain',
+        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
+        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
+        template_file=r"{{fileDirname}}/template/ICL.json",
+        policy="policy_jigsaw_v1",
+    ),
     **_base_.DEFAULT_TRAIN_GQA_VARIANT,
     **_base_.DEFAULT_TRAIN_CLEVR_VARIANT,
     **_base_.DEFAULT_TRAIN_POINT_VARIANT,
@@ -71,4 +135,5 @@ DEFAULT_TRAIN_DATASET = dict(
     **_base_.DEFAULT_TRAIN_VQAv2_VARIANT,
     **_base_.DEFAULT_TRAIN_VQAEX_VARIANT,
     **_base_.DEFAULT_TRAIN_V3DET_VARIANT,
+    **_base_.IMAGENET1K_TRAIN,
 )

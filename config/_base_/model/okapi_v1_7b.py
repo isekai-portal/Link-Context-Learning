@@ -10,7 +10,7 @@ model_args = dict(
     pretrain_mm_mlp_adapter=None,
     # model config
     mm_vision_select_layer=-2,
-    model_max_length=6144,
+    model_max_length=30000,
     
     # finetune config
     freeze_backbone=False,
@@ -36,7 +36,7 @@ model_args = dict(
     ),
 
     conv_args=dict(
-        conv_template=['hypnotized_v1.0','hypnotized_v1.1','hypnotized_ans_v1.0'],
+        conv_template=['hypnotized_v1.0','hypnotized_v1.1','hypnotized_ans_v1.0','vicuna_v1.1','causal_v1.0','final_v1.0'],
         transforms=dict(type='Expand2square'),
         tokenize_kwargs=dict(truncation_size=2048),
     ),

@@ -47,6 +47,8 @@ def prepare_data(
 
     use_icl = data_args.get('use_icl', False)
     shot = data_args.get('shot', 1)
+    mix = data_args.get('use_mix', False)
+    icl_dataset_list = data_args.get('icl_dataset_list', [0])
     conv_dataset_cls = partial(
         SingleImageConvDataset,
         preprocessor=preprocessor,
@@ -57,6 +59,8 @@ def prepare_data(
         transforms=transforms,
         use_icl=use_icl,
         shot=shot,
+        use_mix=mix,
+        mix_icl_dataset=icl_dataset_list,
     )
     ds = {
         'train': conv_dataset_cls(dataset_generator=datasets['train'], mode='train') if datasets['train'] is not None else None,

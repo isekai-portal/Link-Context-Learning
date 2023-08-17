@@ -50,8 +50,31 @@ class ICLEvalDataset(ICLTrainDataset):
         for i in range(shot):
             context_imgs.append(self.get_image(context_samples[i]))
         return class_name, context_imgs, test_img
+    
+@DATASETS.register_module()
+class LCLEvalDataset(ICLTrainDataset):
+    def __init__(self, policy, sample_per_class = 0, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.policy = policy
+        self.sample_per_class = sample_per_class    
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def get_samples(self, index, shot):
+        cls_idx, sample_idx = self.data[index]
+        item = self.get_raw_item(cls_idx)
+        class_id = item["class_id"]
+        class_name = item["class_name"].lower()
+        context_samples = item["context_samples"]
+        test_samples = item['test_samples']
 
-
+        test_img = self.get_image(test_samples[sample_idx])
+        context_imgs = []
+        for i in range(shot):
+            context_imgs.append(self.get_image(context_samples[i]))
+        return class_name, context_imgs, test_img
+    
 @METRICS.register_module()
 class ICLComputeMetrics(BaseComputeMetrics):
     def extract_ans(self, string: str):

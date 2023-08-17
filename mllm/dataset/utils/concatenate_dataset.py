@@ -51,6 +51,22 @@ class ICLConcatDataset(TorchConcatDataset):
                 sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
             return self.datasets[dataset_idx].__get_icl_item__(sample_idx,shot)
 
+    def __get_mix_item__(self, idx, shot, icl_list=[0]):
+            if idx < 0:
+                if -idx > len(self):
+                    raise ValueError("absolute value of index should not exceed dataset length")
+                idx = len(self) + idx
+            dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
+            if dataset_idx == 0:
+                sample_idx = idx
+            else:
+                sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
+
+            if dataset_idx in icl_list:
+                return self.datasets[dataset_idx].__get_icl_item__(sample_idx,shot),dataset_idx
+            else:
+                return self.datasets[dataset_idx].__getitem__(sample_idx),dataset_idx
+    
 @DATASETS.register_module()
 class InterleaveDateset(Dataset):
     _repr_indent = 4
@@ -82,9 +98,13 @@ class InterleaveDateset(Dataset):
 
     def __getitem__(self, index):
         return self.concat_dataset[self.index_mapping[index]]
-    
+
     def __get_icl_item__(self, index, shot):
         return self.concat_dataset.__get_icl_item__(self.index_mapping[index],shot)
+    
+    def __get_mix_item__(self, index, shot, icl_list):
+        info, dataset_idx = self.concat_dataset.__get_mix_item__(self.index_mapping[index],shot,icl_list)
+        return info, dataset_idx
 
     def __repr__(self) -> str:
         head = "Dataset " + self.__class__.__name__
