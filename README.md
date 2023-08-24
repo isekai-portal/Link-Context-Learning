@@ -54,3 +54,16 @@ This repository contains the **official implementation** and **dataset** of the 
 4. [ ] Release the codes and checkpoints.
 5. [ ] Release the full ISEKAI dataset.
 
+
+## Cite
+
+```bibtex
+@article{tai2023link,
+  title={Link-Context Learning for Multimodal LLMs},
+  author={Tai, Yan and Fan, Weichen and Zhang, Zhao and Zhu, Feng and Zhao, Rui and Liu, Ziwei},
+  journal={arXiv preprint arXiv:2308.07891},
+  year={2023}
+}
+```
+
+
