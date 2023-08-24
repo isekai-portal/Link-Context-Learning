@@ -34,7 +34,7 @@
 [![Dataset](https://img.shields.io/badge/Dataset-Download-blue)](https://huggingface.co/ISEKAI-Portal) 
 
 ## Updates
-- **24 Aug, 2023**: :boom::boom: We release the online at [🔗LCL-Demo🔗](https://huggingface.co/ISEKAI-Portal).
+- **24 Aug, 2023**: :boom::boom: We release the online at [🔗LCL-Demo🔗](http://117.144.81.99:20488/).
 - **17 Aug, 2023**: :boom::boom: We release the two subsets of ISEKAI (ISEKAI-10 and ISEKAI-pair) at [[Hugging Face 🤗]](https://huggingface.co/ISEKAI-Portal).
 
 ---
