@@ -12,8 +12,11 @@ def prepare_demo_dataset(
 ):
     conv_args = model_args.conv_args
     tokenize_kwargs = conv_args.get('tokenize_kwargs', {})
-    conv_template = conv_args.get('conv_template', 'vicuna_v1.1')
-    conv_template = partial(get_conv_template, name=conv_template)
+    conv_template_ = conv_args.get('conv_template', 'vicuna_v1.1')
+    if isinstance(conv_template_, list):
+        conv_template = {item: partial(get_conv_template, name=item) for item in conv_template_}
+    else:
+        conv_template = partial(get_conv_template, name=conv_template_)
     transforms = conv_args.get('transforms', None)
     if transforms is not None:
         transforms = TRANSFORMS.build(transforms)
@@ -69,13 +72,20 @@ class SingleImageInteractive(SingleImageConvDatasetMixin):
     def get_raw_icl_item(self, index, shot):
         assert self.data_meta is not None
         result = []
-        for img, question, answer in zip(self.data_meta['pos_img'], self.data_meta['pos_q'], self.data_meta['pos_a']):
-            result.append(self.get_ret(image=img, question=question, answer=answer))
-        for img, question, answer in zip(self.data_meta['neg_img'], self.data_meta['neg_q'], self.data_meta['neg_a']):
-            result.append(self.get_ret(image=img, question=question, answer=answer))
+        for img in self.data_meta['pos_img']:
+            question, answer = self.data_meta['pos_q'][0], self.data_meta['pos_a'][0]
+            result.append(self.get_ret(image=img, question=question, answer=answer, conv_mode='causal_v1.0'))
+        for img in self.data_meta['neg_img']:
+            question, answer = self.data_meta['neg_q'][0], self.data_meta['neg_a'][0]
+            result.append(self.get_ret(image=img, question=question, answer=answer, conv_mode='causal_v1.0'))
         
+        
+        if len(result) == 0:
+            mode = 'vicuna_v1.1'
+        else:
+            mode = 'causal_v1.0'
         assert len(self.data_meta['infer_img']) == 1
-        result.append(self.get_ret(image=self.data_meta['infer_img'][0], question=self.data_meta['infer_q'][0], answer=''))
+        result.append(self.get_ret(image=self.data_meta['infer_img'][0], question=self.data_meta['infer_q'][0], answer='', conv_mode=mode))
         return result
 
     def __getitem__(self, index, debug_mode=False) -> Dict[str, Any]:

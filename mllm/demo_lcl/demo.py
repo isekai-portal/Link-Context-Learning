@@ -15,7 +15,7 @@ from mmengine import Config
 import transformers
 from transformers import BitsAndBytesConfig
 
-import debugpy;debugpy.connect(('10.198.34.32', 5610))
+# import debugpy;debugpy.connect(('10.142.4.66', 5610))
 
 SLURM_ENV = {k: v for k, v in os.environ.items() if 'SLURM' in k}
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -38,7 +38,7 @@ TEMP_FILE_DIR.mkdir(parents=True, exist_ok=True)
 #region paser
 parser = argparse.ArgumentParser("LCL Web Demo")
 parser.add_argument('--base_model', default='llama', choices=['llama'])
-parser.add_argument('--model_path', default=r'/mnt/lustrenew/share_data/taiyan/checkpoint/shikras/shikra-checkpoint-44000')
+parser.add_argument('--model_path', default=r'/home/taiyan/ckpt/okapis/demo_mix_1w')
 parser.add_argument('--server_name', default=SLURM_ENV.get('SLURM_JOB_NODELIST', None))
 parser.add_argument('--server_port', type=int, default=20488)
 parser.add_argument('--load_in_8bit', action='store_true')
@@ -55,7 +55,7 @@ model_name_or_path = args.model_path
 if args.cluster_mode:
     vision_tower_path = r'/mnt/lustre/share_data/chenkeqin/VG/ckpt/openai/clip-vit-large-patch14'  # offline
 else:
-    vision_tower_path = r'openai/clip-vit-large-patch14'
+    vision_tower_path = r'/home/chenkeqin/openai/clip-vit-large-patch14'
 #endregion
 
 #region configs
@@ -68,7 +68,7 @@ model_args = dict(
     # checkpoint config
     cache_dir=None,
     model_name_or_path=model_name_or_path,
-    vision_tower=r'/mnt/lustre/share_data/chenkeqin/VG/ckpt/openai/clip-vit-large-patch14',
+    vision_tower=vision_tower_path,
     pretrain_mm_mlp_adapter=None,
     # model config
     mm_vision_select_layer=-2,
@@ -98,7 +98,7 @@ model_args = dict(
     ),
 
     conv_args=dict(
-        conv_template='icl_v1.0',
+        conv_template=['causal_v1.0', 'vicuna_v1.1'],
         transforms=dict(type='Expand2square'),
         tokenize_kwargs=dict(truncation_size=2048),
     ),
@@ -274,22 +274,20 @@ if __name__ == '__main__':
         )
         with gr.Row(variant='compact'):
             with gr.Column():
-                pos_imgbox1 = gr.Image(label="Positive Support Image 1")
-                pos_q1 = gr.Textbox(placeholder="What is in the image?",label="Question")
-                pos_a1 = gr.Textbox(placeholder="The answer is ...",label="Answer")
+                with gr.Group():
+                    with gr.Row():
+                        pos_imgbox1 = gr.Image(label="Positive Support Image 1")
+                        pos_imgbox2 = gr.Image(label="Positive Support Image 2(Optional)")
+                    pos_q = gr.Textbox(placeholder="What is in the image?",label="Question")
+                    pos_a = gr.Textbox(placeholder="The answer is ...",label="Answer")
+
             with gr.Column():
-                neg_imgbox1 = gr.Image(label="Negative Support Image 1")
-                neg_q1 = gr.Textbox(placeholder="What is in the image?",label="Question")
-                neg_a1 = gr.Textbox(placeholder="The answer is ...",label="Answer")
-        
-            with gr.Column():
-                pos_imgbox2 = gr.Image(label="Positive Support Image 2(Optional)")
-                pos_q2 = gr.Textbox(placeholder="What is in the image?",label="Question")
-                pos_a2 = gr.Textbox(placeholder="The answer is ...",label="Answer")
-            with gr.Column():
-                neg_imgbox2 = gr.Image(label="Negative Support Image 2(Optional)")
-                neg_q2 = gr.Textbox(placeholder="What is in the image?",label="Question")
-                neg_a2 = gr.Textbox(placeholder="The answer is ...",label="Answer")
+                with gr.Group():
+                    with gr.Row():
+                        neg_imgbox1 = gr.Image(label="Negative Support Image 1")
+                        neg_imgbox2 = gr.Image(label="Negative Support Image 2(Optional)")
+                    neg_q = gr.Textbox(placeholder="What is in the image?",label="Question")
+                    neg_a = gr.Textbox(placeholder="The answer is ...",label="Answer")
 
         gr.HTML(
             """ 
@@ -322,33 +320,46 @@ if __name__ == '__main__':
                 'infer_q': []
             }
 
-        def set_state(custom_state, pos_imgbox1, pos_q1, pos_a1, pos_imgbox2, pos_q2, pos_a2,\
-            neg_imgbox1, neg_q1, neg_a1, neg_imgbox2, neg_q2, neg_a2, infer_imgbox, infer_q):
-            def _append(key, value):
-                if value is not None:
-                    custom_state[key].append(value)
-            custom_state = init_state()
+        def set_state(custom_state, pos_imgbox1, pos_imgbox2, pos_q, pos_a,\
+                neg_imgbox1, neg_imgbox2, neg_q, neg_a, infer_imgbox, infer_q):
+            def _convert(img):
+                if img is None:
+                    return
+                img = Image.fromarray(img)
+                return img
             
-            pos_imgbox1 = Image.fromarray(pos_imgbox1)
-            pos_imgbox2 = Image.fromarray(pos_imgbox2)
-            neg_imgbox1 = Image.fromarray(neg_imgbox1)
-            neg_imgbox2 = Image.fromarray(neg_imgbox2)
-            infer_imgbox = Image.fromarray(infer_imgbox)
+            def _append(key, value):
+                if value is None:
+                    return
+                if '_q' in key:
+                    value = value.replace('<image>', '').replace('<im_start>', '').replace('<im_end>', '')
+                    value += '<image>'
+                    if key == 'pos_q' or key == 'neg_q':
+                        value = '[INSTRUCTION]' + value
+                    elif key == 'infer_q':
+                        if len(custom_state['pos_img']) != 0 or len(custom_state['neg_img']) != 0:
+                            value = '[FINAL QUESTION]' + value
+
+                custom_state[key].append(value)
+
+            # set state
+            custom_state = init_state()
+            pos_imgbox1 = _convert(pos_imgbox1)
+            pos_imgbox2 = _convert(pos_imgbox2)
+            neg_imgbox1 = _convert(neg_imgbox1)
+            neg_imgbox2 = _convert(neg_imgbox2)
+            infer_imgbox = _convert(infer_imgbox)
 
             _append('pos_img', pos_imgbox1)
             _append('pos_img', pos_imgbox2)
             _append('neg_img', neg_imgbox1)
             _append('neg_img', neg_imgbox2)
 
-            _append('pos_q', pos_q1)
-            _append('pos_q', pos_q2)
-            _append('pos_a', pos_a1)
-            _append('pos_a', pos_a2)
+            _append('pos_q', pos_q)
+            _append('pos_a', pos_a)
 
-            _append('neg_q', neg_q1)
-            _append('neg_q', neg_q2)
-            _append('neg_a', neg_a1)
-            _append('neg_a', neg_a2)
+            _append('neg_q', neg_q)
+            _append('neg_a', neg_a)
 
             _append('infer_img', infer_imgbox)
             _append('infer_q', infer_q)
@@ -365,8 +376,8 @@ if __name__ == '__main__':
 
         # control functions
         submit_btn.click(fn=set_state,
-            inputs=[custom_state, pos_imgbox1, pos_q1, pos_a1, pos_imgbox2, pos_q2, pos_a2,\
-                neg_imgbox1, neg_q1, neg_a1, neg_imgbox2, neg_q2, neg_a2, infer_imgbox, infer_q],
+            inputs=[custom_state, pos_imgbox1, pos_imgbox2, pos_q, pos_a,\
+                neg_imgbox1, neg_imgbox2, neg_q, neg_a, infer_imgbox, infer_q],
             outputs=[custom_state],
             show_progress=True,
             queue=True).then(fn=predict, 
@@ -375,8 +386,8 @@ if __name__ == '__main__':
                         show_progress=True, 
                         queue=True)
 
-        clear_btn.add([chatbot, pos_imgbox1, pos_q1, pos_a1, pos_imgbox2, pos_q2, pos_a2,\
-                neg_imgbox1, neg_q1, neg_a1, neg_imgbox2, neg_q2, neg_a2, infer_imgbox, infer_q])
+        clear_btn.add([chatbot, pos_imgbox1, pos_imgbox2, pos_q, pos_a,\
+                neg_imgbox1, neg_imgbox2, neg_q, neg_a, infer_imgbox, infer_q])
 
     # demo.launch(server_name='0.0.0.0', server_port=args.server_port)
     demo.launch(server_name=args.server_name, server_port=args.server_port)
