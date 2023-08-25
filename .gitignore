@@ -42,3 +42,4 @@ sketch*
 run_debug.sh
 run_ty.sh
 transform.ipynb
+gradio_cached_examples/
