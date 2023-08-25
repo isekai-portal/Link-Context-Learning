@@ -186,6 +186,7 @@ class SingleImageConvDatasetMixin:
 
             ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
 
+        print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids']).replace('<im_patch> ','')}")
 
         if not hasattr(self, '_printed_sample'):
 
@@ -202,8 +203,8 @@ class SingleImageConvDatasetMixin:
             print(f"=================== {self.mode} sample ===================", flush=True)
             print(f"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}")
 
-            print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids'])}")
-            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels)}")
+            print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids']).replace('<im_patch> ','')}")
+            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels).replace('<im_patch> ','')}")
 
         return ret_dict
 

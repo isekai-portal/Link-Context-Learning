@@ -93,12 +93,12 @@ model_args = dict(
     process_func_args=dict(
         conv=dict(type='LLavaConvProcessV1'),
         target=dict(type='BoxFormatProcess'),
-        text=dict(type='LlavaTextProcessV1'),
+        text=dict(type='LlavaTextProcessV2'),
         image=dict(type='LlavaImageProcessorV1'),
     ),
 
     conv_args=dict(
-        conv_template=['causal_v1.0', 'vicuna_v1.1'],
+        conv_template=['causal_v1.0', 'hypnotized_ans_v1.0', 'final_v1.0', 'vicuna_v1.1'],
         transforms=dict(type='Expand2square'),
         tokenize_kwargs=dict(truncation_size=2048),
     ),
@@ -133,8 +133,6 @@ else:
     quantization_kwargs = dict()
 
 #endregion
-
-
 
 #region Load model and dataset
 model, preprocessor = load_pretrained_llava(model_args, training_args, **quantization_kwargs)
@@ -222,6 +220,7 @@ def predict(data_meta, history):
     response = tokenizer.batch_decode(output_ids[:, input_token_len:], skip_special_tokens=True)[0]
     print(f"response: {response}")
 
+    dataset_demo.clear_data()
     history = history + [(data_meta['infer_q'][0], response)]
     return data_meta, history
 
@@ -238,7 +237,7 @@ if __name__ == '__main__':
     )
 
     with gr.Blocks(title="LCL", theme=gr.themes.Base(text_size=text_custom)).queue() as demo:
-        logo_file_url = f"file={os.path.join(os.path.dirname(__file__), 'examples_icl/logo.png')}"
+        logo_file_url = f"file={os.path.join(os.path.dirname(__file__), 'examples/logo.png')}"
         gr.HTML(
             f"""
             <p align="center"><img src="{logo_file_url}" alt="Logo" width="200"></p>
@@ -249,17 +248,17 @@ if __name__ == '__main__':
             </p>
 
             <p>
-                <font color="#966661"><strong>Link-Context Learning(LCL)</strong></font> emphasizes "reasoning from cause and effect" to augment the learning capabilities of MLLMs.
+                <font color="#966661"><strong>Link-Context Learning (LCL)</strong></font> enhances MLLMs with causal-link while preserving VQA capabilities, so we offer two modes in this demo: "Common" and "LCL".
             </p>
 
             <h2>User Manual</h2>
             <ul>
-                <li><strong>Step 1.</strong> Upload support images.</li>
-                <li><strong>Step 2.</strong> Select Question Format in <code>Task Template</code>. Task template and user input (if exists) will be assembled into final inputs to the model.</li>
+                <li><strong>Common(VQA):</strong> Only upload image in "Query Image" Box(no any support sample needed), or you can try our VQA example by click the item in "0-Shot VQA" panel, then our model will inference the sample in Common VQA mode.</li>
+                <li><strong>LCL:</strong> Upload support samples and query sample, or you can try our LCL example by click the item in "2-Shot LCL" and "4-Shot LCL" panel, then our model will inference the sample in LCL mode.</li>
                 <li><strong>Notes:</strong>
                     <ul>
-                    <li>We only support 2-shot(2 positive and 2 negative samples) in this demo.</li>
-                    <li>Watting for supplementary.</li>
+                    <li>We only support 4-shot in LCL mode.</li>
+                    <li>We adopted 2 positive and 2 negative samples as a support set in our paper (recommended), but of course, you are free to try it yourself.</li>
                     </ul>
                 </li>
             </ul>
@@ -278,7 +277,7 @@ if __name__ == '__main__':
                     with gr.Row():
                         pos_imgbox1 = gr.Image(label="Positive Support Image 1")
                         pos_imgbox2 = gr.Image(label="Positive Support Image 2(Optional)")
-                    pos_q = gr.Textbox(placeholder="What is in the image?",label="Question")
+                    pos_q = gr.Textbox(placeholder="What is in the image?",label="Question(Fixed)",interactive=False)
                     pos_a = gr.Textbox(placeholder="The answer is ...",label="Answer")
 
             with gr.Column():
@@ -286,7 +285,7 @@ if __name__ == '__main__':
                     with gr.Row():
                         neg_imgbox1 = gr.Image(label="Negative Support Image 1")
                         neg_imgbox2 = gr.Image(label="Negative Support Image 2(Optional)")
-                    neg_q = gr.Textbox(placeholder="What is in the image?",label="Question")
+                    neg_q = gr.Textbox(placeholder="What is in the image?",label="Question(Fixed)",interactive=False)
                     neg_a = gr.Textbox(placeholder="The answer is ...",label="Answer")
 
         gr.HTML(
@@ -313,15 +312,13 @@ if __name__ == '__main__':
                 'pos_img': [],
                 'neg_img': [],
                 'infer_img': [],
-                'pos_q': [],
                 'pos_a': [],
-                'neg_q': [],
                 'neg_a': [],
                 'infer_q': []
             }
 
-        def set_state(custom_state, pos_imgbox1, pos_imgbox2, pos_q, pos_a,\
-                neg_imgbox1, neg_imgbox2, neg_q, neg_a, infer_imgbox, infer_q):
+        def set_state(custom_state, pos_imgbox1, pos_imgbox2, pos_a,\
+                neg_imgbox1, neg_imgbox2, neg_a, infer_imgbox, infer_q):
             def _convert(img):
                 if img is None:
                     return
@@ -331,16 +328,17 @@ if __name__ == '__main__':
             def _append(key, value):
                 if value is None:
                     return
-                if '_q' in key:
-                    value = value.replace('<image>', '').replace('<im_start>', '').replace('<im_end>', '')
-                    value += '<image>'
-                    if key == 'pos_q' or key == 'neg_q':
-                        value = '[INSTRUCTION]' + value
-                    elif key == 'infer_q':
-                        if len(custom_state['pos_img']) != 0 or len(custom_state['neg_img']) != 0:
-                            value = '[FINAL QUESTION]' + value
-
+                # format inputs
+                if isinstance(value, str):
+                    special_tokens = ['<image>', '<im_start>', '<im_end>', '[BEGIN EXAMPLE]', '[END EXAMPLE]', '[FINAL QUESTION]']
+                    for token in special_tokens:
+                        value = value.replace(token, '')
                 custom_state[key].append(value)
+
+            if infer_imgbox is None:
+                raise gr.Error("Please set inference image.")
+            if infer_q is None:
+                raise gr.Error("Please input your question.")
 
             # set state
             custom_state = init_state()
@@ -355,15 +353,11 @@ if __name__ == '__main__':
             _append('neg_img', neg_imgbox1)
             _append('neg_img', neg_imgbox2)
 
-            _append('pos_q', pos_q)
             _append('pos_a', pos_a)
-
-            _append('neg_q', neg_q)
             _append('neg_a', neg_a)
 
             _append('infer_img', infer_imgbox)
             _append('infer_q', infer_q)
-            
             return custom_state
 
         custom_state = gr.State(init_state())
@@ -372,12 +366,55 @@ if __name__ == '__main__':
         ##############################################
         #  Examples
         ##############################################
+        # with gr.Column(visible=True) as example_lcl:
+        def _example_path(img_name):
+            path = os.path.join(os.path.dirname(__file__), f'examples/{img_name}')
+            return path
+        def vqa_examples_fn(infer_imgbox, infer_q):
+            return None, None, '', None, None, ''
+        def lcl2shot_example_fn(infer_imgbox, infer_q, pos_imgbox1, pos_a, neg_imgbox1, neg_a):
+            return None, None
 
+        gr.Examples(
+            examples=[
+                [_example_path('vqa/pandas.png'), "How many pandas are there in the image?"],
+                [_example_path('vqa/kite.png'), "What is the man trying to catch?"],
+                [_example_path('vqa/sign.png'), "Provide a comprehensive description of the image and specify the positions of any mentioned objects in square brackets."]
+            ],
+            inputs=[infer_imgbox, infer_q],
+            label="0-Shot VQA",
+            cache_examples=True,
+            fn=vqa_examples_fn,
+            outputs=[pos_imgbox1, pos_imgbox2, pos_a, neg_imgbox1, neg_imgbox2, neg_a]
+        )
+
+        gr.Examples(
+            examples=[
+                [_example_path('thrones/infer1.jpg'), "What is in the image?", _example_path('thrones/pos1.jpg'), 'Tyrion Lannister', _example_path('thrones/neg1.jpg'), 'Jon Snow'],
+                [_example_path('cactihog/infer1.png'), "What is in the image?", _example_path('cactihog/pos1.png'), 'cactihog', _example_path('cactihog/neg1.png'), 'hedgehog'],
+                [_example_path('cctovac/infer1.png'), "What is in the image?", _example_path('cctovac/pos1.png'), 'cctovac', _example_path('cctovac/neg1.png'), 'octopus'],
+                [_example_path('icemic/infer1.png'), "What is in the image?", _example_path('icemic/pos1.png'), 'icemic', _example_path('icemic/neg1.png'), 'ice cream'],
+            ],
+            inputs=[infer_imgbox, infer_q, pos_imgbox1, pos_a, neg_imgbox1, neg_a],
+            label="2-Shot LCL",
+            cache_examples=True,
+            fn=lcl2shot_example_fn,
+            outputs=[pos_imgbox2, neg_imgbox2]
+        )
+
+        gr.Examples(
+            examples=[
+                [_example_path('airstone/infer1.png'), "What is in the image?", _example_path('airstone/pos1.png'), _example_path('airstone/pos2.png'), 'airstone', \
+                _example_path('airstone/neg1.png'), _example_path('airstone/neg2.png'), 'stone'],
+            ],
+            inputs=[infer_imgbox, infer_q, pos_imgbox1, pos_imgbox2, pos_a, neg_imgbox1, neg_imgbox2, neg_a],
+            label="4-Shot LCL"
+        )
 
         # control functions
         submit_btn.click(fn=set_state,
-            inputs=[custom_state, pos_imgbox1, pos_imgbox2, pos_q, pos_a,\
-                neg_imgbox1, neg_imgbox2, neg_q, neg_a, infer_imgbox, infer_q],
+            inputs=[custom_state, pos_imgbox1, pos_imgbox2, pos_a,\
+                neg_imgbox1, neg_imgbox2, neg_a, infer_imgbox, infer_q],
             outputs=[custom_state],
             show_progress=True,
             queue=True).then(fn=predict, 

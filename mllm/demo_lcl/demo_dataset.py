@@ -45,6 +45,9 @@ class SingleImageInteractive(SingleImageConvDatasetMixin):
 
     def update_data(self, data):
         self.data_meta = data
+
+    def clear_data(self):
+        self.data_meta = None
     
     def get_ret(self, image, question, answer, conv_mode=None):
         ret = {
@@ -72,20 +75,31 @@ class SingleImageInteractive(SingleImageConvDatasetMixin):
     def get_raw_icl_item(self, index, shot):
         assert self.data_meta is not None
         result = []
+        question = '[BEGIN EXAMPLE] What is in the image <image>?'
         for img in self.data_meta['pos_img']:
-            question, answer = self.data_meta['pos_q'][0], self.data_meta['pos_a'][0]
-            result.append(self.get_ret(image=img, question=question, answer=answer, conv_mode='causal_v1.0'))
+            answer = self.data_meta['pos_a'][0] + ' [END EXAMPLE]'
+            result.append(self.get_ret(image=img, question=question, answer=answer))
         for img in self.data_meta['neg_img']:
-            question, answer = self.data_meta['neg_q'][0], self.data_meta['neg_a'][0]
-            result.append(self.get_ret(image=img, question=question, answer=answer, conv_mode='causal_v1.0'))
-        
-        
+            answer = self.data_meta['neg_a'][0] + ' [END EXAMPLE]'
+            result.append(self.get_ret(image=img, question=question, answer=answer))
+
+        # remove system infomation in the middle of prompt
+        for i in range(len(result)):
+            if i == 0:
+                support_mode = 'causal_v1.0'
+            else:
+                support_mode = 'hypnotized_ans_v1.0'
+            result[i]['mode'] = support_mode
+
         if len(result) == 0:
-            mode = 'vicuna_v1.1'
+            infer_mode = 'vicuna_v1.1' # vqa
         else:
-            mode = 'causal_v1.0'
+            infer_mode = 'final_v1.0' # lcl
+
         assert len(self.data_meta['infer_img']) == 1
-        result.append(self.get_ret(image=self.data_meta['infer_img'][0], question=self.data_meta['infer_q'][0], answer='', conv_mode=mode))
+        infer_img = self.data_meta['infer_img'][0]
+        infer_question = self.data_meta['infer_q'][0] + '<image>'
+        result.append(self.get_ret(image=infer_img, question=infer_question, answer='', conv_mode=infer_mode))
         return result
 
     def __getitem__(self, index, debug_mode=False) -> Dict[str, Any]:
