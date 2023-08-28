@@ -75,28 +75,31 @@ class SingleImageInteractive(SingleImageConvDatasetMixin):
     def get_raw_icl_item(self, index, shot):
         assert self.data_meta is not None
         result = []
-        question = '[BEGIN EXAMPLE] What is in the image <image>?'
-        for img in self.data_meta['pos_img']:
-            answer = self.data_meta['pos_a'][0] + ' [END EXAMPLE]'
-            result.append(self.get_ret(image=img, question=question, answer=answer))
-        for img in self.data_meta['neg_img']:
-            answer = self.data_meta['neg_a'][0] + ' [END EXAMPLE]'
-            result.append(self.get_ret(image=img, question=question, answer=answer))
 
-        # remove system infomation in the middle of prompt
-        for i in range(len(result)):
-            if i == 0:
-                support_mode = 'causal_v1.0'
-            else:
-                support_mode = 'hypnotized_ans_v1.0'
-            result[i]['mode'] = support_mode
+        if self.data_meta['mode'] == 'lcl':
+            question = '[BEGIN EXAMPLE] What is in the image <image>?'
+            for img in self.data_meta['pos_img']:
+                answer = self.data_meta['pos_a'][0] + ' [END EXAMPLE]'
+                result.append(self.get_ret(image=img, question=question, answer=answer))
+            for img in self.data_meta['neg_img']:
+                answer = self.data_meta['neg_a'][0] + ' [END EXAMPLE]'
+                result.append(self.get_ret(image=img, question=question, answer=answer))
 
-        if len(result) == 0:
-            infer_mode = 'vicuna_v1.1' # vqa
+            # remove system infomation in the middle of prompt
+            for i in range(len(result)):
+                if i == 0:
+                    support_mode = 'causal_v1.0'
+                else:
+                    support_mode = 'hypnotized_ans_v1.0'
+                result[i]['mode'] = support_mode
+
+            infer_mode = 'final_v1.0'
+        elif self.data_meta['mode'] == 'vqa':
+            infer_mode = 'vicuna_v1.1'
         else:
-            infer_mode = 'final_v1.0' # lcl
+            raise NotImplementedError
 
-        assert len(self.data_meta['infer_img']) == 1
+        assert len(self.data_meta['infer_img'])  == 1
         infer_img = self.data_meta['infer_img'][0]
         infer_question = self.data_meta['infer_q'][0] + '<image>'
         result.append(self.get_ret(image=infer_img, question=infer_question, answer='', conv_mode=infer_mode))

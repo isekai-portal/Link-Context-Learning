@@ -41,6 +41,7 @@ parser.add_argument('--base_model', default='llama', choices=['llama'])
 parser.add_argument('--model_path', default=r'/home/taiyan/ckpt/okapis/demo_mix_1w')
 parser.add_argument('--server_name', default=SLURM_ENV.get('SLURM_JOB_NODELIST', None))
 parser.add_argument('--server_port', type=int, default=20488)
+parser.add_argument('--remove_model', action='store_true')
 parser.add_argument('--load_in_8bit', action='store_true')
 parser.add_argument('--load_in_4bit', action='store_true')
 
@@ -135,19 +136,22 @@ else:
 #endregion
 
 #region Load model and dataset
-model, preprocessor = load_pretrained_llava(model_args, training_args, **quantization_kwargs)
-preprocessor['target'] = {'boxes': PlainBoxFormatter()}
-tokenizer = preprocessor['text']
+if not args.remove_model:
+    model, preprocessor = load_pretrained_llava(model_args, training_args, **quantization_kwargs)
+    preprocessor['target'] = {'boxes': PlainBoxFormatter()}
+    tokenizer = preprocessor['text']
 
-if not getattr(model, 'is_quantized', False):
-    model.to(dtype=torch.float16, device=torch.device('cuda'))
-if not getattr(model.model.vision_tower[0], 'is_quantized', False):
-    model.model.vision_tower[0].to(dtype=torch.float16, device=torch.device('cuda'))
+    if not getattr(model, 'is_quantized', False):
+        model.to(dtype=torch.float16, device=torch.device('cuda'))
+    if not getattr(model.model.vision_tower[0], 'is_quantized', False):
+        model.model.vision_tower[0].to(dtype=torch.float16, device=torch.device('cuda'))
 
-dataset_demo = prepare_demo_dataset(model_args=model_args, preprocessor=preprocessor)
+    dataset_demo = prepare_demo_dataset(model_args=model_args, preprocessor=preprocessor)
 
-print(f"LLM device: {model.device}, is_quantized: {getattr(model, 'is_quantized', False)}, is_loaded_in_4bit: {getattr(model, 'is_loaded_in_4bit', False)}, is_loaded_in_8bit: {getattr(model, 'is_loaded_in_8bit', False)}")
-print(f"vision device: {model.model.vision_tower[0].device}, is_quantized: {getattr(model.model.vision_tower[0], 'is_quantized', False)}, is_loaded_in_4bit: {getattr(model, 'is_loaded_in_4bit', False)}, is_loaded_in_8bit: {getattr(model, 'is_loaded_in_8bit', False)}")
+    print(f"LLM device: {model.device}, is_quantized: {getattr(model, 'is_quantized', False)}, is_loaded_in_4bit: {getattr(model, 'is_loaded_in_4bit', False)}, is_loaded_in_8bit: {getattr(model, 'is_loaded_in_8bit', False)}")
+    print(f"vision device: {model.model.vision_tower[0].device}, is_quantized: {getattr(model.model.vision_tower[0], 'is_quantized', False)}, is_loaded_in_4bit: {getattr(model, 'is_loaded_in_4bit', False)}, is_loaded_in_8bit: {getattr(model, 'is_loaded_in_8bit', False)}")
+else:
+    print(f'Skip model process.')
 #endregion
 
 #########################################
@@ -180,7 +184,33 @@ def setup_gradio_warning(level=1):
 
 grWarning = setup_gradio_warning()
 
+def get_example_path(img_name):
+    path = os.path.join(os.path.dirname(__file__), f'examples/{img_name}')
+    return path
+
+def lcl2shot_examples_fn(infer_imgbox, infer_q, pos_imgbox1, pos_a, neg_imgbox1, neg_a):
+    return None, None
+
+def convert_img(img):
+    if img is None:
+        return
+    img = Image.fromarray(img)
+    return img
+
+def state_update(state, key, value):
+    if value is None:
+        return
+    # format inputs
+    if isinstance(value, str):
+        special_tokens = ['<image>', '<im_start>', '<im_end>', '[BEGIN EXAMPLE]', '[END EXAMPLE]', '[FINAL QUESTION]']
+        for token in special_tokens:
+            value = value.replace(token, '')
+    state[key].append(value)
+
 def predict(data_meta, history):
+    if len(data_meta['infer_q']) == 0:
+        return data_meta, history
+    
     dataset_demo.update_data(data_meta)
     model_inputs = dataset_demo[0]
     model_dtype = next(model.parameters()).dtype
@@ -248,12 +278,12 @@ if __name__ == '__main__':
             </p>
 
             <p>
-                <font color="#966661"><strong>Link-Context Learning (LCL)</strong></font> enhances MLLMs with causal-link while preserving VQA capabilities, so we offer two modes in this demo: "Common" and "LCL".
+                <font color="#966661"><strong>Link-Context Learning (LCL)</strong></font> enhances MLLMs with causal-link while preserving VQA capabilities, so we offer two modes in this demo: "VQA" and "LCL".
             </p>
 
             <h2>User Manual</h2>
             <ul>
-                <li><strong>Common(VQA):</strong> Only upload image in "Query Image" Box(no any support sample needed), or you can try our VQA example by click the item in "0-Shot VQA" panel, then our model will inference the sample in Common VQA mode.</li>
+                <li><strong>VQA:</strong> Upload image and input the question, or you can try our VQA example by click the item in "0-Shot VQA" panel, then our model will inference the sample in VQA mode.</li>
                 <li><strong>LCL:</strong> Upload support samples and query sample, or you can try our LCL example by click the item in "2-Shot LCL" and "4-Shot LCL" panel, then our model will inference the sample in LCL mode.</li>
                 <li><strong>Notes:</strong>
                     <ul>
@@ -265,50 +295,102 @@ if __name__ == '__main__':
 
             """
         )
-
-        gr.HTML(
-            """ 
-            <h2>Support Samples</h2>
-            """
-        )
-        with gr.Row(variant='compact'):
-            with gr.Column():
-                with gr.Group():
+        #region VQA Mode
+        with gr.Tab("VQA"):
+            with gr.Row():
+                with gr.Column():
+                    vqa_imgbox = gr.Image(label="Input Image")
+                    vqa_q = gr.Textbox(placeholder="What is in the image?",label="Question")
                     with gr.Row():
-                        pos_imgbox1 = gr.Image(label="Positive Support Image 1")
-                        pos_imgbox2 = gr.Image(label="Positive Support Image 2(Optional)")
-                    pos_q = gr.Textbox(placeholder="What is in the image?",label="Question(Fixed)",interactive=False)
-                    pos_a = gr.Textbox(placeholder="The answer is ...",label="Answer")
+                        vqa_submit_btn = gr.Button('Submit')
+                        vqa_clear_btn = gr.ClearButton()
+                vqa_chatbot = gr.Chatbot(label='VQA Chatbot', show_label=True)
 
-            with gr.Column():
-                with gr.Group():
+            gr.Examples(
+                examples=[
+                    [get_example_path('vqa/pandas.png'), "How many pandas are there in the image?"],
+                    [get_example_path('vqa/kite.png'), "What is the man trying to catch?"],
+                    [get_example_path('vqa/sign.png'), "Provide a comprehensive description of the image and specify the positions of any mentioned objects in square brackets."]
+                ],
+                inputs=[vqa_imgbox, vqa_q],
+                label="0-Shot VQA",
+            )
+        #endregion
+
+        #region LCL Mode
+        with gr.Tab("LCL"):
+            gr.HTML(
+                """ 
+                <h2>Support Samples</h2>
+                """
+            )
+            with gr.Row(variant='compact'):
+                with gr.Column():
+                    with gr.Group():
+                        with gr.Row():
+                            pos_imgbox1 = gr.Image(label="Positive Support Image 1")
+                            pos_imgbox2 = gr.Image(label="Positive Support Image 2(Optional)")
+                        pos_q = gr.Textbox(placeholder="What is in the image?",label="Question(Fixed)",interactive=False)
+                        pos_a = gr.Textbox(placeholder="The answer is ...",label="Answer")
+
+                with gr.Column():
+                    with gr.Group():
+                        with gr.Row():
+                            neg_imgbox1 = gr.Image(label="Negative Support Image 1")
+                            neg_imgbox2 = gr.Image(label="Negative Support Image 2(Optional)")
+                        neg_q = gr.Textbox(placeholder="What is in the image?",label="Question(Fixed)",interactive=False)
+                        neg_a = gr.Textbox(placeholder="The answer is ...",label="Answer")
+
+            gr.HTML(
+                """ 
+                <h2>Query Sample</h2>
+                """
+            )
+            with gr.Row():
+                with gr.Column():
+                    lcl_imgbox = gr.Image(label="Query Image")
+                    lcl_q = gr.Textbox(placeholder="What is in the image?",label="Question")
                     with gr.Row():
-                        neg_imgbox1 = gr.Image(label="Negative Support Image 1")
-                        neg_imgbox2 = gr.Image(label="Negative Support Image 2(Optional)")
-                    neg_q = gr.Textbox(placeholder="What is in the image?",label="Question(Fixed)",interactive=False)
-                    neg_a = gr.Textbox(placeholder="The answer is ...",label="Answer")
+                        lcl_submit_btn = gr.Button('Submit')
+                        lcl_clear_btn = gr.ClearButton()
+                lcl_chatbot = gr.Chatbot(label='LCL Chatbot', show_label=True)
 
-        gr.HTML(
-            """ 
-            <h2>Query Sample</h2>
-            """
-        )
+            gr.Examples(
+                examples=[
+                    [get_example_path('thrones/infer1.jpg'), "What is in the image?", get_example_path('thrones/pos1.jpg'), 'Tyrion Lannister', get_example_path('thrones/neg1.jpg'), 'Jon Snow'],
+                    [get_example_path('cactihog/infer1.png'), "What is in the image?", get_example_path('cactihog/pos1.png'), 'cactihog', get_example_path('cactihog/neg1.png'), 'hedgehog'],
+                    [get_example_path('cctovac/infer1.png'), "What is in the image?", get_example_path('cctovac/pos1.png'), 'cctovac', get_example_path('cctovac/neg1.png'), 'octopus'],
+                    [get_example_path('icemic/infer1.png'), "What is in the image?", get_example_path('icemic/pos1.png'), 'icemic', get_example_path('icemic/neg1.png'), 'ice cream'],
+                ],
+                inputs=[lcl_imgbox, lcl_q, pos_imgbox1, pos_a, neg_imgbox1, neg_a],
+                label="2-Shot LCL",
+                cache_examples=True,
+                fn=lcl2shot_examples_fn,
+                outputs=[pos_imgbox2, neg_imgbox2]
+            )
+            gr.Examples(
+                examples=[
+                    [get_example_path('airstone/infer1.png'), "What is in the image?", get_example_path('airstone/pos1.png'), get_example_path('airstone/pos2.png'), 'airstone', \
+                    get_example_path('airstone/neg1.png'), get_example_path('airstone/neg2.png'), 'stone'],
+                ],
+                inputs=[lcl_imgbox, lcl_q, pos_imgbox1, pos_imgbox2, pos_a, neg_imgbox1, neg_imgbox2, neg_a],
+                label="4-Shot LCL"
+            )
+        #endregion
         
-        with gr.Row():
-            with gr.Column():
-                infer_imgbox = gr.Image(label="Query Image")
-                infer_q = gr.Textbox(placeholder="What is in the image?",label="Question")
-                with gr.Row():
-                    submit_btn = gr.Button('Submit')
-                    clear_btn = gr.ClearButton()
-            chatbot = gr.Chatbot()
-
         ##############################################
-        #  init state
+        #  Set state
         ##############################################
-
-        def init_state():
+        def init_vqa_state():
             return {
+                'mode' : 'vqa',
+                'infer_img': [],
+                'infer_q': []
+            }
+
+        def init_lcl_state():
+            return {
+                'mode' : 'lcl',
                 'pos_img': [],
                 'neg_img': [],
                 'infer_img': [],
@@ -317,114 +399,85 @@ if __name__ == '__main__':
                 'infer_q': []
             }
 
-        def set_state(custom_state, pos_imgbox1, pos_imgbox2, pos_a,\
-                neg_imgbox1, neg_imgbox2, neg_a, infer_imgbox, infer_q):
-            def _convert(img):
-                if img is None:
-                    return
-                img = Image.fromarray(img)
-                return img
-            
-            def _append(key, value):
-                if value is None:
-                    return
-                # format inputs
-                if isinstance(value, str):
-                    special_tokens = ['<image>', '<im_start>', '<im_end>', '[BEGIN EXAMPLE]', '[END EXAMPLE]', '[FINAL QUESTION]']
-                    for token in special_tokens:
-                        value = value.replace(token, '')
-                custom_state[key].append(value)
-
+        def set_vqa_state(state, infer_imgbox, infer_q):
             if infer_imgbox is None:
-                raise gr.Error("Please set inference image.")
+                grWarning("Please set inference image.")
+                return state 
             if infer_q is None:
-                raise gr.Error("Please input your question.")
+                grWarning("Please input your question.")
+                return
 
             # set state
-            custom_state = init_state()
-            pos_imgbox1 = _convert(pos_imgbox1)
-            pos_imgbox2 = _convert(pos_imgbox2)
-            neg_imgbox1 = _convert(neg_imgbox1)
-            neg_imgbox2 = _convert(neg_imgbox2)
-            infer_imgbox = _convert(infer_imgbox)
+            state = init_vqa_state()
+            infer_imgbox = convert_img(infer_imgbox)
+            state_update(state, 'infer_img', infer_imgbox)
+            state_update(state, 'infer_q', infer_q)
+            return state
 
-            _append('pos_img', pos_imgbox1)
-            _append('pos_img', pos_imgbox2)
-            _append('neg_img', neg_imgbox1)
-            _append('neg_img', neg_imgbox2)
+        def set_lcl_state(state, pos_imgbox1, pos_imgbox2, pos_a,\
+                neg_imgbox1, neg_imgbox2, neg_a, infer_imgbox, infer_q):
+            
+            if infer_imgbox is None:
+                grWarning("Please set inference image.")
+                return state
+            if infer_q is None:
+                grWarning("Please input your question.")
+                return state
 
-            _append('pos_a', pos_a)
-            _append('neg_a', neg_a)
+            # set state
+            state = init_lcl_state()
+            pos_imgbox1 = convert_img(pos_imgbox1)
+            pos_imgbox2 = convert_img(pos_imgbox2)
+            neg_imgbox1 = convert_img(neg_imgbox1)
+            neg_imgbox2 = convert_img(neg_imgbox2)
+            infer_imgbox = convert_img(infer_imgbox)
 
-            _append('infer_img', infer_imgbox)
-            _append('infer_q', infer_q)
-            return custom_state
+            state_update(state, 'pos_img', pos_imgbox1)
+            state_update(state, 'pos_img', pos_imgbox2)
+            state_update(state, 'neg_img', neg_imgbox1)
+            state_update(state, 'neg_img', neg_imgbox2)
 
-        custom_state = gr.State(init_state())
-        example_state = gr.State(init_state())
+            if len(state['pos_img']) + len(state['neg_img']) == 0:
+                grWarning(f"The LCL mode requires providing support samples, otherwise the results may not meet expectations. \
+                        Alternatively, you can try inferring a single image directly in VQA mode.")
 
-        ##############################################
-        #  Examples
-        ##############################################
-        # with gr.Column(visible=True) as example_lcl:
-        def _example_path(img_name):
-            path = os.path.join(os.path.dirname(__file__), f'examples/{img_name}')
-            return path
-        def vqa_examples_fn(infer_imgbox, infer_q):
-            return None, None, '', None, None, ''
-        def lcl2shot_example_fn(infer_imgbox, infer_q, pos_imgbox1, pos_a, neg_imgbox1, neg_a):
-            return None, None
+            state_update(state, 'pos_a', pos_a)
+            state_update(state, 'neg_a', neg_a)
 
-        gr.Examples(
-            examples=[
-                [_example_path('vqa/pandas.png'), "How many pandas are there in the image?"],
-                [_example_path('vqa/kite.png'), "What is the man trying to catch?"],
-                [_example_path('vqa/sign.png'), "Provide a comprehensive description of the image and specify the positions of any mentioned objects in square brackets."]
-            ],
-            inputs=[infer_imgbox, infer_q],
-            label="0-Shot VQA",
-            cache_examples=True,
-            fn=vqa_examples_fn,
-            outputs=[pos_imgbox1, pos_imgbox2, pos_a, neg_imgbox1, neg_imgbox2, neg_a]
-        )
+            state_update(state, 'infer_img', infer_imgbox)
+            state_update(state, 'infer_q', infer_q)
+            return state
 
-        gr.Examples(
-            examples=[
-                [_example_path('thrones/infer1.jpg'), "What is in the image?", _example_path('thrones/pos1.jpg'), 'Tyrion Lannister', _example_path('thrones/neg1.jpg'), 'Jon Snow'],
-                [_example_path('cactihog/infer1.png'), "What is in the image?", _example_path('cactihog/pos1.png'), 'cactihog', _example_path('cactihog/neg1.png'), 'hedgehog'],
-                [_example_path('cctovac/infer1.png'), "What is in the image?", _example_path('cctovac/pos1.png'), 'cctovac', _example_path('cctovac/neg1.png'), 'octopus'],
-                [_example_path('icemic/infer1.png'), "What is in the image?", _example_path('icemic/pos1.png'), 'icemic', _example_path('icemic/neg1.png'), 'ice cream'],
-            ],
-            inputs=[infer_imgbox, infer_q, pos_imgbox1, pos_a, neg_imgbox1, neg_a],
-            label="2-Shot LCL",
-            cache_examples=True,
-            fn=lcl2shot_example_fn,
-            outputs=[pos_imgbox2, neg_imgbox2]
-        )
+        vqa_state = gr.State(init_vqa_state())
+        lcl_state = gr.State(init_lcl_state())
 
-        gr.Examples(
-            examples=[
-                [_example_path('airstone/infer1.png'), "What is in the image?", _example_path('airstone/pos1.png'), _example_path('airstone/pos2.png'), 'airstone', \
-                _example_path('airstone/neg1.png'), _example_path('airstone/neg2.png'), 'stone'],
-            ],
-            inputs=[infer_imgbox, infer_q, pos_imgbox1, pos_imgbox2, pos_a, neg_imgbox1, neg_imgbox2, neg_a],
-            label="4-Shot LCL"
-        )
-
-        # control functions
-        submit_btn.click(fn=set_state,
-            inputs=[custom_state, pos_imgbox1, pos_imgbox2, pos_a,\
-                neg_imgbox1, neg_imgbox2, neg_a, infer_imgbox, infer_q],
-            outputs=[custom_state],
+        # vqa control functions
+        vqa_submit_btn.click(fn=set_vqa_state,
+            inputs=[vqa_state, vqa_imgbox, vqa_q],
+            outputs=[vqa_state],
             show_progress=True,
             queue=True).then(fn=predict, 
-                        inputs=[custom_state, chatbot],  
-                        outputs=[custom_state, chatbot],  
+                        inputs=[vqa_state, vqa_chatbot],  
+                        outputs=[vqa_state, vqa_chatbot],  
+                        show_progress=True, 
+                        queue=True)
+        vqa_clear_btn.add([vqa_chatbot, vqa_imgbox, vqa_q])
+
+        # lcl control functions
+        lcl_submit_btn.click(fn=set_lcl_state,
+            inputs=[lcl_state, pos_imgbox1, pos_imgbox2, pos_a,\
+                neg_imgbox1, neg_imgbox2, neg_a, lcl_imgbox, lcl_q],
+            outputs=[lcl_state],
+            show_progress=True,
+            queue=True).then(fn=predict, 
+                        inputs=[lcl_state, lcl_chatbot],  
+                        outputs=[lcl_state, lcl_chatbot],  
                         show_progress=True, 
                         queue=True)
 
-        clear_btn.add([chatbot, pos_imgbox1, pos_imgbox2, pos_q, pos_a,\
-                neg_imgbox1, neg_imgbox2, neg_q, neg_a, infer_imgbox, infer_q])
+        lcl_clear_btn.add([lcl_chatbot, pos_imgbox1, pos_imgbox2, pos_q, pos_a,\
+                neg_imgbox1, neg_imgbox2, neg_q, neg_a, lcl_imgbox, lcl_q])
+
 
     # demo.launch(server_name='0.0.0.0', server_port=args.server_port)
     demo.launch(server_name=args.server_name, server_port=args.server_port)
