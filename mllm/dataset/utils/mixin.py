@@ -4,9 +4,7 @@ import os
 import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
-from .io import read_img_general
-
+from PIL import Image
 
 class QuestionTemplateMixin:
     def __init__(
@@ -76,7 +74,7 @@ class MInstrDataset(QuestionTemplateMixin, Dataset):
     def get_image(self, image_path):
         if self.image_folder is not None:
             image_path = os.path.join(self.image_folder, image_path)
-        image = read_img_general(image_path)
+        image = Image.open(image_path).convert('RGB')
         return image
 
     def get_template(self):

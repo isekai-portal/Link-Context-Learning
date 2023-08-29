@@ -24,7 +24,7 @@ from ..root import (
     EXPR_PLACEHOLDER,
     BOXES_PLACEHOLDER,
 )
-from mllm.dataset.utils.io import read_img_general
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -92,7 +92,7 @@ class BusinessDataset(MInstrDataset):
     def get_image(self, image_folder, image_path):
         if image_folder is not None:
             image_path = os.path.join(image_folder, image_path)
-        image = read_img_general(image_path)
+        image = Image.open(image_path).convert('RGB')
         return image
 
     def _get_ret_origin(self, index, mode):

@@ -8,6 +8,7 @@ import jsonlines
 import random
 from typing import Dict, Any, Sequence
 from numpy import real
+from PIL import Image
 
 import torch
 from torchvision.ops import box_iou
@@ -23,7 +24,6 @@ from ..root import (
     IMAGE_PLACEHOLDER,
     EXPR_PLACEHOLDER,
 )
-from mllm.dataset.utils.io import read_img_general
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -80,7 +80,7 @@ class BusinessVQADataset(MInstrDataset):
     def get_image(self, image_folder, image_path):
         if image_folder is not None:
             image_path = os.path.join(image_folder, image_path)
-        image = read_img_general(image_path)
+        image = Image.open(image_path).convert('RGB')
         return image
 
     def _get_ret_origin(self, index, mode):
