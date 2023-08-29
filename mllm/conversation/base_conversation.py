@@ -607,19 +607,6 @@ register_conv_template(
     )
 )
 
-# custom otter template
-register_conv_template(
-    Conversation(
-        name='openflamingo',
-        system='',
-        roles=('User:', 'GPT:'),
-        messages=(),
-        offset=0,
-        sep_style=SeparatorStyle.ADD_SPACE_TWO,
-        sep=' ',
-        sep2='<|endofchunk|>',
-    )
-)
 
 if __name__ == "__main__":
     conv = get_conv_template("vicuna_v1.1")

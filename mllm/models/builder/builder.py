@@ -1,10 +1,6 @@
-from typing import Dict, Any, Tuple
-
 from torch import nn
-
+from typing import Dict, Any, Tuple
 from .build_llava import load_pretrained_llava
-from .build_otter import load_pretrained_otter
-from .build_flamingo import load_pretrained_flamingo
 
 PREPROCESSOR = Dict[str, Any]
 
@@ -14,9 +10,5 @@ def load_pretrained(model_args, training_args) -> Tuple[nn.Module, PREPROCESSOR]
     type_ = model_args.type
     if type_ == 'llava':
         return load_pretrained_llava(model_args, training_args)
-    elif type_ == 'otter':
-        return load_pretrained_otter(model_args, training_args)
-    elif type_ == 'flamingo':
-        return load_pretrained_flamingo(model_args, training_args)
     else:
         assert False

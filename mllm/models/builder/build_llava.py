@@ -98,27 +98,27 @@ def load_pretrained_llava(model_args, training_args) -> Tuple[nn.Module, PREPROC
                                       pretrain_mm_mlp_adapter=model_args.pretrain_mm_mlp_adapter)
 
     params_no_grad = [n for n, p in model.named_parameters() if not p.requires_grad]
-    # if len(params_no_grad) > 0:
-    #     if training_args.fsdp is not None and len(training_args.fsdp) > 0:
-    #         if len(params_no_grad) < 10:
-    #             print('[WARNING] Attempting to use FSDP while {} parameters do not require gradients: {}'.format(len(params_no_grad),
-    #                                                                                                              params_no_grad))
-    #         else:
-    #             print('[WARNING] Attempting to use FSDP while {} parameters do not require gradients: {}...(omitted)'.format(
-    #                 len(params_no_grad), ', '.join(params_no_grad[:10])))
-    #         print("[WARNING] Attempting to use FSDP with partially frozen parameters, this is experimental.")
-    #         print(
-    #             "[WARNING] As of 4/30/23, this feature requires PyTorch-nightly build.  See here for details: https://github.com/haotian-liu/LLaVA#experimental-use-fsdp-to-save-memory-in-pretraining")
+    if len(params_no_grad) > 0:
+        if training_args.fsdp is not None and len(training_args.fsdp) > 0:
+            if len(params_no_grad) < 10:
+                print('[WARNING] Attempting to use FSDP while {} parameters do not require gradients: {}'.format(len(params_no_grad),
+                                                                                                                 params_no_grad))
+            else:
+                print('[WARNING] Attempting to use FSDP while {} parameters do not require gradients: {}...(omitted)'.format(
+                    len(params_no_grad), ', '.join(params_no_grad[:10])))
+            print("[WARNING] Attempting to use FSDP with partially frozen parameters, this is experimental.")
+            print(
+                "[WARNING] As of 4/30/23, this feature requires PyTorch-nightly build.  See here for details: https://github.com/haotian-liu/LLaVA#experimental-use-fsdp-to-save-memory-in-pretraining")
 
-    #         from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel as FSDP
+            from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel as FSDP
 
-    #         def patch_FSDP_use_orig_params(func):
-    #             def wrap_func(*args, **kwargs):
-    #                 use_orig_params = kwargs.pop('use_orig_params', True)
-    #                 return func(*args, **kwargs, use_orig_params=True)
-    #             return wrap_func
+            def patch_FSDP_use_orig_params(func):
+                def wrap_func(*args, **kwargs):
+                    use_orig_params = kwargs.pop('use_orig_params', True)
+                    return func(*args, **kwargs, use_orig_params=True)
+                return wrap_func
 
-    #         FSDP.__init__ = patch_FSDP_use_orig_params(FSDP.__init__)
+            FSDP.__init__ = patch_FSDP_use_orig_params(FSDP.__init__)
 
     preprocessor = dict(
         image=model_vision_dict['image_processor'],
