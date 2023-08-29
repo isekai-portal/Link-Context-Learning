@@ -16,3 +16,4 @@ matplotlib
 accelerate
 SentencePiece
 deepspeed
+gradio==3.40.1
