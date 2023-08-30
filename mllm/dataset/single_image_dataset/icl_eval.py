@@ -58,9 +58,6 @@ class LCLEvalDataset(ICLTrainDataset):
         self.policy = policy
         self.sample_per_class = sample_per_class    
     
-    def __len__(self):
-        return len(self.data)
-    
     def get_samples(self, index, shot):
         cls_idx, sample_idx = self.data[index]
         item = self.get_raw_item(cls_idx)
