@@ -6,7 +6,7 @@
 
 <div>
 <div align="center">
-    Yan Tai<sup>*,1,2</sup></a>&emsp;
+    <a href='https://macavityt.github.io/' target='_blank'>Yan Tai<sup>*,1,2</sup></a>&emsp;
     <a href='https://weichenfan.github.io/Weichen/' target='_blank'>Weichen Fan<sup>*,†,1</sup></a>&emsp;
     <a href='https://zhaozhang.net/' target='_blank'>Zhao Zhang<sup>1</sup></a>&emsp;
     <a href='https://zhufengx.github.io/' target='_blank'>Feng Zhu<sup>1</sup></a>&emsp;
