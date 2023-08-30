@@ -45,77 +45,22 @@ class ICLTrainDataset(MInstrDataset):
     def get_raw_item(self, index):
         return self.data[index]
 
-
-    def get_ret_raw(self, image, question, answer, conv_mode=None):
-        # Placeholder for template
-        # question = item['text']
-        # final_question = self.get_template().replace(QUESTION_PLACEHOLDER, question)
-        if conv_mode is None:
-            ret = {
-                'image': image,
-                'conversations': [
-                    {
-                        'from': 'human',
-                        'value': question,
-                    },
-                    {
-                        'from': 'gpt',
-                        'value': f"{answer}",
-                    },
-                ]
-            }
-        else:
-            ret = {
-                'image': image,
-                'conversations': [
-                    {
-                        'from': 'human',
-                        'value': question,
-                    },
-                    {
-                        'from': 'gpt',
-                        'value': f"{answer}",
-                    },
-                ],
-                'mode': conv_mode
-                
-            }
-        return ret
-    
     def get_ret(self, image, question, answer, conv_mode=None):
-        # Placeholder for template
-        # question = item['text']
-        # final_question = self.get_template().replace(QUESTION_PLACEHOLDER, question)
-        if conv_mode is None:
-            ret = {
-                'image': image,
-                'conversations': [
-                    {
-                        'from': 'human',
-                        'value': question,
-                    },
-                    {
-                        'from': 'gpt',
-                        'value': f"{answer}",
-                    },
-                ]
-            }
-        else:
-            ret = {
-                'image': image,
-                'conversations': [
-                    {
-                        'from': 'human',
-                        'value': question,
-                    },
-                    {
-                        'from': 'gpt',
-                        'value': f"{answer}",
-                    },
-                ],
-                'mode': conv_mode
-                
-            }
+        ret = {
+            'image': image,
+            'conversations': [
+                {
+                    'from': 'human',
+                    'value': question,
+                },
+                {
+                    'from': 'gpt',
+                    'value': f"{answer}",
+                },
+            ]
+        }
+        if conv_mode is not None:
+            ret['mode'] = conv_mode
         return ret
 
     def get_samples(self, index, mode="cls_positive"):

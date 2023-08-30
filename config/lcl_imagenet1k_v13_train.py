@@ -1,9 +1,4 @@
-_base_ = ['_base_/dataset/DEFAULT_TRAIN_IMAGENET.py', '_base_/model/okapi_v1_7b.py', '_base_/train/llava_fsdp.py']
-
-# training_args = dict(
-#     output_dir='/mnt/lustrenew/taiyan/models/shikra/{{fileBasenameNoExtension}}',
-#     ceph_dir='ty-sdc:s3://ICL/checkpoint/taiyan/{{fileBasenameNoExtension}}/',
-# )
+_base_ = ['_base_/dataset/DEFAULT_TRAIN_IMAGENET.py', '_base_/model/lcl_7b.py', '_base_/train/llava_fsdp.py']
 
 data_args = dict(
     train=dict(

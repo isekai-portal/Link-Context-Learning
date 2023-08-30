@@ -53,10 +53,9 @@ class ICLEvalDataset(ICLTrainDataset):
     
 @DATASETS.register_module()
 class LCLEvalDataset(ICLTrainDataset):
-    def __init__(self, policy, sample_per_class = 0, *args, **kwargs):
+    def __init__(self, policy, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.policy = policy
-        self.sample_per_class = sample_per_class    
     
     def get_samples(self, index, shot):
         cls_idx, sample_idx = self.data[index]
@@ -73,7 +72,7 @@ class LCLEvalDataset(ICLTrainDataset):
         return class_name, context_imgs, test_img
     
 @METRICS.register_module()
-class ICLComputeMetrics(BaseComputeMetrics):
+class LCLComputeMetrics(BaseComputeMetrics):
     def extract_ans(self, string: str):
         try:
             found = string.split("ASSISTANT:")[-1].split("</s>")[0].replace("The answer is", "").replace('there is', '').replace('in the image', '').replace(".", "").strip().lower()

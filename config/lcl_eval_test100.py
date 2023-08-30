@@ -1,4 +1,4 @@
-_base_ = ['_base_/dataset/DEFAULT_TEST_IMAGENET.py', '_base_/model/okapi_v1_7b.py', '_base_/train/eval.py']
+_base_ = ['_base_/dataset/DEFAULT_TEST_IMAGENET.py', '_base_/model/lcl_7b.py', '_base_/train/eval.py']
 
 training_args = dict(
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_eval_exp_unify_mllm/{{fileBasenameNoExtension}}',
@@ -29,7 +29,7 @@ data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={"ImageNet1k_100Class": {'cfg': dataset, 'compute_metric': dict(type='ICLComputeMetrics')}},
+    multitest={"ImageNet1k_100Class": {'cfg': dataset, 'compute_metric': dict(type='LCLComputeMetrics')}},
     compute_metric=None,
 
     # padding collator kwargs

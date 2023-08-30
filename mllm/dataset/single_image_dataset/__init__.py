@@ -14,10 +14,7 @@ from .pure_vqa import PureVQADataset
 from .pope import POPEVQADataset
 from .v3det import V3DetDataset
 from .icl_train import ICLTrainDataset
-from .icl_eval import ICLEvalDataset, ICLComputeMetrics
+from .icl_eval import ICLEvalDataset, LCLComputeMetrics
 from .imagenet1k import (ImageNet1kDatasetTrain, ImageNet1kDatasetEval, \
-    ImageNet1k2WayEval, ImageNet1k2WayCleanEval, ImageNet1k2WayCleanISEKAIEval, ImageNetISEKAI2wayEval)
-from .mini_imagenet import MiniImageNetDatasetEval
-from .business import BusinessDataset
-from .business_vqa import BusinessVQADataset
-from .isekai_qa import ISEKAIVQADataset
+    ImageNet1k2WayEval, ImageNet1k2WayCleanEval)
+from .isekai import ImageNet1k2WayCleanISEKAIEval

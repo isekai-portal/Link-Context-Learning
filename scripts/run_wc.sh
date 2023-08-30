@@ -7,7 +7,7 @@ export LD_LIBRARY_PATH=/mnt/cache/share/cuda-11.7/lib64:$LD_LIBRARY_PATH
 
 name=train_icl_imagenet1k_v13_train_8shot_weight-2
 
-config=config/icl_imagenet1k_v13_train.py
+config=config/lcl_imagenet1k_v13_train.py
 pretrained=/mnt/lustre/share_data/xiechi/misc/to_weichen/llava_pretrain_final19/checkpoint-44000/
 output_dir=/mnt/cache/fanweichen2/Code/unify_mllm/result/$name
 ceph_dir=ty-sdc:s3://ICL/checkpoint/fanweichen2/$name
