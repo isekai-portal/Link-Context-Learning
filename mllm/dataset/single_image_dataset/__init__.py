@@ -13,7 +13,6 @@ from .vqaex import VQAEXDataset
 from .pure_vqa import PureVQADataset
 from .pope import POPEVQADataset
 from .v3det import V3DetDataset
-from .icl_train import ICLTrainDataset
-from .icl_eval import ICLEvalDataset, LCLComputeMetrics
+from .lcl import LCLDataset
 from .imagenet1k import ImageNet1kDatasetTrain, ImageNet1k2WayCleanEval
 from .isekai import ImageNet1k2WayCleanISEKAIEval
