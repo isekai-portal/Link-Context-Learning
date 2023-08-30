@@ -8,7 +8,6 @@ import string
 from inspect import isfunction
 from .icl_train import logger
 from .icl_eval import LCLEvalDataset
-from .imagenet1k import ImageNet1kDatasetEval
 
 from ..root import (
     DATASETS,
