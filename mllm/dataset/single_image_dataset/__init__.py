@@ -14,5 +14,5 @@ from .pure_vqa import PureVQADataset
 from .pope import POPEVQADataset
 from .v3det import V3DetDataset
 from .lcl import LCLDataset
-from .imagenet1k import ImageNet1kDatasetTrain, ImageNet1k2WayCleanEval
+from .imagenet1k import ImageNet1kDatasetTrain, ImageNetTest100Eval2Way
 from .isekai import ImageNet1k2WayCleanISEKAIEval

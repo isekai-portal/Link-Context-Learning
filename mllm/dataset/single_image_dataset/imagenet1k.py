@@ -13,13 +13,12 @@ from copy import deepcopy
 import numpy as np
 import math
 import cv2 as cv
-from .lcl import LCLDataset, logger
+from .lcl import LCLDataset, logger, LABEL_PLACEHOLDER
 from ..root import (
     DATASETS,
     METRICS,
     EXPR_PLACEHOLDER
 )
-LABEL_PLACEHOLDER = "<label>"
 
 @DATASETS.register_module()
 class ImageNet1kDatasetTrain(LCLDataset):   
@@ -347,12 +346,10 @@ class ImageNet1kDatasetTrain(LCLDataset):
         self.cls_idx = None
         self.cls_name = None
         return ret_list
-    
-
 
 
 @DATASETS.register_module()
-class ICLEvalDataset(LCLDataset):
+class ImageNetTest100Eval(LCLDataset):
     def __init__(self, policy, sample_per_class = 0, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.policy = policy
@@ -390,11 +387,8 @@ class ICLEvalDataset(LCLDataset):
         return class_name, context_imgs, test_img
 
 
-
-
-
 @DATASETS.register_module()
-class ImageNet1k2WayCleanEval(ICLEvalDataset):
+class ImageNetTest100Eval2Way(ImageNetTest100Eval):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert len(self.data)%2 == 0

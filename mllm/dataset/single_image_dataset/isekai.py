@@ -6,7 +6,7 @@ import jsonlines
 import random
 import string
 from inspect import isfunction
-from .lcl import LCLDataset, logger
+from .lcl import LCLDataset, logger, LABEL_PLACEHOLDER
 
 from ..root import (
     DATASETS,
@@ -14,7 +14,6 @@ from ..root import (
     IMAGE_PLACEHOLDER,
     EXPR_PLACEHOLDER,
 )
-LABEL_PLACEHOLDER = "<label>"
 
 @DATASETS.register_module()
 class ImageNet1k2WayCleanISEKAIEval(LCLDataset):

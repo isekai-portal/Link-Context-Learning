@@ -18,6 +18,7 @@ from ..root import (
     EXPR_PLACEHOLDER,
     MAPPING_DICT,
 )
+LABEL_PLACEHOLDER = "<label>"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

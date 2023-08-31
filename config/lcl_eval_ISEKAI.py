@@ -1,4 +1,4 @@
-_base_ = ['_base_/dataset/DEFAULT_TEST_IMAGENET.py', '_base_/model/lcl_7b.py', '_base_/train/eval.py']
+_base_ = ['_base_/dataset/DEFAULT_TEST_ISEKAI.py', '_base_/model/lcl_7b.py', '_base_/train/eval.py']
 
 training_args = dict(
     output_dir='/mnt/lustre/share_data/chenkeqin/dummy_eval_exp_unify_mllm/{{fileBasenameNoExtension}}',
@@ -20,7 +20,7 @@ model_args = dict(
 )
 
 dataset=dict(
-    **_base_.IMAGENET1K2WAYCLEANISEKAI_TEST,
+    **_base_.ISEKAI_2WAY,
     policy="policy_v13",
 )
 
