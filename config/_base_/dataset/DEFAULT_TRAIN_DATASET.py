@@ -76,7 +76,7 @@ DEFAULT_TRAIN_DATASET = dict(
         filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
         image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
         template_file=r"{{fileDirname}}/template/ICL.json",
-        policy="policy_jigsaw_v1",
+        policy="policy_jigsaw",
     ),
     **_base_.DEFAULT_TRAIN_GQA_VARIANT,
     **_base_.DEFAULT_TRAIN_CLEVR_VARIANT,

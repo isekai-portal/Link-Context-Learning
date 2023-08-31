@@ -81,86 +81,45 @@ class ImageNet1kDatasetTrain(LCLDataset):
     #v13
     def policy_v13(self, index, shot):
         random_string = None
-        def _convert_qa(question, label, mode, final=False):
+        def _convert_qa(question, label, mode):
             nonlocal random_string
             assert mode in ['cls_negative', 'neighbors']
-            if final:
-                answer = f'there is "{LABEL_PLACEHOLDER}" in the image.'
-            else:
-                answer = f'there is "{LABEL_PLACEHOLDER}" in the image. [END EXAMPLE]'
+
+            answer = f'there is "{LABEL_PLACEHOLDER}" in the image. [END EXAMPLE]'
             if mode == "cls_negative":
                 # current class image, random string or current label
-                if random_string:
-                    #label = random_string
-                    pass
-                else:
+                if not random_string:
                     random_string = ''.join(random.choices(\
                         string.ascii_uppercase, k=random.randint(1,10))).lower()
                 answer = answer.replace(LABEL_PLACEHOLDER, random_string)
             elif mode == "neighbors":
                 answer = answer.replace(LABEL_PLACEHOLDER, label)
-            else:
-                raise NotImplementedError
 
             return question, answer
 
         ret_list = []
         mix_question = '[BEGIN EXAMPLE] What is in the image <image>?'
-        #infer_question = 'What is in the image <image>?'
         infer_question = self.get_template()
-        #shot = random.randint(1, shot)
+
         weight = [math.exp((i+1)/2) for i in range(shot)]
         shot_list = [i+1 for i in range(shot)]
-        chosen = random.choices(shot_list,weight)
-        shot = chosen[0]
-        
-        if random.randint(0, 1):
+        shot = random.choices(shot_list, weight)[0]
+
+        # context sample: current class image + random string
+        for _ in range(shot):
             image, label = self.get_samples(index, mode = 'cls_negative')
+            # convert label to random string
             question, answer = _convert_qa(mix_question, label, mode = 'cls_negative')
-            ret = self.get_ret(image, question = question, answer = answer, conv_mode="causal_v1.0")
+            ret = self.get_ret(image, question = question, answer = answer)
             ret_list.append(ret)
-            shot_p = shot - 1
-            shot_n = shot
-        else:
+        # context sample: neighbor image + neighbor label
+        for _ in range(shot):
             image, label = self.get_samples(index, mode = 'neighbors')
-            question, answer = _convert_qa(mix_question, label, mode = 'neighbors')#use random string
-            ret = self.get_ret(image, question = question, answer = answer, conv_mode="causal_v1.0")
+            question, answer = _convert_qa(mix_question, label, mode = 'neighbors')
+            ret = self.get_ret(image, question = question, answer = answer)
             ret_list.append(ret)
-            shot_p = shot
-            shot_n = shot - 1
-
-        tmp_list = []
-        for _ in range(shot_p):
-            image, label = self.get_samples(index, mode = 'cls_negative')
-            # convert correct label to random string(or not)
-            question, answer = _convert_qa(mix_question, label, mode = 'cls_negative')
-            ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
-            tmp_list.append(ret)
-
-        for _ in range(shot_n):
-            image, label = self.get_samples(index, mode = 'neighbors')
-            question, answer = _convert_qa(mix_question, label, mode = 'neighbors')#use random string
-            ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
-            tmp_list.append(ret)
         
-        random.shuffle(tmp_list)
-        ret_list = ret_list + tmp_list
-
-
-
-
-
-
-
-
-        # context sample: pos A image(text: there is A) + neg B image(text: there is B) + infer A image(label: there is A)
-        for img in sample_meta["pos_imgs"]:
-            ret_list.append(self.get_ret(img, question=QnA["pos_question"], answer=QnA["pos_answer"]))
-        
-        for img in sample_meta["neg_imgs"]:
-            ret_list.append(self.get_ret(img, question=QnA["neg_question"], answer=QnA["neg_answer"]))
         random.shuffle(ret_list)
-
         for i in range(len(ret_list)):
             if i == 0:
                 conv_mode = 'causal_v1.0'
@@ -168,43 +127,15 @@ class ImageNet1kDatasetTrain(LCLDataset):
                 conv_mode = 'hypnotized_ans_v1.0'
             ret_list[i]['mode'] = conv_mode
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        mode = random.choice(["cls_negative","neighbors"])
-        if mode == "cls_negative":
-            question = infer_question
-            # need correct label and optional convert to random string
-            image, label = self.get_samples(index, mode = "cls_negative")
-            question, answer = _convert_qa(question, label, mode = "cls_negative", final=True)
-        elif mode == "neighbors":
-            question = infer_question
-            image, label = self.get_samples(index, mode = mode)
-            question, answer = _convert_qa(question, label, mode = mode, final=True)#use random string
+        mode = random.choice(["cls_negative", "neighbors"])
+        question = infer_question
+        image, label = self.get_samples(index, mode = mode)
+        question, answer = _convert_qa(question, label, mode = mode)
+        answer = answer.replace(" [END EXAMPLE]", '')
 
         ret = self.get_ret(image, question = question, answer = answer, conv_mode="final_v1.0")
         ret_list.append(ret)
+
         random_string = None
         self.cls_neg_label = None
         self.cls_idx = None
@@ -370,7 +301,7 @@ class ImageNet1kDatasetTrain(LCLDataset):
         return ret_list
 
     #jigsaw_v1
-    def policy_jigsaw_v1(self, index, shot):
+    def policy_jigsaw(self, index, shot):
         ret_list = []
         mix_question = '[BEGIN EXAMPLE] This image <image> is a puzzle piece.'
         infer_question = 'Using the puzzle pieces provided above to piece together this image <image>, and provide the coordinates of each piece on the image coordinate system in order.'
