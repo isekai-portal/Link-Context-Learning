@@ -78,8 +78,7 @@ class ImageNet1kDatasetTrain(LCLDataset):
         assert func is not None
         return func(index, shot)
 
-    #v13
-    def policy_v13(self, index, shot):
+    def policy_2way_weight(self, index, shot):
         random_string = None
         def _convert_qa(question, label, mode):
             nonlocal random_string
@@ -142,11 +141,10 @@ class ImageNet1kDatasetTrain(LCLDataset):
         self.cls_name = None
         return ret_list
 
-    #v9_update
     def policy_v13_update(self, index, shot):
         random_string = None
         random_name_list = []
-        def _convert_qa(question, label, mode, empty_mode=False, final=False, wrong_injection=False, order_list=None):
+        def _convert_qa(question, label, mode, empty_mode=False, final=False, order_list=None):
             nonlocal random_string
             nonlocal random_name_list
             assert mode in ['cls_negative', 'neighbors']
@@ -214,7 +212,7 @@ class ImageNet1kDatasetTrain(LCLDataset):
             ori_list = []
             for _ in range(shot):
                 image, label = self.get_samples(index, mode = 'cls_negative')
-                question, answer = _convert_qa(mix_question, label, mode = 'cls_negative',empty_mode=True)
+                question, answer = _convert_qa(mix_question, label, mode = 'cls_negative', empty_mode=True)
                 ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
                 ret_list.append(ret)
                 ori_list.append(0)
@@ -242,25 +240,16 @@ class ImageNet1kDatasetTrain(LCLDataset):
             is_empty = True
         else:
             ori_list = []
-            do_inject = random.choice([True,False])
-            if do_inject:
-                inject_positive = True
-                inject_negative = True
-            else:
-                inject_positive = False
-                inject_negative = False
             for _ in range(shot):
                 image, label = self.get_samples(index, mode = 'cls_negative')
-                question, answer = _convert_qa(mix_question, label, mode = 'cls_negative',wrong_injection=inject_positive)
-                inject_positive=False
+                question, answer = _convert_qa(mix_question, label, mode = 'cls_negative')
                 ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
                 ret_list.append(ret)
                 ori_list.append(0)
 
             for _ in range(shot):
                 image, label = self.get_samples(index, mode = 'neighbors')
-                question, answer = _convert_qa(mix_question, label, mode = 'neighbors',wrong_injection=inject_negative)
-                inject_negative=False
+                question, answer = _convert_qa(mix_question, label, mode = 'neighbors')
                 ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
                 ret_list.append(ret)
                 ori_list.append(1)
@@ -476,7 +465,7 @@ class ImageNetTest100Eval2Way(ImageNetTest100Eval):
         ret_list.append(self.get_ret(sample_meta["infer_img"], question=QnA["infer_question"], answer=QnA["infer_answer"], conv_mode="final_v1.0")) 
         return ret_list
 
-    def policy_v13(self, cls_name_pos, cls_name_neg):
+    def policy_2way(self, cls_name_pos, cls_name_neg):
         pos_question = '[BEGIN EXAMPLE] What is in the image <image>?'
         neg_question = pos_question
         infer_question = f'Based on the previous examples, what is in the image <image>?'
@@ -484,7 +473,7 @@ class ImageNetTest100Eval2Way(ImageNetTest100Eval):
         answer = f'there is "{LABEL_PLACEHOLDER}" in the image. [END EXAMPLE]'
         pos_answer = answer.replace(LABEL_PLACEHOLDER, cls_name_pos)
         neg_answer = answer.replace(LABEL_PLACEHOLDER, cls_name_neg)
-        infer_answer = pos_answer
+        infer_answer = pos_answer.replace(" [END EXAMPLE]", "")
 
         return dict(
             pos_question = pos_question, 

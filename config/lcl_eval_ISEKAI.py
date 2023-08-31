@@ -21,7 +21,7 @@ model_args = dict(
 
 dataset=dict(
     **_base_.ISEKAI_2WAY,
-    policy="policy_v13",
+    policy="policy_2way",
 )
 
 data_args = dict(

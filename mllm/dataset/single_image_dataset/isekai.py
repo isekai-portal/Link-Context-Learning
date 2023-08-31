@@ -78,7 +78,7 @@ class ISEKAIEval2Way(ISEKAIEval):
         ret_list.append(self.get_ret(sample_meta["infer_img"], question=QnA["infer_question"], answer=QnA["infer_answer"], conv_mode="final_v1.0")) 
         return ret_list
 
-    def policy_v13(self, cls_name_pos, cls_name_neg, label_name):
+    def policy_2way(self, cls_name_pos, cls_name_neg, label_name):
         pos_question = '[BEGIN EXAMPLE] What is in the image <image>?'
         neg_question = pos_question
         infer_question = f'Based on the previous examples, what is in the image <image>?'

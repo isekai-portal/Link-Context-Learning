@@ -3,7 +3,7 @@ _base_ = ['_base_/dataset/DEFAULT_TRAIN_IMAGENET.py', '_base_/model/lcl_7b.py', 
 data_args = dict(
     train=dict(
     **_base_.IMAGENET1K_TRAIN,
-    policy="policy_v13",
+    policy="policy_2way_weight",
     ),
     validation=None,
     test=None,
