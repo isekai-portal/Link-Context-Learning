@@ -16,7 +16,7 @@ from ..root import (
 )
 
 @DATASETS.register_module()
-class ImageNet1k2WayCleanISEKAIEval(LCLDataset):
+class ISEKAIEval(LCLDataset):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert len(self.data)%2 == 0
@@ -47,13 +47,18 @@ class ImageNet1k2WayCleanISEKAIEval(LCLDataset):
         return sample_meta
 
     def __get_icl_item__(self, index, shot):
+        raise NotImplementedError
+
+
+@DATASETS.register_module()
+class ISEKAIEval2Way(ISEKAIEval):
+
+    def __get_icl_item__(self, index, shot):
         func = getattr(self, self.policy)
         assert func is not None
         
         sample_meta = self.get_samples(index, shot)
-
         QnA = func(sample_meta["pos_cls_name"],sample_meta["neg_cls_name"],sample_meta["label_name"])
-        
         ret_list = []
         # context sample: pos A image(text: there is A) + neg B image(text: there is B) + infer A image(label: there is A)
         for img in sample_meta["pos_imgs"]:
@@ -78,11 +83,10 @@ class ImageNet1k2WayCleanISEKAIEval(LCLDataset):
         neg_question = pos_question
         infer_question = f'Based on the previous examples, what is in the image <image>?'
 
-        #answer = f'there is {LABEL_PLACEHOLDER} in the image'
         answer = f'there is "{LABEL_PLACEHOLDER}" in the image. [END EXAMPLE]'
         pos_answer = answer.replace(LABEL_PLACEHOLDER, cls_name_pos)
         neg_answer = answer.replace(LABEL_PLACEHOLDER, cls_name_neg)
-        infer_answer = answer.replace(LABEL_PLACEHOLDER,label_name)
+        infer_answer = answer.replace(LABEL_PLACEHOLDER, label_name).replace(' [END EXAMPLE]', '')
 
         return dict(
             pos_question = pos_question, 
