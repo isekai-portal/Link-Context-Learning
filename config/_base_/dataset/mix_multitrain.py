@@ -6,7 +6,7 @@ data_args = dict(
         type='InterleaveDateset',
         cfgs=[
             {{_base_.DEFAULT_TRAIN_DATASET.imagenet_v13_update}},
-            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_jigsaw_v1}},
+            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_jigsaw}},
             dict(
                 type='SubSet',
                 portion=1/20,

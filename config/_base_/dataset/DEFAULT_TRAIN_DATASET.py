@@ -71,7 +71,7 @@ DEFAULT_TRAIN_DATASET = dict(
         template_file=r"{{fileDirname}}/template/ICL.json",
         policy="policy_v13_update",
     ),
-    imagenet_jigsaw_v1=dict(
+    imagenet_jigsaw=dict(
         type='ImageNet1kDatasetTrain',
         filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
         image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',

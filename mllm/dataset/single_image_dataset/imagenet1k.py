@@ -46,24 +46,24 @@ class ImageNet1kDatasetTrain(LCLDataset):
 
         if mode == "cls_negative":
             # current class image, random neighbor label
-            if self.cls_neg_label:
-                label = self.cls_neg_label
+            if self.neg_label:
+                label = self.neg_label
             else:
                 metas = random.choice(neighbors)
                 label = metas[1].lower()
-                self.cls_neg_label = label
+                self.neg_label = label
             sample = random.choice(samples)
         elif mode == "neighbors":
-            if self.cls_idx:
-                item_neighbor = self.get_raw_item(self.cls_map[self.cls_idx])
+            if self.neighbor_idx:
+                item_neighbor = self.get_raw_item(self.cls_map[self.neighbor_idx])
                 samples = item_neighbor['samples']
                 sample = random.choice(samples)
-                label = self.cls_name.lower()
+                label = self.neighbor_label.lower()
             else:
                 sample_weight = list(range(len(neighbors), 0, -1))
                 metas = random.choices(neighbors, weights=sample_weight)[0]
-                self.cls_idx = metas[0]
-                self.cls_name = metas[1]
+                self.neighbor_idx = metas[0]
+                self.neighbor_label = metas[1]
                 label = metas[1].lower()
                 sample = metas[2]
         else:
@@ -86,7 +86,7 @@ class ImageNet1kDatasetTrain(LCLDataset):
 
             answer = f'there is "{LABEL_PLACEHOLDER}" in the image. [END EXAMPLE]'
             if mode == "cls_negative":
-                # current class image, random string or current label
+                # set random string as answer
                 if not random_string:
                     random_string = ''.join(random.choices(\
                         string.ascii_uppercase, k=random.randint(1,10))).lower()
@@ -104,20 +104,13 @@ class ImageNet1kDatasetTrain(LCLDataset):
         shot_list = [i+1 for i in range(shot)]
         shot = random.choices(shot_list, weight)[0]
 
-        # context sample: current class image + random string
-        for _ in range(shot):
-            image, label = self.get_samples(index, mode = 'cls_negative')
-            # convert label to random string
-            question, answer = _convert_qa(mix_question, label, mode = 'cls_negative')
-            ret = self.get_ret(image, question = question, answer = answer)
-            ret_list.append(ret)
-        # context sample: neighbor image + neighbor label
-        for _ in range(shot):
-            image, label = self.get_samples(index, mode = 'neighbors')
-            question, answer = _convert_qa(mix_question, label, mode = 'neighbors')
-            ret = self.get_ret(image, question = question, answer = answer)
-            ret_list.append(ret)
-        
+        for mode in ['cls_negative', 'neighbors']:
+            for _ in range(shot):
+                image, label = self.get_samples(index, mode = mode)
+                question, answer = _convert_qa(mix_question, label, mode = mode)
+                ret = self.get_ret(image, question = question, answer = answer)
+                ret_list.append(ret)
+
         random.shuffle(ret_list)
         for i in range(len(ret_list)):
             if i == 0:
@@ -136,9 +129,9 @@ class ImageNet1kDatasetTrain(LCLDataset):
         ret_list.append(ret)
 
         random_string = None
-        self.cls_neg_label = None
-        self.cls_idx = None
-        self.cls_name = None
+        self.neg_label = None
+        self.neighbor_idx = None
+        self.neighbor_label = None
         return ret_list
 
     def policy_v13_update(self, index, shot):
@@ -153,26 +146,17 @@ class ImageNet1kDatasetTrain(LCLDataset):
                     answer = f'{order_list}.'+'_'+random_string
                 else:
                     answer = f'There is "{LABEL_PLACEHOLDER}" in the image.'
-
                     if mode == "cls_negative":
                         # current class image, random string or current label
-                        if random_string:
-                            #label = random_string
-                            pass
-                        else:
+                        if not random_string:
                             random_string = ''.join(random.choices(\
                                 string.ascii_uppercase, k=random.randint(1,10))).lower()
                         answer = answer.replace(LABEL_PLACEHOLDER, random_string)
                     elif mode == "neighbors":
                         answer = answer.replace(LABEL_PLACEHOLDER, label)
-                    else:
-                        raise NotImplementedError
             else:
                 if empty_mode:
-                    if random_string:
-                        #label = random_string
-                        pass
-                    else:
+                    if not random_string:
                         random_string = ''.join(random.choices(\
                             string.ascii_uppercase, k=random.randint(1,10))).lower()
                     name = ''.join(random.choices(\
@@ -188,19 +172,15 @@ class ImageNet1kDatasetTrain(LCLDataset):
 
                     if mode == "cls_negative":
                         # current class image, random string or current label
-                        if random_string:
-                            #label = random_string
-                            pass
-                        else:
+                        if not random_string:
                             random_string = ''.join(random.choices(\
                                 string.ascii_uppercase, k=random.randint(1,10))).lower()
                         answer = answer.replace(LABEL_PLACEHOLDER, random_string)
                     elif mode == "neighbors":
                         answer = answer.replace(LABEL_PLACEHOLDER, label)
-                    else:
-                        raise NotImplementedError
 
             return question, answer
+        
         ret_list = []
         mix_question = '[BEGIN EXAMPLE] Tell me something about this image <image>.'
         infer_question = self.get_template()
@@ -219,12 +199,12 @@ class ImageNet1kDatasetTrain(LCLDataset):
 
             for _ in range(shot):
                 image, label = self.get_samples(index, mode = 'neighbors')
-                question, answer = _convert_qa(mix_question, label, mode = 'neighbors',empty_mode=True)
+                question, answer = _convert_qa(mix_question, label, mode = 'neighbors', empty_mode=True)
                 ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
                 ret_list.append(ret)
                 ori_list.append(1)
 
-            tmp = list(zip(ret_list,ori_list,random_name_list))
+            tmp = list(zip(ret_list, ori_list, random_name_list))
             random.shuffle(tmp)
             ret_list,ori_list,name_list=list(zip(*tmp))
             ret_list = list(ret_list)
@@ -239,54 +219,35 @@ class ImageNet1kDatasetTrain(LCLDataset):
             idx_n = list(name_list[n_idx])
             is_empty = True
         else:
-            ori_list = []
-            for _ in range(shot):
-                image, label = self.get_samples(index, mode = 'cls_negative')
-                question, answer = _convert_qa(mix_question, label, mode = 'cls_negative')
-                ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
-                ret_list.append(ret)
-                ori_list.append(0)
-
-            for _ in range(shot):
-                image, label = self.get_samples(index, mode = 'neighbors')
-                question, answer = _convert_qa(mix_question, label, mode = 'neighbors')
-                ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
-                ret_list.append(ret)
-                ori_list.append(1)
-
             is_empty = False
+
+            ori_list = []
+            for mode in ['cls_negative', 'neighbors']:
+                for _ in range(shot):
+                    image, label = self.get_samples(index, mode = mode)
+                    question, answer = _convert_qa(mix_question, label, mode = mode)
+                    ret = self.get_ret(image, question = question, answer = answer, conv_mode="hypnotized_ans_v1.0")
+                    ret_list.append(ret)
+                    ori_list.append(0 if mode == 'cls_negative' else 1)
+
+            
         ret_list[0]['mode'] = 'causal_v1.0'
 
+        # query sample
+        mode = random.choice(["cls_negative", "neighbors"])
+        order_list = None
         if is_empty:
             infer_question = category_question
-            mode = random.choice(["cls_negative","neighbors"])
-            if mode == "cls_negative":
-                question = infer_question
-                # need correct label and optional convert to random string
-                image, label = self.get_samples(index, mode = mode)
-                question, answer = _convert_qa(question, label, mode = mode, empty_mode=is_empty ,final=True, order_list=str(idx_p))
-            elif mode == "neighbors":
-                question = infer_question
-                image, label = self.get_samples(index, mode = mode)
-                question, answer = _convert_qa(question, label, mode = mode, empty_mode=is_empty, final=True, order_list=str(idx_n))
-        else:
-            mode = random.choice(["cls_negative","neighbors"])
-            if mode == "cls_negative":
-                question = infer_question
-                # need correct label and optional convert to random string
-                image, label = self.get_samples(index, mode = mode)
-                question, answer = _convert_qa(question, label, mode = mode, empty_mode=is_empty ,final=True)
-            elif mode == "neighbors":
-                question = infer_question
-                image, label = self.get_samples(index, mode = mode)
-                question, answer = _convert_qa(question, label, mode = mode, empty_mode=is_empty, final=True)
+            order_list = str(idx_n) if mode == "cls_negative" else str(idx_p)
 
+        image, label = self.get_samples(index, mode = mode)
+        question, answer = _convert_qa(infer_question, label, mode = mode, empty_mode=is_empty, final=True, order_list=order_list)
         ret = self.get_ret(image, question = question, answer = answer, conv_mode="final_v1.0")
         ret_list.append(ret)
         random_string = None
-        self.cls_neg_label = None
-        self.cls_idx = None
-        self.cls_name = None
+        self.neg_label = None
+        self.neighbor_idx = None
+        self.neighbor_label = None
         return ret_list
 
     #jigsaw_v1
@@ -294,7 +255,6 @@ class ImageNet1kDatasetTrain(LCLDataset):
         ret_list = []
         mix_question = '[BEGIN EXAMPLE] This image <image> is a puzzle piece.'
         infer_question = 'Using the puzzle pieces provided above to piece together this image <image>, and provide the coordinates of each piece on the image coordinate system in order.'
-        #infer_question = self.get_template()
 
         tiles_list = [4,6,9,12,16]
         combination_dict = {4:[[2,2]],6:[[2,3],[3,2]],9:[[3,3]],12:[[3,4],[4,3]],16:[[4,4]]}
@@ -338,7 +298,6 @@ class ImageNet1kDatasetTrain(LCLDataset):
         random.shuffle(tmp)
         tile,meta_order_list=list(zip(*tmp))
         
-
         for i in range(len(tile)):
             answer = '[END EXAMPLE]'
             question = mix_question
@@ -353,10 +312,9 @@ class ImageNet1kDatasetTrain(LCLDataset):
         ret = self.get_ret(image, question = infer_question, answer = answer, conv_mode="final_v1.0")
         ret_list.append(ret)
 
-        random_string = None
-        self.cls_neg_label = None
-        self.cls_idx = None
-        self.cls_name = None
+        self.neg_label = None
+        self.neighbor_idx = None
+        self.neighbor_label = None
         return ret_list
 
 
