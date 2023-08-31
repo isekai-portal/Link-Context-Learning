@@ -52,7 +52,6 @@ class SingleImageConvDatasetMixin:
 
     def __get_icl_item__(self, item, do_mask=None, debug_mode=False, train_mode='train', mode='common', eval_icl=False) -> Dict[str, Any]:
         # get_icl_item
-        #item = self.get_raw_item(index)
         image: Image.Image = item.get('image', None)
         target: Dict[str, Any] = item.get('target', None)
         raw_conv: List[Dict[str, Any]] = item['conversations']
@@ -111,56 +110,48 @@ class SingleImageConvDatasetMixin:
         return res
 
     def __getitem_icl__(self, index=None, debug_mode=False, data=None) -> Dict[str, Any]:
-        # getitem
-        #dict_keys(['input_ids', 'attention_mask', 'labels', 'image'])
-        update_keys = ['input_ids', 'attention_mask', 'labels']
-        ret_dict = {'image':[]}
-        #idx_list = [item for item in range(index, index+5)]
         if data is None:
             dict_list = self.get_raw_icl_item(index,self.shot)
         else:
             dict_list = data
+
+        ret_dict = {'image':[]}
+        update_keys = ['input_ids', 'attention_mask', 'labels']
+
         if self.mode != 'train':
             for i in range(len(dict_list)):
                 item = dict_list[i]
+                conv_mode = item.get('mode', 'icl')
 
-                conv_mode = 'icl'
-                if 'mode' in item.keys():
-                    conv_mode = item['mode']
                 if i != len(dict_list) - 1:
-                    sub_dict = self.__get_icl_item__(item,mode=conv_mode, eval_icl=True)
+                    sub_dict = self.__get_icl_item__(item, mode=conv_mode, eval_icl=True)
                 else:
-                    sub_dict = self.__get_icl_item__(item,mode=conv_mode)
+                    sub_dict = self.__get_icl_item__(item, mode=conv_mode)
 
                 ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
-                
-                for k in update_keys:
-                    if k not in ret_dict.keys():
-                        ret_dict[k] = sub_dict[k]
 
-                    else:
-                        ret_valid = ret_dict[k][:-1]
-                        sub_valid = sub_dict[k]
-                        if k != 'attention_mask':
-                            if k == 'input_ids':
-                                ret_valid = ret_dict[k][:-1]
+                # concatenate multi-context
+                if i == 0:
+                    for k in update_keys:
+                        value = sub_dict[k][:-1]
+                        ret_dict[k] = value
+                else:
+                    for k in update_keys:
+                        # remove the sep2 symbolic for each context (except the last round)
+                        if i != len(dict_list) -1:
+                            value = sub_dict[k][:-1]
+                        else:
+                            value = sub_dict[k]
+                            
+                        ret_dict[k] = torch.cat([ret_dict[k], value], dim = 0)
 
-                        # if k == 'labels' and i == len(dict_list)-1:
-                        #     ret_valid = torch.zeros_like(ret_valid) - 100
-                        #     ret_valid[:] = -100
-
-                        ret_dict[k] = torch.cat([ret_valid,sub_valid],dim=0)
             ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
         else:
             for i in range(len(dict_list)):
                 item = dict_list[i]
+                conv_mode = item.get('mode', 'icl')
 
-                conv_mode = 'icl'
-                if 'mode' in item.keys():
-                    conv_mode = item['mode']
-
-                sub_dict = self.__get_icl_item__(item,mode=conv_mode)
-
+                sub_dict = self.__get_icl_item__(item, mode=conv_mode)
                 ret_dict['image'].append(sub_dict['image'].unsqueeze(0))
                 
                 # concatenate multi-context
@@ -168,9 +159,6 @@ class SingleImageConvDatasetMixin:
                     for k in update_keys:
                         value = sub_dict[k][:-1]
                         ret_dict[k] = value
-                    # # mask the first context label
-                    #     if k == "labels":
-                    #         ret_dict[k][:] = IGNORE_INDEX
                 else:
                     for k in update_keys:
                         # remove the sep2 symbolic for each context (except the last round)
@@ -187,7 +175,6 @@ class SingleImageConvDatasetMixin:
             ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
 
         print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids']).replace('<im_patch> ','')}")
-
         if not hasattr(self, '_printed_sample'):
 
             print('mask: ',ret_dict['attention_mask'].shape)
@@ -398,8 +385,8 @@ class SingleImageConvDatasetMixin:
             print(f"=================== {self.mode} sample ===================", flush=True)
             print(f"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}")
             print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}")
-            print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids'])}")
-            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels)}")
+            print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids']).replace('<im_patch> ','')}")
+            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels).replace('<im_patch> ','')}")
             if 'image' in ret_dict and ret_dict['image'] is not None:
                 image = ret_dict['image']
                 if isinstance(image, torch.Tensor):

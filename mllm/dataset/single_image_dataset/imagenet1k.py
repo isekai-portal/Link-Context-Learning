@@ -55,16 +55,13 @@ class ImageNet1kDatasetTrain(LCLDataset):
             sample = random.choice(samples)
         elif mode == "neighbors":
             if self.cls_idx:
-                item_neighbor = self.get_raw_item(int(self.MAPPING_CLASS_IDX[self.cls_idx]))
-                samples_neighbor = item_neighbor['samples']
-                samples = samples_neighbor
+                item_neighbor = self.get_raw_item(self.cls_map[self.cls_idx])
+                samples = item_neighbor['samples']
                 sample = random.choice(samples)
                 label = self.cls_name.lower()
             else:
-                sample_weight = list(range(len(neighbors),0,-1))
-                metas = random.choices(neighbors,weights=sample_weight)
-                metas = metas[0]
-
+                sample_weight = list(range(len(neighbors), 0, -1))
+                metas = random.choices(neighbors, weights=sample_weight)[0]
                 self.cls_idx = metas[0]
                 self.cls_name = metas[1]
                 label = metas[1].lower()
