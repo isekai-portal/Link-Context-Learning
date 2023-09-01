@@ -1,11 +1,16 @@
 _base_ = ['DEFAULT_TRAIN_DATASET.py']
 
+imagenet_2way_weight = dict(
+    **_base_.DEFAULT_TRAIN_DATASET.imagenet1k_train,
+    policy="policy_2way_weight",
+)
+
 data_args = dict(
     #
     train=dict(
         type='InterleaveDateset',
         cfgs=[
-            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_v13_update}},
+            {{imagenet_2way_weight}},
             dict(
                 type='SubSet',
                 portion=1/20,

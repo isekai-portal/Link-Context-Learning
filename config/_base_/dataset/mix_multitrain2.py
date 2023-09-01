@@ -1,12 +1,22 @@
 _base_ = ['DEFAULT_TRAIN_DATASET.py']
 
+
+imagenet_ref_or_weight = dict(
+    **_base_.DEFAULT_TRAIN_DATASET.imagenet1k_train,
+    policy="policy_2way_ref_or_weight",
+)
+imagenet_jigsaw = dict(
+    **_base_.DEFAULT_TRAIN_DATASET.imagenet1k_train,
+    policy="policy_jigsaw",
+)
+
 data_args = dict(
     #
     train=dict(
         type='InterleaveDateset',
         cfgs=[
-            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_v13_update}},
-            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_jigsaw}},
+            {{imagenet_ref_or_weight}},
+            {{imagenet_jigsaw}},
             dict(
                 type='SubSet',
                 portion=1/20,

@@ -64,20 +64,6 @@ DEFAULT_TRAIN_DATASET = dict(
         image_folder=r'sdc:s3://mm_data/v3det/',
         template_file=r"{{fileDirname}}/template/ICL.json",
     ),
-    imagenet_v13_update=dict(
-        type='ImageNet1kDatasetTrain',
-        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
-        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
-        template_file=r"{{fileDirname}}/template/ICL.json",
-        policy="policy_v13_update",
-    ),
-    imagenet_jigsaw=dict(
-        type='ImageNet1kDatasetTrain',
-        filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/train900_pairs.jsonl',
-        image_folder=r'ty1424:s3://production-public-imagenet/ImageNet/unzip/ILSVRC/Data/CLS-LOC/',
-        template_file=r"{{fileDirname}}/template/ICL.json",
-        policy="policy_jigsaw",
-    ),
     **_base_.DEFAULT_TRAIN_GQA_VARIANT,
     **_base_.DEFAULT_TRAIN_CLEVR_VARIANT,
     **_base_.DEFAULT_TRAIN_POINT_VARIANT,
@@ -86,5 +72,5 @@ DEFAULT_TRAIN_DATASET = dict(
     **_base_.DEFAULT_TRAIN_VQAv2_VARIANT,
     **_base_.DEFAULT_TRAIN_VQAEX_VARIANT,
     **_base_.DEFAULT_TRAIN_V3DET_VARIANT,
-    **_base_.IMAGENET1K_TRAIN,
+    **_base_.DEFAULT_TRAIN_IMAGENET1K_VARIANT,
 )
