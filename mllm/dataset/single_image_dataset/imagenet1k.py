@@ -21,6 +21,9 @@ from ..root import (
     EXPR_PLACEHOLDER
 )
 
+def get_random_string():
+    return ''.join(random.choices(string.ascii_uppercase, k=random.randint(1,10))).lower()
+
 @DATASETS.register_module()
 class ImageNet1kDatasetTrain(LCLDataset):
     def __init__(self, policy: str, *args, **kwargs):
@@ -88,8 +91,7 @@ class ImageNet1kDatasetTrain(LCLDataset):
             if mode == "cls_negative":
                 # set random string as answer
                 if not random_string:
-                    random_string = ''.join(random.choices(\
-                        string.ascii_uppercase, k=random.randint(1,10))).lower()
+                    random_string = get_random_string()
                 answer = answer.replace(LABEL_PLACEHOLDER, random_string)
             elif mode == "neighbors":
                 answer = answer.replace(LABEL_PLACEHOLDER, label)
@@ -130,21 +132,7 @@ class ImageNet1kDatasetTrain(LCLDataset):
         ret_list = self.policy_2way_weight(index, shot)
         return ret_list
 
-    def policy_2way_update(self, index, shot):
-        if random.randint(0, 1):
-            ret_list = self.policy_2way_weight(index, shot)
-
-            mix_question = '[BEGIN EXAMPLE] Tell me something about this image <image>.'
-            for i in range(len(ret_list)):
-                if i != len(ret_list) -1:
-                    ret_list[i]['conversations'][0]['value'] = mix_question
-        else:
-            pass
-
-        return ret_list
-
-
-    def policy_v13_update(self, index, shot):
+    def policy_2way_ref(self, index, shot):
         random_string = None
         random_name_list = []
         def _convert_answer(mode, final=False, order_list=None):
@@ -152,17 +140,12 @@ class ImageNet1kDatasetTrain(LCLDataset):
             nonlocal random_name_list
             assert mode in ['cls_negative', 'neighbors']
             if final:
-                answer = f'{order_list}.'+'_'+random_string
+                answer = f'{order_list}.' + '_' + random_string
             else:
                 if not random_string:
-                    random_string = ''.join(random.choices(\
-                        string.ascii_uppercase, k=random.randint(1,10))).lower()
-                name = ''.join(random.choices(\
-                            string.ascii_uppercase, k=random.randint(1,10))).lower()
-                while name in random_name_list:
-                    name = ''.join(random.choices(\
-                                string.ascii_uppercase, k=random.randint(1,10))).lower()
-                name = name+'_'+random_string
+                    random_string = get_random_string()
+                
+                name = get_random_string() +'_' + random_string
                 random_name_list.append(name)
                 answer = f'The reference name of this image is "{name}". [END EXAMPLE]'
 
@@ -170,11 +153,9 @@ class ImageNet1kDatasetTrain(LCLDataset):
         
         ret_list = []
         mix_question = '[BEGIN EXAMPLE] Tell me something about this image <image>.'
-        infer_question = self.get_template()
-        category_question = 'Which images in the previous example are in the same category as this image <image>? (Provide the answer in order as list)'
+        infer_question = 'Which images in the previous example are in the same category as this image <image>? (Provide the answer in order as list)'
 
         shot = random.randint(3, shot)
-        #empty mode
         ori_list = []
         for mode in ['cls_negative', 'neighbors']:
             for _ in range(shot):
@@ -184,25 +165,24 @@ class ImageNet1kDatasetTrain(LCLDataset):
                 ret_list.append(ret)
                 ori_list.append(0 if mode == 'cls_negative' else 1)
 
+        # combine and shuffle
         tmp = list(zip(ret_list, ori_list, random_name_list))
         random.shuffle(tmp)
-        ret_list,ori_list,name_list=list(zip(*tmp))
+        ret_list, ori_list, name_list = list(zip(*tmp))
         ret_list = list(ret_list)
         ori_list = list(ori_list)
-        name_list = np.array(list(name_list))
+        name_list = list(name_list)
+        ret_list[0]['mode'] = 'causal_v1.0'
 
-        #ori_seq = np.arange(len(ori_list))
-        p_idx = np.array(ori_list)==0
+        name_list = np.array(name_list)
+        p_idx = np.array(ori_list) == 0
         idx_p = list(name_list[p_idx])
 
-        n_idx = np.array(ori_list)==1
+        n_idx = np.array(ori_list) == 1
         idx_n = list(name_list[n_idx])
-
-        ret_list[0]['mode'] = 'causal_v1.0'
 
         # query sample
         mode = random.choice(["cls_negative", "neighbors"])
-        infer_question = category_question
         order_list = str(idx_n) if mode == "cls_negative" else str(idx_p)
 
         image, label = self.get_samples(index, mode = mode)
@@ -215,7 +195,19 @@ class ImageNet1kDatasetTrain(LCLDataset):
         self.neighbor_label = None
         return ret_list
 
-    #jigsaw_v1
+    def policy_2way_ref_or_weight(self, index, shot):
+        if random.randint(0, 1):
+            ret_list = self.policy_2way_weight(index, shot)
+
+            mix_question = '[BEGIN EXAMPLE] Tell me something about this image <image>.'
+            for i in range(len(ret_list)):
+                if i != len(ret_list) -1:
+                    ret_list[i]['conversations'][0]['value'] = mix_question
+        else:
+            ret_list = self.policy_2way_ref(index, shot)
+
+        return ret_list
+
     def policy_jigsaw(self, index, shot):
         ret_list = []
         mix_question = '[BEGIN EXAMPLE] This image <image> is a puzzle piece.'
