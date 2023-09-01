@@ -5,12 +5,6 @@ from .llava_process_function import (
     LlavaTextProcessV2,
 )
 
-from .otter_process_function import (
-    OtterConvProcess,
-    OtterImageProcess,
-    OtterTextProcess
-)
-
 from .box_process_function import (
     BoxFormatProcess,
     BoxFormatter,

@@ -1,8 +1,3 @@
-import imp
-from msilib.schema import Error
-import sys
-import logging
-import warnings
 import os
 import os.path as osp
 import jsonlines
@@ -28,17 +23,22 @@ def get_random_string():
 class ImageNet1kDatasetTrain(LCLDataset):
     def __init__(self, policy: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.neg_label = None
+        self.neighbor_idx = None
+        self.neighbor_label = None
         self.policy = policy
         self.cls_map = self.get_cls_map()
-
+    
     def get_cls_map(self):
         # Map origin ImageNet1k class_id to Train900 index
+        cls_map = {}
         for id, item in enumerate(self.data):
             cls_id = item["class_id"]
-            if cls_id not in self.cls_map.keys():
-                self.cls_map[cls_id] = id
+            if cls_id not in cls_map.keys():
+                cls_map[cls_id] = id
             else:
                 logger.warning("Class id conflict.")
+        return cls_map
 
     def get_samples(self, index, mode="cls_negative"):
         assert mode in ['cls_negative', 'neighbors']
@@ -105,7 +105,7 @@ class ImageNet1kDatasetTrain(LCLDataset):
             for _ in range(shot):
                 image, label = self.get_samples(index, mode = mode)
                 answer = _convert_answer(label, mode = mode)
-                ret = self.get_ret(image, question = mix_question, answer = answer, conv_mode = 'hypnotized_ans_v1')
+                ret = self.get_ret(image, question = mix_question, answer = answer, conv_mode = 'hypnotized_ans_v1.0')
                 ret_list.append(ret)
         random.shuffle(ret_list)
         ret_list[0]['mode'] = 'causal_v1.0'

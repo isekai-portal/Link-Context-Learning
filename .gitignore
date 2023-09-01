@@ -42,4 +42,3 @@ run_debug.sh
 run_ty.sh
 transform.ipynb
 gradio_cached_examples
-gradio_cached_examples_debug
