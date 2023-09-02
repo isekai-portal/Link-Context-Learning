@@ -26,5 +26,5 @@ data_args = dict(
 
 training_args = dict(
     num_train_epochs=25,
-    save_strategy='no'
+    save_strategy='steps'
 )

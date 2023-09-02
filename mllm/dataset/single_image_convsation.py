@@ -12,7 +12,7 @@ from mllm.dataset.process_function.llava_process_function import IGNORE_INDEX
 from .root import IMAGE_PLACEHOLDER, BOXES_PLACEHOLDER
 from ..conversation import Conversation, get_conv_template
 from ..utils import post_process_generate_ids
-
+import torch.distributed as dist
 
 class SingleImageConvDatasetMixin:
 
@@ -174,24 +174,23 @@ class SingleImageConvDatasetMixin:
 
             ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
 
-        print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids']).replace('<im_patch> ','')}")
-        if not hasattr(self, '_printed_sample'):
+        if not hasattr(self, '_printed_sample') and dist.get_rank() == 0:
 
-            print('mask: ',ret_dict['attention_mask'].shape)
-            print('labels: ',ret_dict['labels'].shape)
-            print('input_ids: ',ret_dict['input_ids'].shape)
-            print('image: ',ret_dict['image'].shape)
-
+            print('mask: ', ret_dict['attention_mask'].shape)
+            print('labels: ', ret_dict['labels'].shape)
+            print('input_ids: ', ret_dict['input_ids'].shape)
+            print('image: ', ret_dict['image'].shape)
 
             self._printed_sample = True
             post_processed_labels = post_process_generate_ids(self.preprocessor['text'], ret_dict['labels'])
-            print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}")
 
-            print(f"=================== {self.mode} sample ===================", flush=True)
-            print(f"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}")
+            print(f"=================== {self.mode} tokens sample ===================", flush=True)
+            print(f"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}".replace("'<im_patch>', ", ""))
+            print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}".replace("'<unk>', ", ""))
 
+            print(f"=================== {self.mode} decode sample ===================", flush=True)
             print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids']).replace('<im_patch> ','')}")
-            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels).replace('<im_patch> ','')}")
+            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels).replace('<unk>', '')}")
 
         return ret_dict
 

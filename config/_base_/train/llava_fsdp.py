@@ -31,7 +31,7 @@ training_args = dict(
     #deepspeed="/mnt/cache/fanweichen2/Code/unify_mllm/accelerate_config/ds_config2_alpaca.json",
     # train logging
     logging_steps=10,
-    save_strategy='steps',
+    save_strategy='steps', # steps, epoch, no
     save_steps=2000,
     #save_total_limit=1,
 
