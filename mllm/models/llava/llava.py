@@ -25,7 +25,7 @@ from transformers import AutoConfig, AutoModelForCausalLM, \
                          CLIPVisionModel, CLIPImageProcessor
 
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
-from mllm.models.llava.Qformer import BertConfig, BertLMHeadModel
+from mllm.models.llava.qformer import BertConfig, BertLMHeadModel
 
 DEFAULT_IMAGE_TOKEN = "<image>"
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
@@ -116,7 +116,6 @@ class LlavaLlamaModel(LlamaModel):
                 qformer_config.cross_attention_freq
             )
             self.mm_projector = nn.Linear(qformer_config.hidden_size, self.config.hidden_size)
-        # /mnt/lustre/share_data/zhangzhao2/VG/ckpt/visionLLM/bert-base-uncased/
         if not hasattr(self, 'mm_projector') and qformer_config is None:
             self.mm_projector = nn.Linear(vision_config.hidden_size, self.config.hidden_size)
 
