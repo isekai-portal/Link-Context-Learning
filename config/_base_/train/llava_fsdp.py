@@ -33,7 +33,7 @@ training_args = dict(
     logging_steps=10,
     save_strategy='steps', # steps, epoch, no
     save_steps=2000,
-    #save_total_limit=1,
+    save_total_limit=1,
 
     # eval and predict
     do_eval=False,
