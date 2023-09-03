@@ -8,6 +8,7 @@ import jsonlines
 
 from ..utils import MInstrDataset
 from .. import BaseComputeMetrics
+from typing import Dict, Any, Sequence
 
 from ..root import (
     DATASETS,
@@ -74,9 +75,52 @@ class LCLDataset(MInstrDataset):
 
 @METRICS.register_module()
 class LCLComputeMetrics(BaseComputeMetrics):
-    def extract_ans(self, string: str):
+    def __init__(self, filename, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.filename = filename
+
+    def get_neg_pair(self, index, target):
+        raise NotImplementedError
+
+    def extract_target(self, string: str):
         try:
-            found = string.split("ASSISTANT:")[-1].split("</s>")[0].replace("The answer is", "").replace('there is', '').replace('in the image', '').replace(".", "").strip().lower()
+            found = string.split("ASSISTANT:")[-1].split("</s>")[0]
+            found = found.replace("The answer is", "")
+            found = found.replace('there is', '').replace('in the image', '')
+            found = found.replace("\"", "").replace("\'", "").replace(".", "").strip().lower()
             return found
         except (IndexError, AttributeError):
             return None
+
+    def extract_pred(self, string: str):
+        try:
+            found = string.replace("The answer is", "")
+            found = found.replace('there is', '').replace('in the image', '')
+            found = found.replace("\"", "").replace("\'", "").replace(".", "").strip().lower()
+            return found
+        except (IndexError, AttributeError):
+            return None
+
+    def calculate_metric(self, preds: Sequence[str], targets: Sequence[str]) -> Dict[str, Any]:
+        correct = 0
+        failed = 0
+        target_failed = 0
+        for idx, (pred, target) in enumerate(zip(preds, targets)):
+            extract_pred = self.extract_pred(pred)
+            extract_target = self.extract_target(target)
+            if extract_target is None:
+                target_failed += 1
+                logger.warning(f"failed to extract ans from target. maybe the response string is truncated: {target}.")
+                continue
+            if extract_pred is None:
+                failed += 1
+            
+            pos_target = extract_target
+            neg_target = self.get_neg_pair(idx, pos_target)
+            if pos_target in pred and neg_target not in pred:
+                correct += 1
+        return {
+            'accuracy': 1.0 * correct / len(targets),
+            'target_failed': target_failed,
+            'failed': failed,
+        }

@@ -6,14 +6,11 @@ import jsonlines
 import random
 import string
 from inspect import isfunction
-from .lcl import LCLDataset, logger, LABEL_PLACEHOLDER
-
+from .lcl import LCLDataset, LCLComputeMetrics, logger, LABEL_PLACEHOLDER
 from ..root import (
     DATASETS,
-    QUESTION_PLACEHOLDER,
-    IMAGE_PLACEHOLDER,
-    EXPR_PLACEHOLDER,
-)
+    METRICS,)
+
 
 @DATASETS.register_module()
 class ISEKAIEval(LCLDataset):
@@ -96,3 +93,22 @@ class ISEKAIEval2Way(ISEKAIEval):
             neg_answer = neg_answer, 
             infer_answer = infer_answer
         )
+
+@METRICS.register_module()
+class ISEKAIMetrics(LCLComputeMetrics):
+    def __init__(self, filename, *args, **kwargs):
+        super().__init__(filename, *args, **kwargs)
+        self.gt_pairs = self.get_pairs_isekai()
+
+    def get_pairs_isekai(self):
+        target_pairs = []
+        with jsonlines.open(self.filename) as reader:
+            for metas in reader:
+                positive_prompt = metas['positive_promt'].lower()
+                negative_prompt = metas['negative_promt'].lower()
+                target_pairs.append([positive_prompt, negative_prompt])
+        return target_pairs    
+
+    def get_neg_pair(self, index, target):
+        pairs = self.gt_pairs[index]
+        return pairs[1]

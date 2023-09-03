@@ -223,7 +223,7 @@ def get_bl_example(ann, scene):
 
 @METRICS.register_module()
 class GQAComputeMetrics(BaseComputeMetrics):
-    def extract_ans(self, string: str):
+    def extract_target(self, string: str):
         try:
             found = ANS_EXTRACT_PAT.findall(string.strip())
             if len(found) != 1:

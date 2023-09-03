@@ -9,7 +9,7 @@ from copy import deepcopy
 import numpy as np
 import math
 import cv2 as cv
-from .lcl import LCLDataset, logger, LABEL_PLACEHOLDER
+from .lcl import LCLDataset, LCLComputeMetrics, logger, LABEL_PLACEHOLDER
 from ..root import (
     DATASETS,
     METRICS,
@@ -198,11 +198,11 @@ class ImageNet1kDatasetTrain(LCLDataset):
     def policy_2way_ref_or_weight(self, index, shot):
         if random.randint(0, 1):
             ret_list = self.policy_2way_weight(index, shot)
-
-            mix_question = '[BEGIN EXAMPLE] Tell me something about this image <image>.'
-            for i in range(len(ret_list)):
-                if i != len(ret_list) -1:
-                    ret_list[i]['conversations'][0]['value'] = mix_question
+            # # fit question to ref policy
+            # mix_question = '[BEGIN EXAMPLE] Tell me something about this image <image>.'
+            # for i in range(len(ret_list)):
+            #     if i != len(ret_list) -1:
+            #         ret_list[i]['conversations'][0]['value'] = mix_question
         else:
             ret_list = self.policy_2way_ref(index, shot)
 
@@ -398,3 +398,31 @@ class ImageNetTest100Eval2Way(ImageNetTest100Eval):
             neg_answer = neg_answer, 
             infer_answer = infer_answer
         )
+
+@METRICS.register_module()
+class ImageNetTest100Metrics(LCLComputeMetrics):
+    def __init__(self, filename, *args, **kwargs):
+        super().__init__(filename, *args, **kwargs)
+        self.gt_pairs = self.gt_pairs_test100()
+    
+    def gt_pairs_test100(self):
+        target_pairs = dict()
+        cls_metas = []
+        with jsonlines.open(self.filename) as reader:
+            for metas in reader:
+                cls_metas.append(metas)
+
+        for cls_idx, _ in enumerate(cls_metas):
+            if cls_idx % 2 == 0:
+                neg_cls_idx = cls_idx + 1
+            else:
+                neg_cls_idx = cls_idx - 1
+            pos_item = cls_metas[cls_idx]
+            pos_cls_name = pos_item["class_name"].lower()
+            neg_item = cls_metas[neg_cls_idx]
+            neg_cls_name = neg_item["class_name"].lower()
+            target_pairs[pos_cls_name] = neg_cls_name
+        return target_pairs
+    
+    def get_neg_pair(self, index, target):
+        return self.gt_pairs[target]

@@ -142,7 +142,10 @@ class SingleImageConvDatasetMixin:
                             value = sub_dict[k][:-1]
                         else:
                             value = sub_dict[k]
-                            
+                            # mask all labels except the last one
+                            if k == "labels":
+                                ret_dict[k][:] = IGNORE_INDEX   
+                         
                         ret_dict[k] = torch.cat([ret_dict[k], value], dim = 0)
 
             ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
@@ -186,11 +189,11 @@ class SingleImageConvDatasetMixin:
 
             print(f"=================== {self.mode} tokens sample ===================", flush=True)
             print(f"        input_ids: {self.preprocessor['text'].convert_ids_to_tokens(ret_dict['input_ids'])}".replace("'<im_patch>', ", ""))
-            print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}".replace("'<unk>', ", ""))
+            print(f"           labels: {self.preprocessor['text'].convert_ids_to_tokens(post_processed_labels)}".replace("'<unk>', ", "").replace("'<im_patch>', ", ""))
 
             print(f"=================== {self.mode} decode sample ===================", flush=True)
             print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids']).replace('<im_patch> ','')}")
-            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels).replace('<unk>', '')}")
+            print(f"decoded    labels: {self.preprocessor['text'].decode(post_processed_labels).replace('<unk>', '').replace('<im_patch> ','')}")
 
         return ret_dict
 

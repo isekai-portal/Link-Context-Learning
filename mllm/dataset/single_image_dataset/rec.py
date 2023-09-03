@@ -113,8 +113,8 @@ class RECComputeMetrics(BaseComputeMetrics):
 
         pred_boxes, target_boxes = [], []
         for pred, target in zip(preds, targets):
-            extract_pred = self.extract_ans(pred)
-            extract_target = self.extract_ans(target)
+            extract_pred = self.extract_target(pred)
+            extract_target = self.extract_target(target)
             if extract_target is None:
                 target_failed += 1
                 logger.warning(f"failed to extract ans for target: {target}")
@@ -149,7 +149,7 @@ class RECComputeMetrics(BaseComputeMetrics):
             'warning': warn_message,
         }
 
-    def extract_ans(self, string: str):
+    def extract_target(self, string: str):
         try:
             list_of_boxes = self.box_formatter.extract(string)
             if len(list_of_boxes) != 1 or len(list_of_boxes[0]) != 1:

@@ -21,7 +21,7 @@ model_args = dict(
 
 dataset=dict(
     **_base_.IMAGENET_TEST100_2WAY,
-    sample_per_class=50,
+    sample_per_class=2,
     policy="policy_2way",
 )
 
@@ -29,7 +29,8 @@ data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={"ImageNet1k_100Class": {'cfg': dataset, 'compute_metric': dict(type='LCLComputeMetrics')}},
+    # ,
+    multitest={"ImageNet1k_test100": {'cfg': dataset, 'compute_metric': dict(type='ImageNetTest100Metrics', filename=r'/mnt/lustre/share_data/taiyan/dataset/imagenet1k/test100_pairs.jsonl')}},
     compute_metric=None,
 
     # padding collator kwargs

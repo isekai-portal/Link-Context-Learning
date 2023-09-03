@@ -237,7 +237,7 @@ ANS_EXTRACT_PAT = re.compile(r'(?:The answer is (.+?)\.)')
 
 @METRICS.register_module()
 class PointQAComputeMetrics(BaseComputeMetrics):
-    def extract_ans(self, string: str):
+    def extract_target(self, string: str):
         try:
             found = ANS_EXTRACT_PAT.findall(string.strip())
             if len(found) != 1:
