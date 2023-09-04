@@ -8,9 +8,15 @@ _base_ = [
     'DEFAULT_TRAIN_VQAEX_VARIANT.py',
     'DEFAULT_TRAIN_V3DET_VARIANT.py',
     'DEFAULT_TRAIN_IMAGENET.py',
+    'DEFAULT_TRAIN_CAPVG_VARIANT.py',
 ]
 
 DEFAULT_TRAIN_DATASET = dict(
+    vgcap=dict(
+        type='VGCapDataset',
+        filename=r'/mnt/lustre/fanweichen2/Research/MLLM/vg_data/processed_vg.json',
+        template_file=r"/mnt/cache/fanweichen2/Code/unify_mllm/config/_base_/dataset/template/d_cap.json",
+    ),
     flickr=dict(
         type='FlickrDataset',
         filename=r'/mnt/lustre/share_data/chenkeqin/mllm_data/pretrain_data/ann/CWB_flickr30k_train.jsonl',
@@ -136,4 +142,5 @@ DEFAULT_TRAIN_DATASET = dict(
     **_base_.DEFAULT_TRAIN_VQAEX_VARIANT,
     **_base_.DEFAULT_TRAIN_V3DET_VARIANT,
     **_base_.IMAGENET1K_TRAIN,
+    **_base_.DEFAULT_TRAIN_VGCAP_VARIANT,
 )

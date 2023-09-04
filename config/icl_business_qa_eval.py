@@ -29,7 +29,7 @@ data_args = dict(
     test=None,
     #multitest={"bussiness_vqa_test": {'cfg': dataset, 'compute_metric': None}},
     # multitest={k: {'cfg': v, 'compute_metric': None} for k, v in _base_.DEFAULT_BUSINESS_EASY.items()},
-    multitest={k: {'cfg': v, 'compute_metric': None} for k, v in _base_.DEFAULT_BUSINESS_EASY.items()},
+    multitest={k: {'cfg': v, 'compute_metric': None} for k, v in _base_.DEFAULT_BUSINESS_DETECTION.items()},
     compute_metric=None,
 
     # padding collator kwargs

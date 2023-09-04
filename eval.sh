@@ -130,8 +130,29 @@ export LD_LIBRARY_PATH=/mnt/cache/share/cuda-11.7/lib64:$LD_LIBRARY_PATH
 #         --cfg-options data_args.use_icl=True \
 #         --cfg-options data_args.shot=8 \
 
+# for(( i=1;i<9;i++)) do
+#     echo ${i}
+#     sbatch -p mm_v100_32g \
+#         -n 1 \
+#         -N 1 \
+#         --gres=gpu:8 \
+#         --phx-priority P0 \
+#         --preempt \
+#         -c 64 \
+#         --job-name=eval_mmv100 \
+#         -x SH-IDC1-10-142-4-22 \
+#         --comment "wbsR-SC230999.001.02" \
+#         accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
+#             config/icl_imagenet1k_v13_mix_eval_ISEKAI.py \
+#             --tf32=False --bf16=False --fp16=True \
+#             --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/checkpoint-10000 \
+#             --per_device_eval_batch_size 1 \
+#             --output_dir /mnt/lustre/fanweichen2/tmp_save/output/mix/ISEKAI-20/"${i}"-shot/ \
+#             --cfg-options data_args.use_icl=True \
+#             --cfg-options data_args.shot=${i}∂∂
+# done
 
-for(( i=1;i<9;i++)) do
+for(( i=1;i<2;i++)) do
     echo ${i}
     sbatch -p mm_v100_32g \
         -n 1 \
@@ -144,11 +165,11 @@ for(( i=1;i<9;i++)) do
         -x SH-IDC1-10-142-4-22 \
         --comment "wbsR-SC230999.001.02" \
         accelerate launch --num_processes 8 --main_process_port 23781 mllm/pipeline/finetune.py \
-            config/icl_business_qa_eval.py \
+            config/icl_business_qa_all.py \
             --tf32=False --bf16=False --fp16=True \
-            --cfg-options model_args.model_name_or_path=/mnt/lustre/fanweichen2/Research/MLLM/ckpt/checkpoint-2800 \
+            --cfg-options model_args.model_name_or_path=/mnt/lustre/share_data/taiyan/checkpoint/okapis/checkpoints/2way_weight \
             --per_device_eval_batch_size 1 \
-            --output_dir /mnt/lustre/fanweichen2/tmp_save/output/mix/business_easy_fixed/"${i}"-shot/ \
+            --output_dir /mnt/lustre/fanweichen2/tmp_save/output/icl_imagenet1k_v9_weigth_tune_new_all_20ep_eweight/business_easy_det_sim6/"${i}"-shot/ \
             --cfg-options data_args.use_icl=True \
             --cfg-options data_args.shot=${i}
 done

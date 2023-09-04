@@ -6,7 +6,7 @@ from torch import nn
 
 from ..llava import LlavaLlamaForCausalLM
 from transformers.modeling_utils import load_sharded_checkpoint
-
+from transformers import CLIPVisionModel
 PREPROCESSOR = Dict[str, Any]
 
 DEFAULT_PAD_TOKEN = "[PAD]"
@@ -23,7 +23,7 @@ def load_pretrained_llava(model_args, training_args) -> Tuple[nn.Module, PREPROC
     model.config.use_cache = False
     if model_args.freeze_backbone:
         model.model.requires_grad_(False)
-
+    #model_args.model_name_or_path,
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
@@ -75,7 +75,31 @@ def load_pretrained_llava(model_args, training_args) -> Tuple[nn.Module, PREPROC
             print('missing: ',missing_keys)
             print('unexpected: ',unexpected_keys)
 
-    model.model.vision_tower[0].to(dtype=dtype, device=training_args.device)
+    #model.model.vision_tower[0].to(dtype=dtype, device=training_args.device)
+    if isinstance(model.model.vision_tower, list):
+        # HACK for quantization
+        if model.model.vision_tower[0].device != torch.device('meta'):
+            model.model.vision_tower[0].to(dtype=dtype, device=training_args.device)
+        else:
+            model.model.vision_tower[0] = CLIPVisionModel.from_pretrained(model_args.vision_tower)  # not quantize clip
+            # model.model.vision_tower[0] = CLIPVisionModel.from_pretrained(model_args.vision_tower, **kwargs)  # quantize clip
+    else:
+        # HACK for quantization
+        if model.model.vision_tower.device != torch.device('meta'):
+            print("using meta device.")
+            model.model.vision_tower = CLIPVisionModel.from_pretrained(model_args.vision_tower, torch_dtype=dtype)
+            # model.model.vision_tower.to(dtype=dtype, device=training_args.device)
+        else:
+            model.model.vision_tower = CLIPVisionModel.from_pretrained(model_args.vision_tower, torch_dtype=dtype)  # not quantize clip
+            print("not using meta device.")
+            # model.model.vision_tower[0] = CLIPVisionModel.from_pretrained(model_args.vision_tower, **kwargs)  # quantize clip
+        #print("is_deepspeed_zero3_enabled: ", is_deepspeed_zero3_enabled())
+        print("vision tower's dtype & device: ", model.model.vision_tower.dtype, model.model.vision_tower.device)
+        try:
+            print(model.model.vision_tower.vision_model.embeddings.patch_embedding.weight.shape)
+        except:
+            print(model.model.vision_tower)
+
     vision_config = model_vision_dict['vision_config']
 
     model.config.tune_mm_mlp_adapter = model_args.tune_mm_mlp_adapter

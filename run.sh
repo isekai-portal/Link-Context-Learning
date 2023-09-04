@@ -5,7 +5,7 @@ export CUDA_HOME=/mnt/cache/share/cuda-11.7
 export PATH=/mnt/cache/share/cuda-11.7/bin::$PATH
 export LD_LIBRARY_PATH=/mnt/cache/share/cuda-11.7/lib64:$LD_LIBRARY_PATH
 
-name=train_icl_imagenet1k_v13_train_8shot_weight-2
+name=train_icl_imagenet1k_v13_train_8shot_fix
 
 config=config/icl_imagenet1k_v13_train.py
 pretrained=/mnt/lustre/share_data/xiechi/misc/to_weichen/llava_pretrain_final19/checkpoint-44000/
@@ -23,7 +23,7 @@ sbatch -p mm_v100_32g  --quotatype=auto \
     --job-name=$name \
     --phx-priority P0 \
     --preempt \
-    --nodes 4 \
+    --nodes 2 \
     -x SH-IDC1-10-142-4-22 \
     launcher_intelmpi.sh mllm/pipeline/finetune.py $config\
     --tf32=False --bf16=False --fp16=True --overwrite_output_dir \
@@ -35,7 +35,8 @@ sbatch -p mm_v100_32g  --quotatype=auto \
     --cfg-options training_args.num_train_epochs=$epochs \
     --cfg-options training_args.output_dir=$output_dir \
     --cfg-options training_args.ceph_dir=$ceph_dir \
-    --cfg-options model_args.freeze_mm_projector=True \
+    --cfg-options model_args.freeze_mm_projector=False \
+    --cfg-options model_args.freeze_backbone=True \
     #--cfg-options training_args.save_strategy="steps" \ 
 
 

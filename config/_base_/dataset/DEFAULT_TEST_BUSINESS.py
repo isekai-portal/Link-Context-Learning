@@ -1,5 +1,5 @@
 BUSINESS_VQA_TEST = dict(
-    type='BusinessVQADataset',
+    type='BusinessVQADataset_MIX',
     template_file=r"{{fileDirname}}/template/ICL.json",
 )
 ISEKAI_VQA_TEST = dict(

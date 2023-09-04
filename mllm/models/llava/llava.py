@@ -86,7 +86,7 @@ class LlavaLlamaModel(LlamaModel):
 
 
     def initialize_vision_modules(self, vision_tower, mm_vision_select_layer,
-                                  qformer_config, pretrain_mm_mlp_adapter,dtype,device,freeze_mm_projector=False):
+                                  qformer_config, pretrain_mm_mlp_adapter,dtype,device,freeze_mm_projector=False, fsdp=True):
         self.config.mm_vision_tower = vision_tower
         self.freeze_mm_projector = freeze_mm_projector
         image_processor = CLIPImageProcessor.from_pretrained(vision_tower)
@@ -97,7 +97,10 @@ class LlavaLlamaModel(LlamaModel):
             vision_tower = self.vision_tower[0]
         vision_tower.requires_grad_(False)
         vision_tower = vision_tower.to(torch.float16)
-        self.vision_tower = [vision_tower]
+        if fsdp:
+            self.vision_tower = [vision_tower]
+        else:
+            self.vision_tower = vision_tower
 
         vision_config = vision_tower.config
         num_patches = (vision_config.image_size // vision_config.patch_size) ** 2
@@ -156,7 +159,8 @@ class LlavaLlamaModel(LlamaModel):
         vision_tower = getattr(self, 'vision_tower', None)
         if vision_tower is not None and (input_ids.shape[1] != 1 or self.training) and images is not None:
             # TODO: this is a modified multimodal LLM -- Haotian Liu
-            vision_tower = vision_tower[0]  # HACK: for FSDP
+            if isinstance(vision_tower,list):
+                vision_tower = vision_tower[0]  # HACK: for FSDP
             # In-Context Learning Forward
             if len(images.shape) == 5:
                 # [BxSxCxWxH]
@@ -429,7 +433,11 @@ class LlavaLlamaForCausalLM(LlamaForCausalLM):
 
     def initialize_vision_tokenizer(self, mm_use_im_start_end, tokenizer, device,
                                     tune_mm_mlp_adapter=False, pretrain_mm_mlp_adapter=None):
-        vision_config = self.model.vision_tower[0].config
+        if isinstance(self.model.vision_tower, list):
+            vision_config = self.model.vision_tower[0].config
+        else:
+            vision_config = self.model.vision_tower.config
+
         vision_config.use_im_start_end = mm_use_im_start_end
         tokenizer.add_tokens([DEFAULT_IMAGE_PATCH_TOKEN], special_tokens=True)
         self.resize_token_embeddings(len(tokenizer))

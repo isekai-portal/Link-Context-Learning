@@ -953,8 +953,10 @@ class ImageNet1kDatasetTrain(ICLTrainDataset):
     #v13
     def policy_v13(self, index, shot):
         random_string = None
+        random_string_neg = None
         def _convert_qa(question, label, mode, final=False):
             nonlocal random_string
+            nonlocal random_string_neg
             assert mode in ['cls_negative', 'neighbors']
             if final:
                 answer = f'there is "{LABEL_PLACEHOLDER}" in the image.'
@@ -968,9 +970,26 @@ class ImageNet1kDatasetTrain(ICLTrainDataset):
                 else:
                     random_string = ''.join(random.choices(\
                         string.ascii_uppercase, k=random.randint(1,10))).lower()
+                    random_string_neg = ''.join(random.choices(\
+                        string.ascii_uppercase, k=random.randint(1,10))).lower()
+                    while random_string_neg == random_string:
+                        random_string_neg = ''.join(random.choices(\
+                            string.ascii_uppercase, k=random.randint(1,10))).lower()
                 answer = answer.replace(LABEL_PLACEHOLDER, random_string)
             elif mode == "neighbors":
-                answer = answer.replace(LABEL_PLACEHOLDER, label)
+                if random_string:
+                    #label = random_string
+                    pass
+                else:
+                    random_string = ''.join(random.choices(\
+                        string.ascii_uppercase, k=random.randint(1,10))).lower()
+                    random_string_neg = ''.join(random.choices(\
+                        string.ascii_uppercase, k=random.randint(1,10))).lower()
+                    while random_string_neg == random_string:
+                        random_string_neg = ''.join(random.choices(\
+                            string.ascii_uppercase, k=random.randint(1,10))).lower()
+                #answer = answer.replace(LABEL_PLACEHOLDER, label)
+                answer = answer.replace(LABEL_PLACEHOLDER, random_string_neg)
             else:
                 raise NotImplementedError
 
@@ -980,11 +999,11 @@ class ImageNet1kDatasetTrain(ICLTrainDataset):
         mix_question = '[BEGIN EXAMPLE] What is in the image <image>?'
         #infer_question = 'What is in the image <image>?'
         infer_question = self.get_template()
-        #shot = random.randint(1, shot)
-        weight = [math.exp((i+1)/2) for i in range(shot)]
-        shot_list = [i+1 for i in range(shot)]
-        chosen = random.choices(shot_list,weight)
-        shot = chosen[0]
+        shot = random.randint(1, shot)
+        # weight = [math.exp((i+1)/2) for i in range(shot)]
+        # shot_list = [i+1 for i in range(shot)]
+        # chosen = random.choices(shot_list,weight)
+        # shot = chosen[0]
         
         if random.randint(0,1):
             image, label = self.get_samples_same_cls(index, mode = 'cls_negative')

@@ -21,4 +21,6 @@ from .imagenet1k import (ImageNet1kDatasetTrain, ImageNet1kDatasetEval, \
 from .mini_imagenet import MiniImageNetDatasetEval
 from .business import BusinessDataset
 from .business_vqa import BusinessVQADataset
+from .business_vqa_mix import BusinessVQADataset_MIX
 from .isekai_qa import ISEKAIVQADataset
+from .vg_caption import VGCapDataset

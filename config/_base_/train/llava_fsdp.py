@@ -28,7 +28,7 @@ training_args = dict(
     # fsdp_transformer_layer_cls_to_wrap='BertLayer',
     fsdp="full_shard auto_wrap",
     fsdp_transformer_layer_cls_to_wrap='LlamaDecoderLayer',
-    #deepspeed="/mnt/cache/fanweichen2/Code/unify_mllm/accelerate_config/ds_config2_alpaca.json",
+    #deepspeed="/mnt/cache/fanweichen2/Code/unify_mllm/accelerate_config/ds_config4.json",
     # train logging
     logging_steps=10,
     save_strategy='steps',

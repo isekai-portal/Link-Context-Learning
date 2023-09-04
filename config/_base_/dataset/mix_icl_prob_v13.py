@@ -1,12 +1,12 @@
 _base_ = ['DEFAULT_TRAIN_DATASET.py']
 
+#            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_jigsaw_v1}},
 data_args = dict(
     #
     train=dict(
         type='InterleaveDateset',
         cfgs=[
-            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_v13_update}},
-            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_jigsaw_v1}},
+            {{_base_.DEFAULT_TRAIN_DATASET.imagenet_v13}},
             dict(
                 type='SubSet',
                 portion=1/20,
@@ -41,7 +41,7 @@ data_args = dict(
             {{_base_.DEFAULT_TRAIN_DATASET.POINT_V7W_p}},
             {{_base_.DEFAULT_TRAIN_DATASET.POINT_V7W_b}},
         ],
-        probabilities=[0.3,0.2] + [1./21.*0.5]*21,
+        probabilities=[0.5] + [1./21.*0.5]*21,
         seed=None,
         stopping_strategy='first_exhausted',
     ),
@@ -50,7 +50,7 @@ data_args = dict(
     
     # mix training
     use_mix=True,
-    icl_dataset_list=[0,1],
+    icl_dataset_list=[0],
 
     # compute_metric
     compute_metric=None,
