@@ -14,8 +14,9 @@ from ..root import (
 
 @DATASETS.register_module()
 class ISEKAIEval(LCLDataset):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, policy: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.policy = policy
         assert len(self.data)%2 == 0
 
     def get_samples(self, index, shot):

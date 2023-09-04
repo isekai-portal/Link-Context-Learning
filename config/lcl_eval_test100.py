@@ -21,7 +21,7 @@ model_args = dict(
 
 dataset=dict(
     **_base_.IMAGENET_TEST100_2WAY,
-    sample_per_class=2,
+    sample_per_class=50,
     policy="policy_2way",
 )
 

@@ -19,16 +19,20 @@ model_args = dict(
     model_name_or_path=None,
 )
 
-dataset=dict(
-    **_base_.ISEKAI_2WAY,
-    policy="policy_2way",
-)
-
 data_args = dict(
     train=None,
     validation=None,
     test=None,
-    multitest={"ISEKAI": {'cfg': dataset, 'compute_metric': dict(type='LCLComputeMetrics')}},
+    multitest=dict(
+        ISEKAI_10 = dict(
+            cfg = {{_base_.ISEKAI_10}}, 
+            compute_metric = dict(type='ISEKAIMetrics', filename=r'/mnt/lustre/share_data/taiyan/dataset/isekai/ISEKAI-10.json')
+            ),
+        ISEKAI_PAIR = dict(
+            cfg = {{_base_.ISEKAI_PAIR}},
+            compute_metric = dict(type='ISEKAIMetrics', filename=r'/mnt/lustre/share_data/taiyan/dataset/isekai/ISEKAI-pair.json')
+        )
+    ),
     compute_metric=None,
 
     # padding collator kwargs
