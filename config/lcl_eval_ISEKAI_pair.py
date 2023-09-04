@@ -24,10 +24,6 @@ data_args = dict(
     validation=None,
     test=None,
     multitest=dict(
-        ISEKAI_10 = dict(
-            cfg = {{_base_.ISEKAI_10}}, 
-            compute_metric = dict(type='ISEKAIMetrics', filename=r'/mnt/lustre/share_data/taiyan/dataset/isekai/ISEKAI-10.json')
-            ),
         ISEKAI_PAIR = dict(
             cfg = {{_base_.ISEKAI_PAIR}},
             compute_metric = dict(type='ISEKAIMetrics', filename=r'/mnt/lustre/share_data/taiyan/dataset/isekai/ISEKAI-pair.json')

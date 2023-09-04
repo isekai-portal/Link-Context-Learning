@@ -117,8 +117,11 @@ class LCLComputeMetrics(BaseComputeMetrics):
             
             pos_target = extract_target
             neg_target = self.get_neg_pair(idx, pos_target)
-            if pos_target in pred and neg_target not in pred:
-                correct += 1
+
+            if pos_target in pred:
+                pred = pred.replace(pos_target, '')
+                if neg_target not in pred:
+                    correct += 1
         return {
             'accuracy': 1.0 * correct / len(targets),
             'target_failed': target_failed,

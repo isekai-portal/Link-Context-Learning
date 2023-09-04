@@ -111,5 +111,10 @@ class ISEKAIMetrics(LCLComputeMetrics):
         return target_pairs    
 
     def get_neg_pair(self, index, target):
-        pairs = self.gt_pairs[index]
-        return pairs[1]
+        pair = self.gt_pairs[index]
+
+        pos_target = target
+        for name in pair:
+            if name != pos_target:
+                neg_target = name
+        return neg_target

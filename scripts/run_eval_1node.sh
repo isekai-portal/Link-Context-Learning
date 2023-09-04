@@ -16,6 +16,7 @@ port=23789
 sbatch -p atshare_a100_40g  --quotatype=auto \
     --comment "wbsR-SC230999.001.02" \
     --job-name=$name \
+    --phx-priority P0 \
     -o ./output/$name-%j.out \
     -n 1 -N 1 --gres=gpu:$gpus -c $cpus \
     accelerate launch --num_processes $gpus \
