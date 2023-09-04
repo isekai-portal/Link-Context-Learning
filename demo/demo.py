@@ -10,15 +10,12 @@ import numpy as np
 import gradio as gr
 from gradio.themes.utils.sizes import Size
 from PIL import Image
-from PIL import ImageDraw, ImageFont
 from mmengine import Config
 import transformers
 from transformers import BitsAndBytesConfig
 
-# import debugpy;debugpy.connect(('10.142.4.66', 5610))
-
 SLURM_ENV = {k: v for k, v in os.environ.items() if 'SLURM' in k}
-sys.path.append(str(Path(__file__).parent.parent.parent))
+sys.path.append(str(Path(__file__).parent))
 
 from mllm.models.builder.build_llava import load_pretrained_llava
 from mllm.dataset.process_function import PlainBoxFormatter
@@ -60,7 +57,6 @@ else:
 #endregion
 
 #region configs
-#TODO: 修改各种参数
 model_args = dict(
     type='llava',
     # TODO: process version; current version use default version

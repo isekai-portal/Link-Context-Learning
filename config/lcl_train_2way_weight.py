@@ -25,7 +25,7 @@ data_args = dict(
 )
 
 training_args = dict(
-    num_train_epochs=25,
+    num_train_epochs=50,
     save_strategy='steps', # steps, epoch, no
     save_steps=500
 )

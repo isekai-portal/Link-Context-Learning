@@ -5,7 +5,7 @@ model_path=${3:-'/home/taiyan/ckpt/okapis/demo_mix_1w'}
 
 
 rm -r gradio_cached_examples
-python -u ./mllm/demo_lcl/demo.py \
+python -u ./demo/demo.py \
     --model_path $model_path \
     --server_name 0.0.0.0 \
     --server_port $server_port 
