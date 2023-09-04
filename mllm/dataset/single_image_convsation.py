@@ -177,7 +177,10 @@ class SingleImageConvDatasetMixin:
 
             ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
 
-        if not hasattr(self, '_printed_sample') and dist.get_rank() == 0:
+        if not hasattr(self, '_printed_sample'):
+            if dist.is_initialized():
+                if dist.get_rank() != 0:
+                    return ret_dict
 
             print('mask: ', ret_dict['attention_mask'].shape)
             print('labels: ', ret_dict['labels'].shape)

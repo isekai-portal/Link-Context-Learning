@@ -95,13 +95,13 @@ Download
 To launch a Gradio web demo, use the following command. Please note that the model evaluates in the torch.float16 format, which requires a GPU with at least 16GB of memory.
 
 ```shell
-python demo/demo.py --model_path /path/to/lcl/ckpt
+python ./mllm/demo/demo.py --model_path /path/to/lcl/ckpt
 ```
 
 It is also possible to use it in 8-bit quantization, albeit at the expense of sacrificing some performance.
 
 ```shell
-python demo/demo.py --model_path /path/to/lcl/ckpt --load_in_8bit
+python ./mllm/demo/demo.py --model_path /path/to/lcl/ckpt --load_in_8bit
 ```
 
 ## Train
@@ -114,6 +114,7 @@ accelerate launch --num_processes 4 \
         --main_process_port 23786 \
         mllm/pipeline/finetune.py \
         config/lcl_train_2way_weight.py \
+        --cfg-options data_args.use_icl=True \
         --cfg-options model_args.model_name_or_path=/path/to/init/checkpoint
 ```
 
@@ -123,11 +124,49 @@ accelerate launch --num_processes 4 \
         --main_process_port 23786 \
         mllm/pipeline/finetune.py \
         config/lcl_train_mix1.py \
+        --cfg-options data_args.use_icl=True \
         --cfg-options model_args.model_name_or_path=/path/to/init/checkpoint
 ```
 ## Inference
 
+After preparing [data](#dataset), you can inference the model using the command:
 
+### ImageNet-100
+```shell
+accelerate launch --num_processes 4 \
+        --main_process_port 23786 \
+        mllm/pipeline/finetune.py \
+        config/lcl_eval_ISEKAI_10.py \
+        --cfg-options data_args.use_icl=True \
+        --cfg-options model_args.model_name_or_path=/path/to/checkpoint
+```
+
+mmengine style args and huggingface:Trainer args are supported. for example, you can change eval batchsize like this:
+
+### ISEKAI
+```shell
+# ISEKAI10
+accelerate launch --num_processes 4 \
+        --main_process_port 23786 \
+        mllm/pipeline/finetune.py \
+        config/shikra_eval_multi_pope.py \
+        --cfg-options data_args.use_icl=True \
+        --cfg-options model_args.model_name_or_path=/path/to/checkpoint \
+        --per_device_eval_batch_size 1
+
+# ISEKAI-PAIR
+accelerate launch --num_processes 4 \
+        --main_process_port 23786 \
+        mllm/pipeline/finetune.py \
+        config/shikra_eval_multi_pope.py \
+        --cfg-options data_args.use_icl=True \
+        --cfg-options model_args.model_name_or_path=/path/to/checkpoint \
+        --per_device_eval_batch_size 1
+```
+
+where `--cfg-options a=balabala b=balabala` is mmengine style argument. They will overwrite the argument predefined in config file. And `--per_device_eval_batch_size` is huggingface:Trainer argument.
+
+the prediction result will be saved in `output_dir/multitest_xxxx_extra_prediction.jsonl`, which hold the same order as the input dataset. 
 
 ## Cite
 

@@ -15,7 +15,7 @@ import transformers
 from transformers import BitsAndBytesConfig
 
 SLURM_ENV = {k: v for k, v in os.environ.items() if 'SLURM' in k}
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from mllm.models.builder.build_llava import load_pretrained_llava
 from mllm.dataset.process_function import PlainBoxFormatter
