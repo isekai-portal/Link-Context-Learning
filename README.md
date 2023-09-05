@@ -36,7 +36,7 @@
 
 
 ## Updates
-- **05 Sep, 2023**: :boom::boom: We release the code, data, and lcl-2way-weight checkpoint.
+- **05 Sep, 2023**: :boom::boom: We release the code, data, and [LCL-2WAY-WEIGHT](https://huggingface.co/ISEKAI-Portal/LCL_2WAY_WEIGHT) checkpoint.
 - **24 Aug, 2023**: :boom::boom: We release the online demo at [🔗LCL-Demo🔗](http://117.144.81.99:20488/).
 - **17 Aug, 2023**: :boom::boom: We release the two subsets of ISEKAI (ISEKAI-10 and ISEKAI-pair) at [[Hugging Face 🤗]](https://huggingface.co/ISEKAI-Portal).
 
@@ -83,7 +83,7 @@ accelerate config
 
 ### ImageNet
 
-We train the LCL setting on our rebuild ImageNet-900 set, and evaluate model on ImageNet-100 set. You can get the dataset json [here]().
+We train the LCL setting on our rebuild ImageNet-900 set, and evaluate model on ImageNet-100 set. You can get the dataset json [here](https://github.com/isekai-portal/Link-Context-Learning/tree/main/docs).
 
 ### ISEKAI
 We evaluate model on ISEKAI-10 and ISEKAI-Pair, you can download ISEKAI Dataset in [ISEKAI-10](https://huggingface.co/datasets/ISEKAI-Portal/ISEKAI-10) and [ISEKAI-pair](https://huggingface.co/datasets/ISEKAI-Portal/ISEKAI-pair).
