@@ -36,7 +36,7 @@
 
 
 ## Updates
-- **04 Sep, 2023**: :boom::boom: We release the code, data, and lcl-2way-weight checkpoint.
+- **05 Sep, 2023**: :boom::boom: We release the code, data, and lcl-2way-weight checkpoint.
 - **24 Aug, 2023**: :boom::boom: We release the online demo at [🔗LCL-Demo🔗](http://117.144.81.99:20488/).
 - **17 Aug, 2023**: :boom::boom: We release the two subsets of ISEKAI (ISEKAI-10 and ISEKAI-pair) at [[Hugging Face 🤗]](https://huggingface.co/ISEKAI-Portal).
 
@@ -57,9 +57,6 @@ This repository contains the **official implementation** and **dataset** of the 
 4. [x] Release the codes and checkpoints.
 5. [ ] Release the full ISEKAI dataset.
 6. [ ] Release checkpoints supporting few-shot detection and vqa tasks.
-
-
-
 
 
 ## Get Start
@@ -83,12 +80,19 @@ pip install -r requirements.txt
 accelerate config
 ```
 ## Dataset
-Download ISEKAI Dataset in [ISEKAI-10](https://huggingface.co/datasets/ISEKAI-Portal/ISEKAI-10) and [ISEKAI-pair](https://huggingface.co/datasets/ISEKAI-Portal/ISEKAI-pair).
 
+### ImageNet
+
+We train the LCL setting on our rebuild ImageNet-900 set, and evaluate model on ImageNet-100 set. You can get the dataset json [here]().
+
+### ISEKAI
+We evaluate model on ISEKAI-10 and ISEKAI-Pair, you can download ISEKAI Dataset in [ISEKAI-10](https://huggingface.co/datasets/ISEKAI-Portal/ISEKAI-10) and [ISEKAI-pair](https://huggingface.co/datasets/ISEKAI-Portal/ISEKAI-pair).
 
 
 ## Checkpoint
-Download 
+Download our [LCL-2WAY-WEIGHT](https://huggingface.co/ISEKAI-Portal/LCL_2WAY_WEIGHT/tree/main) and [LCL-MIX](https://huggingface.co/ISEKAI-Portal/LCL-Mix) checkpoints in huggingface. 
+
+
 
 ## Demo
 
