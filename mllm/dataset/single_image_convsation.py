@@ -133,7 +133,7 @@ class SingleImageConvDatasetMixin:
                 # concatenate multi-context
                 if i == 0:
                     for k in update_keys:
-                        value = sub_dict[k][:-1]
+                        value = sub_dict[k]
                         ret_dict[k] = value
                 else:
                     for k in update_keys:
@@ -177,6 +177,7 @@ class SingleImageConvDatasetMixin:
 
             ret_dict['image'] = torch.cat(ret_dict['image'],dim=0)
 
+        print(f"decoded input_ids: {self.preprocessor['text'].decode(ret_dict['input_ids']).replace('<im_patch> ','')}")
         if not hasattr(self, '_printed_sample'):
             if dist.is_initialized():
                 if dist.get_rank() != 0:
