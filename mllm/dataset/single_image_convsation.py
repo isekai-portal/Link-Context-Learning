@@ -160,7 +160,7 @@ class SingleImageConvDatasetMixin:
                 # concatenate multi-context
                 if i == 0:
                     for k in update_keys:
-                        value = sub_dict[k][:-1]
+                        value = sub_dict[k]
                         ret_dict[k] = value
                 else:
                     for k in update_keys:
