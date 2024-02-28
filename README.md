@@ -34,11 +34,13 @@
 [![Dataset](https://img.shields.io/badge/Dataset-Download-blue)](https://huggingface.co/ISEKAI-Portal) 
 [![Generic badge](https://img.shields.io/badge/DEMO-LCL_Demo-<COLOR>.svg)](http://117.144.81.99:20488/)
 
+Official PyTorch implementation of "[Link-Context Learning for Multimodal LLMs](https://arxiv.org/pdf/2308.07891.pdf)" [CVPR 2024].
 
 ## Updates
-- **05 Sep, 2023**: :boom::boom: We release the code, data, and [LCL-2WAY-WEIGHT](https://huggingface.co/ISEKAI-Portal/LCL_2WAY_WEIGHT) checkpoint.
-- **24 Aug, 2023**: :boom::boom: We release the online demo at [🔗LCL-Demo🔗](http://117.144.81.99:20488/).
-- **17 Aug, 2023**: :boom::boom: We release the two subsets of ISEKAI (ISEKAI-10 and ISEKAI-pair) at [[Hugging Face 🤗]](https://huggingface.co/ISEKAI-Portal).
+- **28 Feb, 2024** :boom::boom: Our paper has been accepted by CVPR 2024! 🎉
+- **05 Sep, 2023**: We release the code, data, and [LCL-2WAY-WEIGHT](https://huggingface.co/ISEKAI-Portal/LCL_2WAY_WEIGHT) checkpoint.
+- **24 Aug, 2023**: We release the online demo at [🔗LCL-Demo🔗](http://117.144.81.99:20488/).
+- **17 Aug, 2023**: We release the two subsets of ISEKAI (ISEKAI-10 and ISEKAI-pair) at [[Hugging Face 🤗]](https://huggingface.co/ISEKAI-Portal).
 
 ---
 This repository contains the **official implementation** and **dataset** of the following paper:
