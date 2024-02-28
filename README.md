@@ -15,7 +15,7 @@
 <div align="center">
     <sup>1</sup>S-Lab, Nanyang Technological University&emsp;
     <sup>2</sup>Ningbo Institute of Digital Twin, Eastern Institute of Technology, Ningbo, China&emsp;
-    <sup>3</sup>&emsp;
+    <sup>3</sup>SenseTime Research&emsp;
     </br>
     <sup>*</sup> Equal Contribution&emsp;
     <sup>†</sup> Project Lead&emsp;
