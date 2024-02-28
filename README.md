@@ -6,18 +6,16 @@
 
 <div>
 <div align="center">
-    <a href='https://macavityt.github.io/' target='_blank'>Yan Tai<sup>*,1,2</sup></a>&emsp;
+    <a href='https://macavityt.github.io/' target='_blank'>Yan Tai<sup>*,2</sup></a>&emsp;
     <a href='https://weichenfan.github.io/Weichen/' target='_blank'>Weichen Fan<sup>*,†,1</sup></a>&emsp;
-    <a href='https://zhaozhang.net/' target='_blank'>Zhao Zhang<sup>1</sup></a>&emsp;
-    <a href='https://zhufengx.github.io/' target='_blank'>Feng Zhu<sup>1</sup></a>&emsp;
-    <a href='https://scholar.google.com/citations?user=1c9oQNMAAAAJ&hl=zh-CN' target='_blank'>Rui Zhao<sup>1</sup></a>&emsp;
-    <a href='https://liuziwei7.github.io/' target='_blank'>Ziwei Liu<sup>&#x2709,3</sup></a>
+    <a href='https://zhaozhang.net/' target='_blank'>Zhao Zhang<sup>3</sup></a>&emsp;
+    <a href='https://liuziwei7.github.io/' target='_blank'>Ziwei Liu<sup>&#x2709,1</sup></a>
 </div>
 <div>
 <div align="center">
-    <sup>1</sup>SenseTime Research&emsp;
-    <sup>2</sup>Institute of Automation, CAS&emsp;
-    <sup>3</sup>S-Lab, Nanyang Technological University&emsp;
+    <sup>1</sup>S-Lab, Nanyang Technological University&emsp;
+    <sup>2</sup>Ningbo Institute of Digital Twin, Eastern Institute of Technology, Ningbo, China&emsp;
+    <sup>3</sup>&emsp;
     </br>
     <sup>*</sup> Equal Contribution&emsp;
     <sup>†</sup> Project Lead&emsp;
