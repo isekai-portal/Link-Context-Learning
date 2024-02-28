@@ -6,8 +6,8 @@
 
 <div>
 <div align="center">
-    <a href='https://macavityt.github.io/' target='_blank'>Yan Tai<sup>*,2</sup></a>&emsp;
-    <a href='https://weichenfan.github.io/Weichen/' target='_blank'>Weichen Fan<sup>*,†,1</sup></a>&emsp;
+    <a href='https://macavityt.github.io/' target='_blank'>Yan Tai<sup>*,2,3</sup></a>&emsp;
+    <a href='https://weichenfan.github.io/Weichen/' target='_blank'>Weichen Fan<sup>*,†,3</sup></a>&emsp;
     <a href='https://zhaozhang.net/' target='_blank'>Zhao Zhang<sup>3</sup></a>&emsp;
     <a href='https://liuziwei7.github.io/' target='_blank'>Ziwei Liu<sup>&#x2709,1</sup></a>
 </div>
