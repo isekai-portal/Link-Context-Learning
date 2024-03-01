@@ -1,4 +1,4 @@
-# Link-Context Learning for Multimodal LLMs
+# Link-Context Learning for Multimodal LLMs [CVPR 2024]
 
 <p align="center" width="100%">
 <img src="ISEKAI_overview.png"  width="80%" height="80%">
