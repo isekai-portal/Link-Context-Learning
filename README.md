@@ -16,13 +16,11 @@
     <sup>1</sup>S-Lab, Nanyang Technological University&emsp;
     <sup>2</sup>Shanghai Jiao Tong University&emsp;
     <sup>3</sup>SenseTime Research&emsp;
-    <sup>4</sup>Ningbo Institute of Digital Twin, Eastern Institute of Technology, Ningbo, China&emsp;
-    
+    <br><sup>4</sup>Ningbo Institute of Digital Twin, Eastern Institute of Technology, Ningbo, China<br>&emsp;
     </br>
     <sup>*</sup> Equal Contribution&emsp;
     <sup>†</sup> Project Lead&emsp;
     <sup>&#x2709</sup> Corresponding Author
-    
 </div>
  
  -----------------
