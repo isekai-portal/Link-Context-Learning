@@ -175,10 +175,10 @@ the prediction result will be saved in `output_dir/multitest_xxxx_extra_predicti
 ## Cite
 
 ```bibtex
-@article{tai2023link,
+@inproceedings{tai2023link,
   title={Link-Context Learning for Multimodal LLMs},
-  author={Tai, Yan and Fan, Weichen and Zhang, Zhao and Zhu, Feng and Zhao, Rui and Liu, Ziwei},
-  journal={arXiv preprint arXiv:2308.07891},
-  year={2023}
+  author={Tai, Yan and Fan, Weichen and Zhang, Zhao and Liu, Ziwei},
+  booktitle={Proceedings of the IEEE/CVF conference on computer vision and pattern recognition (CVPR)},
+  year={2024}
 }
 ```
